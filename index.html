@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEETAce — Smart NEET Preparation</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+:root {
+  --navy:#0a2342;--blue:#1a56db;--blue-l:#e8f0fe;--green:#0ca30c;--green-l:#e8fdf5;
+  --amber:#f59e0b;--amber-l:#fef3e2;--red:#e34948;--red-l:#feecec;
+  --purple:#4a3aa7;--purple-l:#f3e8ff;--teal:#1baf7a;--teal-l:#e1f5ee;
+  --bg:#f0f4f8;--surf:#fff;--surf2:#f8faff;--bdr:#e2e8f0;
+  --txt:#1a202c;--mute:#718096;--r:12px;
+  --sh:0 2px 12px rgba(0,0,0,.07);--sh-lg:0 8px 32px rgba(0,0,0,.12);
+}
+[data-theme=dark]{
+  --bg:#0d1117;--surf:#161b22;--surf2:#21262d;--bdr:#30363d;
+  --txt:#e6edf3;--mute:#8b949e;--blue-l:#1c2d4a;--green-l:#1a2f1a;
+  --amber-l:#2d2408;--red-l:#2d1a1a;--purple-l:#1f1a35;--teal-l:#0d2a20;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh}
+.app{display:flex;flex-direction:column;min-height:100vh;max-width:980px;margin:0 auto;background:var(--surf);box-shadow:var(--sh-lg)}
+/* TOPBAR */
+.topbar{background:linear-gradient(135deg,#0a2342,#1a56db);color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200}
+.brand{display:flex;align-items:center;gap:8px}
+.brand h1{font-size:18px;font-weight:800;letter-spacing:-.4px}
+.brand-sub{font-size:10px;opacity:.65;margin-top:1px}
+.topbar-right{display:flex;align-items:center;gap:7px}
+.streak-pill{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.15);border-radius:20px;padding:5px 11px;font-size:12px;font-weight:700}
+.ib{width:33px;height:33px;border-radius:50%;background:rgba(255,255,255,.15);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px}
+.ib:hover{background:rgba(255,255,255,.25)}
+.pill{padding:2px 7px;border-radius:8px;font-size:9px;font-weight:700}
+.pill-admin{background:#4a3aa7;color:#fff}.pill-pro{background:#f59e0b;color:#0a2342}
+/* BANNER */
+#accessBanner{display:none;font-size:12px;font-weight:700;text-align:center;padding:8px 12px;border-bottom:1px solid var(--bdr)}
+/* NAV */
+.nav{display:flex;background:var(--surf);border-bottom:1px solid var(--bdr);overflow-x:auto;position:sticky;top:56px;z-index:199;scrollbar-width:none}
+.nav::-webkit-scrollbar{display:none}
+.nb{flex:1;min-width:68px;padding:10px 4px;border:none;background:none;cursor:pointer;font-size:10px;font-weight:600;color:var(--mute);display:flex;flex-direction:column;align-items:center;gap:3px;border-bottom:3px solid transparent;white-space:nowrap}
+.nb.active{color:var(--blue);border-bottom-color:var(--blue)}
+.nb i{font-size:18px}
+/* SCREENS */
+.screen{display:none;padding:16px;animation:fi .2s ease}
+.screen.active{display:block}
+@keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+/* COMMON */
+.sec-hd{font-size:14px;font-weight:700;color:var(--navy);margin-bottom:11px;display:flex;align-items:center;gap:6px}
+[data-theme=dark] .sec-hd{color:var(--txt)}
+.card{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r);padding:15px;margin-bottom:13px}
+.badge{padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;display:inline-block}
+.be{background:var(--green-l);color:#0a5c0a}.bm{background:var(--amber-l);color:#7a4800}.bh{background:var(--red-l);color:#7a0c0c}
+.btn{padding:9px 16px;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:opacity .15s}
+.btn:hover{opacity:.88}.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-blue{background:var(--blue);color:#fff}.btn-green{background:var(--green);color:#fff}
+.btn-red{background:var(--red);color:#fff}.btn-purple{background:var(--purple);color:#fff}
+.btn-ghost{background:transparent;border:1.5px solid var(--bdr);color:var(--txt)}
+.btn-full{width:100%;justify-content:center}
+.pbg{height:6px;background:var(--bdr);border-radius:3px;overflow:hidden;margin-top:7px}
+.pfill{height:100%;border-radius:3px}
+/* HERO */
+.hero{background:linear-gradient(135deg,#0a2342,#1a56db,#4a3aa7);color:#fff;border-radius:16px;padding:18px;margin-bottom:16px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;right:-20px;top:-20px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.05)}
+.hero-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.hs{background:rgba(255,255,255,.13);border-radius:9px;padding:9px 10px;text-align:center}
+.hs-n{font-size:20px;font-weight:800;line-height:1}
+.hs-l{font-size:10px;opacity:.75;margin-top:2px}
+.quad{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:16px}
+.qbox{background:var(--surf2);border:1px solid var(--bdr);border-radius:10px;padding:11px;text-align:center}
+.qn{font-size:20px;font-weight:800;color:var(--blue)}
+.ql{font-size:10px;color:var(--mute);margin-top:2px}
+.sgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-bottom:16px}
+.sc{border-radius:13px;padding:14px;cursor:pointer;transition:transform .2s,box-shadow .2s;border:2px solid transparent}
+.sc:hover{transform:translateY(-2px);box-shadow:var(--sh)}
+.sc.phy{background:var(--blue-l);border-color:#93b4f4}.sc.chem{background:var(--green-l);border-color:#6dd4a8}.sc.bio{background:var(--amber-l);border-color:#f4c05a}
+.si{font-size:26px;margin-bottom:7px}.sn{font-size:12px;font-weight:700;color:var(--navy)}
+[data-theme=dark] .sn{color:var(--txt)}
+.ai-box{background:linear-gradient(135deg,var(--purple-l),var(--blue-l));border:1px solid #c4b5fd;border-radius:12px;padding:13px;margin-bottom:14px;display:flex;gap:11px}
+.ai-av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--purple),var(--blue));display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;flex-shrink:0}
+/* QUIZ */
+.qmeta{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px}
+.qcnt{font-size:12px;font-weight:600;color:var(--mute)}
+.timer{display:flex;align-items:center;gap:5px;background:var(--red-l);color:var(--red);padding:5px 12px;border-radius:20px;font-size:14px;font-weight:800}
+.qpbg{height:5px;background:var(--bdr);border-radius:3px;margin-bottom:14px;overflow:hidden}
+.qpfill{height:100%;background:linear-gradient(90deg,var(--blue),var(--purple));border-radius:3px;transition:width .35s}
+.qcard{background:var(--surf);border:1px solid var(--bdr);border-radius:15px;padding:18px;margin-bottom:13px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.qtag{font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
+.qtext{font-size:14px;line-height:1.65;font-weight:500}
+.opts{display:flex;flex-direction:column;gap:8px;margin-top:13px}
+.opt{padding:12px 15px;border:2px solid var(--bdr);border-radius:10px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:11px;background:var(--surf);transition:all .15s}
+.opt:hover:not(.locked){border-color:var(--blue);background:var(--blue-l)}
+.opt.correct{border-color:var(--green)!important;background:var(--green-l)!important}
+.opt.wrong{border-color:var(--red)!important;background:var(--red-l)!important}
+.oltr{width:26px;height:26px;border-radius:50%;background:var(--bdr);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;flex-shrink:0}
+.opt.correct .oltr{background:var(--green);color:#fff}.opt.wrong .oltr{background:var(--red);color:#fff}
+.expl{background:var(--blue-l);border-left:4px solid var(--blue);border-radius:0 10px 10px 0;padding:13px;margin-top:11px;display:none;font-size:13px;line-height:1.65}
+.expl.show{display:block}
+.ncert-tag{display:inline-flex;align-items:center;gap:5px;background:var(--blue-l);border:1px solid #b8cff6;color:#0a3580;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;margin-top:7px}
+.syl-tag{display:inline-flex;align-items:center;gap:5px;background:var(--purple-l);border:1px solid #c4b5fd;color:#2d1f7a;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;margin-top:5px}
+.conf-row{display:flex;gap:8px;margin-top:10px}
+.cbtn{flex:1;padding:7px;border:1.5px solid var(--bdr);border-radius:8px;cursor:pointer;background:var(--surf);font-size:11px;font-weight:700;text-align:center}
+.ce{border-color:var(--green);color:#0a5c0a;background:var(--green-l)}
+.cm{border-color:var(--amber);color:#7a4800;background:var(--amber-l)}
+.ch{border-color:var(--red);color:#7a0c0c;background:var(--red-l)}
+.qactions{display:flex;gap:9px}
+.tqhdr{background:linear-gradient(135deg,var(--navy),var(--blue));color:#fff;border-radius:13px;padding:14px;margin-bottom:14px}
+/* RESULT */
+.rhero{background:linear-gradient(135deg,#0a2342,#1a56db,#4a3aa7);color:#fff;border-radius:16px;padding:22px;text-align:center;margin-bottom:16px}
+.sring{width:100px;height:100px;border-radius:50%;border:5px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;flex-direction:column}
+.spct{font-size:30px;font-weight:900;line-height:1}
+.rgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:14px}
+.rstat{background:var(--surf2);border:1px solid var(--bdr);border-radius:10px;padding:11px;text-align:center}
+.rn{font-size:20px;font-weight:800}
+/* FLASHCARDS */
+.fcwrap{perspective:1000px;cursor:pointer;margin-bottom:14px}
+.fc{position:relative;height:200px;transform-style:preserve-3d;transition:transform .5s}
+.fc.flipped{transform:rotateY(180deg)}
+.fcface{position:absolute;inset:0;border-radius:15px;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:22px;text-align:center;backface-visibility:hidden;border:1px solid var(--bdr)}
+.fcf{background:linear-gradient(135deg,var(--blue),var(--purple));color:#fff}
+.fcb{background:var(--surf2);transform:rotateY(180deg)}
+.dotrow{display:flex;gap:5px;justify-content:center;margin-bottom:13px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--bdr)}
+.dot.active{background:var(--blue)}
+/* MISTAKES */
+.mc{background:var(--surf);border:1px solid var(--bdr);border-left:4px solid var(--red);border-radius:12px;padding:14px;margin-bottom:11px}
+/* AI CHAT */
+.aiwrap{display:flex;flex-direction:column;gap:11px;max-height:350px;overflow-y:auto;padding-right:4px;margin-bottom:11px}
+.aimsg{padding:11px 13px;border-radius:12px;font-size:13px;line-height:1.6;max-width:88%}
+.aimsg.bot{background:var(--blue-l);border-bottom-left-radius:4px;border:1px solid #c7d9f8;align-self:flex-start}
+.aimsg.user{background:var(--blue);color:#fff;border-bottom-right-radius:4px;align-self:flex-end}
+.aiinrow{display:flex;gap:8px}
+.aiin{flex:1;padding:10px 13px;border:1.5px solid var(--bdr);border-radius:20px;font-size:13px;background:var(--surf);color:var(--txt);outline:none}
+.aiin:focus{border-color:var(--blue)}
+.aisend{width:38px;height:38px;border-radius:50%;background:var(--blue);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.qq{padding:5px 11px;border:1px solid var(--bdr);border-radius:14px;font-size:11px;cursor:pointer;background:var(--surf2);color:var(--mute)}
+.qq:hover{border-color:var(--blue);color:var(--blue)}
+/* ANALYTICS */
+.prow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--bdr)}
+.prow:last-child{border:none}
+.plbl{font-size:12px;font-weight:500;flex:1;min-width:110px}
+.pbarbg{flex:2;height:7px;background:var(--bdr);border-radius:4px;overflow:hidden}
+.pbar{height:100%;border-radius:4px}
+.ppct{font-size:12px;font-weight:800;min-width:36px;text-align:right}
+.sgcell{height:24px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;background:var(--bdr);color:var(--mute)}
+.sgcell.done{background:var(--blue);color:#fff}.sgcell.great{background:var(--purple);color:#fff}
+/* LEADERBOARD */
+.lbrow{display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid var(--bdr)}
+.lbrow:last-child{border:none}
+.lbrank{width:28px;height:28px;border-radius:50%;background:var(--surf2);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;flex-shrink:0}
+.gold{background:#fbbf24;color:#78350f}.silver{background:#d1d5db;color:#374151}.bronze{background:#d97706;color:#fff}.me{background:var(--blue);color:#fff}
+/* ADMIN */
+.ub{border:2px dashed var(--blue);background:var(--blue-l);border-radius:12px;padding:18px;text-align:center;margin-bottom:14px}
+.dtw{background:var(--surf);border:1px solid var(--bdr);border-radius:12px;overflow-x:auto;margin-bottom:14px}
+.dt{width:100%;border-collapse:collapse;font-size:12px}
+.dt th{background:var(--surf2);padding:10px 12px;border-bottom:1px solid var(--bdr);color:var(--mute);font-weight:700;text-align:left}
+.dt td{padding:10px 12px;border-bottom:1px solid var(--bdr)}
+.sp{padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700}
+.sp-active{background:var(--green-l);color:#0a5c0a}.sp-expired{background:var(--red-l);color:#7a0c0c}
+.sp-admin{background:var(--purple-l);color:#2d1f7a}.sp-trial{background:var(--amber-l);color:#7a4800}
+.ab{padding:4px 9px;font-size:11px;border-radius:6px;cursor:pointer;font-weight:700;border:1.5px solid}
+.ab-k{border-color:var(--red);color:var(--red);background:transparent}.ab-k:hover{background:var(--red);color:#fff}
+.ab-t{border-color:var(--blue);color:var(--blue);background:transparent}.ab-t:hover{background:var(--blue);color:#fff}
+.ab-g{border-color:var(--green);color:var(--green);background:transparent}.ab-g:hover{background:var(--green);color:#fff}
+/* SETTINGS */
+.srow{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--bdr)}
+.srow:last-child{border:none}
+.tsw{width:42px;height:23px;background:var(--bdr);border-radius:12px;position:relative;cursor:pointer;border:none;transition:background .2s;flex-shrink:0}
+.tsw.on{background:var(--blue)}.tsw::after{content:'';position:absolute;width:17px;height:17px;background:#fff;border-radius:50%;top:3px;left:3px;transition:left .2s}
+.tsw.on::after{left:22px}
+/* MODAL */
+.mov{position:fixed;inset:0;background:rgba(10,35,66,.75);display:none;align-items:center;justify-content:center;z-index:500;padding:16px;backdrop-filter:blur(4px)}
+.mov.active{display:flex}
+.mcard{background:var(--surf);border-radius:18px;width:100%;max-width:380px;padding:24px;box-shadow:var(--sh-lg);border:1px solid var(--bdr)}
+.fin{width:100%;padding:10px 13px;border:1.5px solid var(--bdr);border-radius:9px;font-size:13px;background:var(--surf);color:var(--txt);margin-top:5px;outline:none}
+.fin:focus{border-color:var(--blue)}
+.flbl{font-size:11px;font-weight:700;color:var(--mute)}
+.dvdr{display:flex;align-items:center;margin:12px 0;color:var(--mute);font-size:12px}
+.dvdr::before,.dvdr::after{content:'';flex:1;border-bottom:1px solid var(--bdr)}
+.dvdr span{padding:0 10px}
+.tab-row{display:flex;margin-bottom:16px;border-bottom:1px solid var(--bdr)}
+.tab{flex:1;padding:10px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--mute);border-bottom:3px solid transparent;margin-bottom:-1px}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.err-msg{background:var(--red-l);color:var(--red);padding:10px 12px;border-radius:8px;font-size:12px;font-weight:600;margin-bottom:12px;display:none}
+.err-msg.show{display:block}
+/* TOAST */
+.toast{position:fixed;bottom:72px;left:50%;transform:translateX(-50%);background:#1a202c;color:#fff;padding:10px 18px;border-radius:30px;font-size:12px;font-weight:600;z-index:999;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap;box-shadow:0 8px 20px rgba(0,0,0,.25);max-width:90vw;text-align:center}
+.toast.show{opacity:1}
+/* CHIP */
+.chips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:13px}
+.chip{padding:5px 13px;border:1.5px solid var(--bdr);border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;background:var(--surf);color:var(--mute);transition:all .15s;white-space:nowrap}
+.chip.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+/* TOPIC ROW */
+.trow{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--surf2);border:1px solid var(--bdr);border-radius:10px;cursor:pointer;margin-bottom:8px;transition:all .15s}
+.trow:hover{background:var(--blue-l);border-color:var(--blue)}
+.tdot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+/* SEARCH */
+.swrap{position:relative;margin-bottom:14px}
+.sin{width:100%;padding:11px 16px 11px 42px;border:2px solid var(--bdr);border-radius:12px;font-size:14px;background:var(--surf);color:var(--txt);outline:none}
+.sin:focus{border-color:var(--blue)}
+.sico{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--mute);font-size:18px;pointer-events:none}
+.sres{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surf);border:1px solid var(--bdr);border-radius:12px;box-shadow:var(--sh-lg);z-index:100;max-height:300px;overflow-y:auto;display:none}
+.sres.show{display:block}
+.sri{padding:11px 14px;cursor:pointer;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:10px}
+.sri:hover{background:var(--blue-l)}.sri:last-child{border:none}
+/* NOTES */
+.ned{width:100%;min-height:120px;padding:12px;border:1.5px solid var(--bdr);border-radius:10px;font-size:13px;font-family:inherit;background:var(--surf);color:var(--txt);resize:vertical;outline:none}
+.ned:focus{border-color:var(--blue)}
+.ncard{background:var(--surf2);border:1px solid var(--bdr);border-left:4px solid var(--blue);border-radius:10px;padding:13px;margin-bottom:10px}
+/* TARGETS */
+.tgt{display:flex;align-items:center;gap:11px;padding:11px 13px;background:var(--surf2);border:1px solid var(--bdr);border-radius:10px;cursor:pointer;margin-bottom:7px}
+.tgt.done{border-left:4px solid var(--green)}.tgt.pending{border-left:4px solid var(--amber)}.tgt.hard{border-left:4px solid var(--red)}
+/* AVATAR */
+.avlg{width:76px;height:76px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;font-size:26px;color:#fff;font-weight:800;margin:0 auto 11px}
+.rb{display:inline-flex;align-items:center;gap:5px;background:var(--blue-l);color:var(--blue);padding:5px 13px;border-radius:20px;font-size:11px;font-weight:700}
+/* LOADING */
+.loading-screen{display:flex;align-items:center;justify-content:center;min-height:60vh;flex-direction:column;gap:12px;color:var(--mute)}
+.spinner{width:36px;height:36px;border:3px solid var(--bdr);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.paywall-screen{text-align:center;padding:40px 20px}
+.paywall-screen .icon{font-size:48px;margin-bottom:16px}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="brand">
+    <i class="ti ti-atom" style="font-size:20px"></i>
+    <div><h1>NEETAce</h1><div class="brand-sub">AI-Powered · NCERT · 2026 Pattern</div></div>
+    <span class="pill pill-admin" id="adminBadge" style="display:none">ADMIN</span>
+    <span class="pill pill-pro" id="proBadge" style="display:none">PRO</span>
+  </div>
+  <div class="topbar-right">
+    <div class="streak-pill" id="streakPill"><i class="ti ti-flame"></i><span id="streakCount">0d</span></div>
+    <button class="ib" onclick="toggleTheme()" id="themeBtn"><i class="ti ti-moon" id="themeIco"></i></button>
+    <button class="ib" onclick="openAuth()" id="authBtn"><i class="ti ti-user"></i></button>
+  </div>
+</div>
+
+<!-- ACCESS BANNER -->
+<div id="accessBanner"></div>
+
+<!-- NAV -->
+<nav class="nav" id="mainNav">
+  <button class="nb active" data-tab="home"><i class="ti ti-home"></i>Home</button>
+  <button class="nb" data-tab="search"><i class="ti ti-search"></i>Smart Test</button>
+  <button class="nb" data-tab="practice"><i class="ti ti-books"></i>Practice</button>
+  <button class="nb" data-tab="quiz"><i class="ti ti-help-circle"></i>Quiz</button>
+  <button class="nb" data-tab="flash"><i class="ti ti-cards"></i>Flash</button>
+  <button class="nb" data-tab="notes"><i class="ti ti-notes"></i>Notes</button>
+  <button class="nb" data-tab="mistakes"><i class="ti ti-notebook"></i>Galti<span id="mistakeDot" style="background:var(--red);color:#fff;padding:1px 5px;border-radius:8px;font-size:9px;margin-left:3px;display:none">0</span></button>
+  <button class="nb" data-tab="ai"><i class="ti ti-robot"></i>AI Tutor</button>
+  <button class="nb" data-tab="analytics"><i class="ti ti-chart-bar"></i>Stats</button>
+  <button class="nb" data-tab="profile"><i class="ti ti-user-circle"></i>Profile</button>
+  <button class="nb" data-tab="admin" id="adminTab" style="display:none;color:var(--purple)"><i class="ti ti-shield"></i>Admin</button>
+</nav>
+
+<!-- HOME -->
+<div class="screen active" id="screen-home">
+  <div class="hero">
+    <div style="font-size:12px;opacity:.75;margin-bottom:3px">Good morning, <span id="welcomeName">Student</span> 👋</div>
+    <div style="font-size:18px;font-weight:800">NEET 2026 — <span id="daysLeft">0</span> days left</div>
+    <div style="font-size:11px;opacity:.7;margin-top:3px">Top 18% of aspirants today</div>
+    <div style="height:4px;background:rgba(255,255,255,.15);border-radius:3px;margin-top:11px;overflow:hidden"><div style="height:100%;width:60%;background:linear-gradient(90deg,#fbbf24,#f59e0b);border-radius:3px"></div></div>
+    <div class="hero-stats">
+      <div class="hs"><div class="hs-n" id="hScore">68%</div><div class="hs-l">Overall Score</div></div>
+      <div class="hs"><div class="hs-n" id="hSolved">3,240</div><div class="hs-l">Qs Solved</div></div>
+      <div class="hs"><div class="hs-n" id="hRank">#842</div><div class="hs-l">AIR Estimate</div></div>
+    </div>
+  </div>
+  <div class="ai-box">
+    <div class="ai-av"><i class="ti ti-robot"></i></div>
+    <div>
+      <div style="font-size:11px;font-weight:700;color:var(--purple);margin-bottom:3px">AI INSIGHT</div>
+      <div style="font-size:12px;line-height:1.5">Your <b>Electrostatics</b> accuracy is 44% — weakest area. Recommended: 20 min on Coulomb's Law today (NCERT Class 12, Ch.1, Pg 6–18).</div>
+      <button class="btn btn-blue" style="font-size:11px;padding:5px 11px;margin-top:8px" onclick="startTopicQuiz('Electrostatics','PHYSICS')"><i class="ti ti-player-play"></i> Practice Now</button>
+    </div>
+  </div>
+  <div class="sec-hd"><i class="ti ti-search"></i> Quick Topic Search</div>
+  <div class="swrap">
+    <i class="ti ti-search sico"></i>
+    <input class="sin" id="homeSearch" placeholder="Search any topic — Mitosis, Ohm's Law, Organic..." oninput="doSearch(this.value,'homeRes')" onfocus="doSearch(this.value,'homeRes')">
+    <div class="sres" id="homeRes"></div>
+  </div>
+  <div class="sec-hd"><i class="ti ti-atom"></i> Subjects</div>
+  <div class="sgrid">
+    <div class="sc phy" onclick="goSubject('PHYSICS')"><div class="si">⚛️</div><div class="sn">Physics</div><div style="font-size:10px;color:var(--mute)">4,200 Qs</div><div class="pbg"><div class="pfill" style="width:62%;background:var(--blue)"></div></div><div style="font-size:10px;color:var(--mute);margin-top:4px">62% done</div></div>
+    <div class="sc chem" onclick="goSubject('CHEMISTRY')"><div class="si">🧪</div><div class="sn">Chemistry</div><div style="font-size:10px;color:var(--mute)">3,800 Qs</div><div class="pbg"><div class="pfill" style="width:48%;background:var(--teal)"></div></div><div style="font-size:10px;color:var(--mute);margin-top:4px">48% done</div></div>
+    <div class="sc bio" onclick="goSubject('BIOLOGY')"><div class="si">🧬</div><div class="sn">Biology</div><div style="font-size:10px;color:var(--mute)">5,600 Qs</div><div class="pbg"><div class="pfill" style="width:75%;background:var(--amber)"></div></div><div style="font-size:10px;color:var(--mute);margin-top:4px">75% done</div></div>
+  </div>
+  <div class="sec-hd"><i class="ti ti-target"></i> Today's Targets</div>
+  <div id="targetsArea">
+    <div class="tgt done"><i class="ti ti-circle-check" style="color:var(--green);font-size:20px"></i><div style="flex:1"><div style="font-size:13px;font-weight:600">Laws of Motion · Daily Quiz</div><div style="font-size:11px;color:var(--mute)">20 Qs · Scored 85%</div></div><span class="badge be">Done</span></div>
+    <div class="tgt pending" onclick="startTopicQuiz('Organic Chemistry','CHEMISTRY')"><i class="ti ti-circle" style="color:var(--amber);font-size:20px"></i><div style="flex:1"><div style="font-size:13px;font-weight:600">Organic Chemistry · Revision</div><div style="font-size:11px;color:var(--mute)">30 Qs · 35 min</div></div><span class="badge bm">Pending</span></div>
+    <div class="tgt hard" onclick="startTopicQuiz('Cell Biology','BIOLOGY')"><i class="ti ti-circle" style="color:var(--red);font-size:20px"></i><div style="flex:1"><div style="font-size:13px;font-weight:600">Full Mock · Biology</div><div style="font-size:11px;color:var(--mute)">50 Qs · 60 min</div></div><span class="badge bh">Hard</span></div>
+  </div>
+  <div class="sec-hd" style="margin-top:14px"><i class="ti ti-trophy"></i> Leaderboard</div>
+  <div class="card">
+    <div class="lbrow"><div class="lbrank gold">1</div><div style="flex:1"><div style="font-size:13px;font-weight:600">Priya S., Mumbai</div><div style="font-size:11px;color:var(--mute)">92% · 8,400 Qs</div></div><span style="font-weight:800;color:var(--green)">92%</span></div>
+    <div class="lbrow"><div class="lbrank silver">2</div><div style="flex:1"><div style="font-size:13px;font-weight:600">Rahul K., Delhi</div><div style="font-size:11px;color:var(--mute)">89% · 7,200 Qs</div></div><span style="font-weight:800;color:var(--mute)">89%</span></div>
+    <div class="lbrow" style="background:var(--blue-l);border-radius:9px;margin:0 -4px;padding:10px 12px"><div class="lbrank me">842</div><div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--blue)" id="lbName">You</div><div style="font-size:11px;color:var(--mute)">68% · 3,240 Qs</div></div><span style="font-weight:800;color:var(--blue)">68%</span></div>
+    <div class="lbrow"><div class="lbrank bronze">3</div><div style="flex:1"><div style="font-size:13px;font-weight:600">Ayesha M., Hyderabad</div><div style="font-size:11px;color:var(--mute)">86% · 6,800 Qs</div></div><span style="font-weight:800">86%</span></div>
+  </div>
+</div>
+
+<!-- SMART TEST -->
+<div class="screen" id="screen-search">
+  <div class="sec-hd"><i class="ti ti-search"></i> Smart Topic Test</div>
+  <div style="font-size:13px;color:var(--mute);margin-bottom:13px">Search any topic — get a targeted quiz with NCERT references and step-by-step explanations.</div>
+  <div class="swrap">
+    <i class="ti ti-search sico"></i>
+    <input class="sin" id="smartSearch" placeholder="e.g. Mitosis, Ohm's Law, Le Chatelier..." oninput="doSearch(this.value,'smartRes')" onfocus="doSearch(this.value,'smartRes')">
+    <div class="sres" id="smartRes"></div>
+  </div>
+  <div class="chips"><div class="chip active" onclick="filterTopics(this,'ALL')">All</div><div class="chip" onclick="filterTopics(this,'PHYSICS')">⚛️ Physics</div><div class="chip" onclick="filterTopics(this,'CHEMISTRY')">🧪 Chemistry</div><div class="chip" onclick="filterTopics(this,'BIOLOGY')">🧬 Biology</div><div class="chip" onclick="filterTopics(this,'PYQ')">📜 PYQ 2025</div></div>
+  <div id="allTopics"></div>
+</div>
+
+<!-- PRACTICE -->
+<div class="screen" id="screen-practice">
+  <div class="chips"><div class="chip active" onclick="filterPractice(this,'ALL')">All</div><div class="chip" onclick="filterPractice(this,'PHYSICS')">⚛️ Physics</div><div class="chip" onclick="filterPractice(this,'CHEMISTRY')">🧪 Chemistry</div><div class="chip" onclick="filterPractice(this,'BIOLOGY')">🧬 Biology</div><div class="chip" onclick="filterPractice(this,'PYQ')">📜 PYQ</div><div class="chip" onclick="filterPractice(this,'MOCK')">🎯 Mock</div></div>
+  <div id="practiceTopics"></div>
+  <button class="btn btn-blue btn-full" onclick="startFullPractice()" style="margin-top:8px"><i class="ti ti-player-play"></i> Start Full Practice Session</button>
+</div>
+
+<!-- QUIZ -->
+<div class="screen" id="screen-quiz">
+  <div id="quizView"></div>
+  <div id="resultView" style="display:none"></div>
+</div>
+
+<!-- FLASHCARDS -->
+<div class="screen" id="screen-flash">
+  <div class="sec-hd"><i class="ti ti-cards"></i> Flash Cards — Spaced Repetition</div>
+  <div style="font-size:12px;color:var(--mute);margin-bottom:13px">Tap card to reveal. Rate to schedule next review.</div>
+  <div class="fcwrap" onclick="flipCard()">
+    <div class="fc" id="flashcard">
+      <div class="fcface fcf"><div style="font-size:10px;opacity:.7;margin-bottom:7px;text-transform:uppercase;letter-spacing:.5px" id="fcSub">Biology • Cell Biology</div><div style="font-size:15px;font-weight:700;line-height:1.5" id="fcQ">Loading...</div><div style="font-size:11px;opacity:.55;margin-top:14px">Tap to reveal</div></div>
+      <div class="fcface fcb"><div style="font-size:10px;color:var(--mute);margin-bottom:6px;text-transform:uppercase">Answer</div><div style="font-size:14px;font-weight:600;line-height:1.6" id="fcA">...</div><div class="ncert-tag" id="fcRef" style="margin-top:9px"><i class="ti ti-book"></i> </div></div>
+    </div>
+  </div>
+  <div class="dotrow" id="fcDots"></div>
+  <div style="display:flex;gap:9px;margin-top:13px">
+    <button class="btn btn-red" style="flex:1" onclick="rateFlash('hard')"><i class="ti ti-x"></i> Hard</button>
+    <button class="btn btn-ghost" style="flex:1" onclick="rateFlash('medium')">Medium</button>
+    <button class="btn btn-green" style="flex:1" onclick="rateFlash('easy')"><i class="ti ti-check"></i> Easy</button>
+  </div>
+  <div style="display:flex;gap:9px;margin-top:9px;align-items:center">
+    <button class="btn btn-ghost" onclick="prevFlash()"><i class="ti ti-arrow-left"></i></button>
+    <div style="flex:1;text-align:center;font-size:12px;color:var(--mute)">Card <span id="fcNum">1</span> of <span id="fcTot">5</span></div>
+    <button class="btn btn-ghost" onclick="nextFlash()"><i class="ti ti-arrow-right"></i></button>
+  </div>
+</div>
+
+<!-- NOTES -->
+<div class="screen" id="screen-notes">
+  <div class="sec-hd"><i class="ti ti-notes"></i> My Notes</div>
+  <div style="display:flex;gap:8px;margin-bottom:9px;flex-wrap:wrap">
+    <select id="noteSubj" style="padding:8px 12px;border:1.5px solid var(--bdr);border-radius:9px;font-size:12px;background:var(--surf);color:var(--txt)"><option>PHYSICS</option><option>CHEMISTRY</option><option>BIOLOGY</option></select>
+    <input id="noteTopic" class="fin" style="flex:1;margin-top:0" placeholder="Topic name e.g. Ohm's Law">
+  </div>
+  <textarea class="ned" id="noteText" placeholder="Write notes, formulas, key points..."></textarea>
+  <button class="btn btn-blue btn-full" style="margin-top:9px" onclick="saveNote()"><i class="ti ti-device-floppy"></i> Save Note</button>
+  <div class="sec-hd" style="margin-top:16px"><i class="ti ti-clock-history"></i> Saved Notes</div>
+  <div id="notesArea"><div style="text-align:center;padding:30px;color:var(--mute);font-size:13px">No notes yet.</div></div>
+</div>
+
+<!-- GALTI COPY -->
+<div class="screen" id="screen-mistakes">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:13px">
+    <div><div class="sec-hd" style="margin-bottom:2px"><i class="ti ti-notebook"></i> Galti Copy</div><div style="font-size:11px;color:var(--mute)">Wrong answers auto-logged with NCERT reference</div></div>
+    <button class="btn btn-blue" style="font-size:11px;padding:7px 12px" onclick="practiceMistakes()"><i class="ti ti-zap"></i> Practice All</button>
+  </div>
+  <div id="mistakeArea"><div style="text-align:center;padding:40px 20px;color:var(--mute)"><i class="ti ti-mood-happy" style="font-size:36px;display:block;margin-bottom:9px"></i><div style="font-size:13px;font-weight:600">Notebook is empty — keep solving!</div></div></div>
+</div>
+
+<!-- AI TUTOR -->
+<div class="screen" id="screen-ai">
+  <div class="sec-hd"><i class="ti ti-robot"></i> AI Tutor — Ask Anything</div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+    <div class="qq" onclick="askAI(\"Explain Newton's Third Law with example\")">Newton's 3rd Law</div>
+    <div class="qq" onclick="askAI('What is DNA replication?')">DNA Replication</div>
+    <div class="qq" onclick="askAI('Difference between mitosis and meiosis')">Mitosis vs Meiosis</div>
+    <div class="qq" onclick="askAI(\"What is Le Chatelier's principle?\")">Le Chatelier</div>
+    <div class="qq" onclick="askAI('NEET 2026 most important chapters')">Important Chapters</div>
+    <div class="qq" onclick="askAI(\"Explain Faraday's law of electromagnetic induction\")">Faraday's Law</div>
+  </div>
+  <div class="card">
+    <div class="aiwrap" id="aiWrap"><div class="aimsg bot"><b>Hi! I'm your NEET AI Tutor.</b> Ask me anything from Physics, Chemistry, or Biology — I explain with NCERT references and exam tips!</div></div>
+    <div class="aiinrow"><input class="aiin" id="aiIn" placeholder="Ask a concept, formula, doubt..." onkeydown="if(event.key==='Enter')sendAI()"><button class="aisend" onclick="sendAI()"><i class="ti ti-send"></i></button></div>
+  </div>
+</div>
+
+<!-- ANALYTICS -->
+<div class="screen" id="screen-analytics">
+  <div class="quad"><div class="qbox"><div class="qn">3,240</div><div class="ql">Qs Solved</div></div><div class="qbox"><div class="qn" style="color:var(--teal)">68%</div><div class="ql">Accuracy</div></div><div class="qbox"><div class="qn" style="color:var(--red)">12</div><div class="ql">Day Streak</div></div><div class="qbox"><div class="qn" style="color:var(--purple)">47h</div><div class="ql">Study Time</div></div></div>
+  <div class="sec-hd"><i class="ti ti-list-check"></i> Chapter Accuracy</div>
+  <div class="card">
+    <div class="prow"><div class="plbl">Cell Biology</div><div class="pbarbg"><div class="pbar" style="width:90%;background:var(--green)"></div></div><div class="ppct" style="color:var(--green)">90%</div></div>
+    <div class="prow"><div class="plbl">Laws of Motion</div><div class="pbarbg"><div class="pbar" style="width:82%;background:var(--blue)"></div></div><div class="ppct" style="color:var(--blue)">82%</div></div>
+    <div class="prow"><div class="plbl">Genetics</div><div class="pbarbg"><div class="pbar" style="width:70%;background:var(--purple)"></div></div><div class="ppct" style="color:var(--purple)">70%</div></div>
+    <div class="prow"><div class="plbl">Organic Chemistry</div><div class="pbarbg"><div class="pbar" style="width:55%;background:var(--amber)"></div></div><div class="ppct" style="color:#7a4800">55%</div></div>
+    <div class="prow"><div class="plbl">Electrostatics</div><div class="pbarbg"><div class="pbar" style="width:44%;background:var(--red)"></div></div><div class="ppct" style="color:var(--red)">44%</div></div>
+    <div class="prow"><div class="plbl">Thermodynamics</div><div class="pbarbg"><div class="pbar" style="width:38%;background:var(--red)"></div></div><div class="ppct" style="color:var(--red)">38%</div></div>
+  </div>
+  <div class="sec-hd"><i class="ti ti-calendar"></i> Study Streak</div>
+  <div class="card"><div id="streakGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px"></div></div>
+</div>
+
+<!-- PROFILE -->
+<div class="screen" id="screen-profile">
+  <div style="text-align:center;padding:18px 0">
+    <div class="avlg" id="profileAv">A</div>
+    <div style="font-size:17px;font-weight:800" id="profileName">Student</div>
+    <div style="font-size:12px;color:var(--mute)" id="profileEmail"></div>
+    <div class="rb" style="margin-top:8px"><i class="ti ti-trophy"></i> All India Rank #842</div>
+  </div>
+  <div class="quad" style="margin-top:14px">
+    <div class="qbox"><div class="qn">3,240</div><div class="ql">Qs</div></div>
+    <div class="qbox"><div class="qn" style="color:var(--teal)">68%</div><div class="ql">Acc</div></div>
+    <div class="qbox"><div class="qn" style="color:var(--red)">12</div><div class="ql">Streak</div></div>
+    <div class="qbox"><div class="qn" style="color:var(--purple)">47h</div><div class="ql">Time</div></div>
+  </div>
+  <div class="sec-hd"><i class="ti ti-id-badge"></i> Subscription</div>
+  <div class="card" id="subCard" style="background:linear-gradient(135deg,var(--blue-l),var(--purple-l));border-color:#c4b5fd">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div><div style="font-size:14px;font-weight:800" id="subTitle">Loading...</div><div style="font-size:11px;color:var(--mute);margin-top:2px" id="subDesc"></div></div>
+      <span id="subPill" class="sp"></span>
+    </div>
+    <button class="btn btn-blue btn-full" style="margin-top:12px;display:none" id="payBtn" onclick="openPaywall()"><i class="ti ti-lock-open"></i> Upgrade — Pay ₹799</button>
+  </div>
+  <div class="sec-hd"><i class="ti ti-settings"></i> Settings</div>
+  <div class="card">
+    <div class="srow"><span style="font-size:13px">Dark Mode</span><button class="tsw" id="darkToggle" onclick="toggleTheme()"></button></div>
+    <div class="srow"><span style="font-size:13px">Show NCERT Page Refs</span><button class="tsw on"></button></div>
+    <div class="srow"><span style="font-size:13px">Daily Reminder (7 PM)</span><button class="tsw on"></button></div>
+    <div class="srow"><span style="font-size:13px">Auto-log Mistakes</span><button class="tsw on"></button></div>
+    <div class="srow"><span style="font-size:13px">Exam Mode</span><span style="font-size:12px;font-weight:700;color:var(--blue)">NEET UG 2026</span></div>
+  </div>
+  <button class="btn btn-ghost btn-full" style="margin-top:4px;color:var(--red);border-color:var(--red)" onclick="signOut()"><i class="ti ti-logout"></i> Sign Out</button>
+</div>
+
+<!-- ADMIN -->
+<div class="screen" id="screen-admin">
+  <div class="sec-hd"><i class="ti ti-shield"></i> Admin Console <span class="pill pill-admin" style="margin-left:7px">ADMIN ONLY</span></div>
+  <div class="quad">
+    <div class="qbox"><div class="qn" id="admQ">5</div><div class="ql">Questions</div></div>
+    <div class="qbox"><div class="qn" id="admU">0</div><div class="ql">Users</div></div>
+    <div class="qbox"><div class="qn" style="color:var(--teal)" id="admA">0</div><div class="ql">Active</div></div>
+    <div class="qbox"><div class="qn" style="color:var(--purple)">₹0</div><div class="ql">Revenue</div></div>
+  </div>
+  <div class="sec-hd"><i class="ti ti-upload"></i> Bulk Upload (CSV)</div>
+  <div class="ub">
+    <i class="ti ti-file-spreadsheet" style="font-size:30px;color:var(--blue)"></i>
+    <div style="font-size:13px;font-weight:700;margin-top:7px">Upload NCERT Question Bank</div>
+    <div style="font-size:10px;color:var(--mute);margin:5px 0">Columns: subject, chapter, question, opt_a, opt_b, opt_c, opt_d, correct(A/B/C/D), explanation, ncert_class, ncert_chapter, ncert_page, syllabus_unit</div>
+    <input type="file" id="csvFile" accept=".csv" style="margin:9px 0;font-size:12px">
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+      <button class="btn btn-blue" onclick="handleCSV()"><i class="ti ti-upload"></i> Import</button>
+      <button class="btn btn-ghost" onclick="downloadSample()"><i class="ti ti-download"></i> Sample CSV</button>
+    </div>
+  </div>
+  <div class="sec-hd"><i class="ti ti-lock"></i> Kill Switch</div>
+  <div class="card" style="border-color:var(--red)">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <button class="btn btn-red" onclick="adminAction('kill_all')"><i class="ti ti-shield-x"></i> Kill All Pilots</button>
+      <button class="btn btn-green" onclick="adminAction('enable_all')"><i class="ti ti-shield-check"></i> Enable All</button>
+      <button class="btn btn-ghost" onclick="adminAction('set_expiry')"><i class="ti ti-clock"></i> Set 7-Day Expiry</button>
+    </div>
+    <div style="font-size:11px;padding:9px;background:var(--surf2);border-radius:8px;border:1px solid var(--bdr)" id="killLog">Kill switch: Not activated</div>
+  </div>
+  <div class="sec-hd"><i class="ti ti-users"></i> User Management</div>
+  <div class="dtw"><table class="dt"><thead><tr><th>Email</th><th>Role</th><th>Status</th><th>Expires</th><th>Actions</th></tr></thead><tbody id="userTable"><tr><td colspan="5" style="text-align:center;color:var(--mute);padding:20px">Loading users...</td></tr></tbody></table></div>
+</div>
+
+</div><!-- .app -->
+
+<!-- AUTH MODAL -->
+<div class="mov" id="authModal">
+  <div class="mcard">
+    <div style="font-size:17px;font-weight:800;margin-bottom:16px">Welcome to NEETAce</div>
+    <div class="tab-row">
+      <button class="tab active" onclick="switchAuthTab('login',this)">Sign In</button>
+      <button class="tab" onclick="switchAuthTab('register',this)">Register</button>
+    </div>
+    <div id="authErr" class="err-msg"></div>
+    <div id="loginForm">
+      <div style="margin-bottom:11px"><div class="flbl">Email</div><input class="fin" type="email" id="loginEmail" placeholder="your@email.com"></div>
+      <div style="margin-bottom:14px"><div class="flbl">Password</div><input class="fin" type="password" id="loginPass" placeholder="Password"></div>
+      <button class="btn btn-blue btn-full" id="loginBtn" onclick="doLogin()"><i class="ti ti-login"></i> Sign In</button>
+    </div>
+    <div id="registerForm" style="display:none">
+      <div style="margin-bottom:11px"><div class="flbl">Full Name</div><input class="fin" type="text" id="regName" placeholder="Your name"></div>
+      <div style="margin-bottom:11px"><div class="flbl">Email</div><input class="fin" type="email" id="regEmail" placeholder="your@email.com"></div>
+      <div style="margin-bottom:14px"><div class="flbl">Password (min 8 chars)</div><input class="fin" type="password" id="regPass" placeholder="Choose a strong password"></div>
+      <button class="btn btn-blue btn-full" id="regBtn" onclick="doRegister()"><i class="ti ti-user-plus"></i> Create Account</button>
+    </div>
+    <button style="width:100%;background:none;border:none;color:var(--mute);font-size:12px;margin-top:11px;cursor:pointer" onclick="closeModal('authModal')">Cancel</button>
+  </div>
+</div>
+
+<!-- PAYWALL MODAL -->
+<div class="mov" id="paywallModal">
+  <div class="mcard">
+    <div style="text-align:center;margin-bottom:16px">
+      <div style="font-size:36px;margin-bottom:8px">🔒</div>
+      <div style="font-size:18px;font-weight:800" id="pwTitle">Trial Ended</div>
+      <div style="font-size:13px;color:var(--mute);margin-top:6px;line-height:1.6" id="pwDesc">Your 7-day free trial has ended. Pay ₹799 to unlock full access until 31 May (academic term).</div>
+    </div>
+    <div style="background:var(--surf2);border-radius:10px;padding:14px;margin-bottom:16px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:8px">NEETAce Pro includes:</div>
+      <div style="font-size:12px;line-height:1.8;color:var(--mute)">✅ Unlimited quizzes & practice<br>✅ AI Tutor with NCERT references<br>✅ Flashcards & spaced repetition<br>✅ Galti Copy mistake notebook<br>✅ Full analytics & leaderboard<br>✅ Admin CSV upload<br>✅ Valid till 31 May (NEET academic term)</div>
+    </div>
+    <button class="btn btn-blue btn-full" id="pwPayBtn" onclick="startPayment()"><i class="ti ti-lock-open"></i> Pay ₹799 — Unlock Full Access</button>
+    <button style="width:100%;background:none;border:none;color:var(--mute);font-size:12px;margin-top:11px;cursor:pointer" onclick="closeModal('paywallModal')">Maybe later</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- FIREBASE CLIENT SDK -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut as fbSignOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDSUlJq0Q-_3_VGEuWZc8HEivEfzpZ30PE",
+  authDomain: "neetace-38827.firebaseapp.com",
+  projectId: "neetace-38827",
+  storageBucket: "neetace-38827.firebasestorage.app",
+  messagingSenderId: "552186896904",
+  appId: "1:552186896904:web:463ce38f4897fcc15de7bd",
+  measurementId: "G-6SVELEW960"
+};
+
+const fbApp  = initializeApp(firebaseConfig);
+const fbAuth = getAuth(fbApp);
+
+// Expose to global scope for non-module handlers
+window._fbAuth    = fbAuth;
+window._fbSignOut = fbSignOut;
+window._fbSignIn  = signInWithEmailAndPassword;
+window._fbRegister = createUserWithEmailAndPassword;
+</script>
+
+<!-- RAZORPAY -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<script>
+// ===== CONSTANTS =====
+const GATED_TABS = ['quiz','practice','flash','mistakes','ai','notes'];
+const ADMIN_EMAIL = 'bluetracetechnologies@gmail.com';
+
+// ===== SESSION STATE =====
+let S = { user:null, sessionToken:null, verifyInterval:null };
+
+function saveSession(user, token){
+  S.user = user; S.sessionToken = token;
+  try{ localStorage.setItem('na_uid', user.uid); localStorage.setItem('na_token', token); localStorage.setItem('na_user', JSON.stringify(user)); }catch(e){}
+}
+function clearSession(){
+  S.user=null; S.sessionToken=null;
+  try{ localStorage.removeItem('na_uid'); localStorage.removeItem('na_token'); localStorage.removeItem('na_user'); }catch(e){}
+}
+function loadSession(){
+  try{
+    const uid=localStorage.getItem('na_uid'), token=localStorage.getItem('na_token'), u=localStorage.getItem('na_user');
+    if(uid&&token&&u){ S.user=JSON.parse(u); S.sessionToken=token; return true; }
+  }catch(e){}
+  return false;
+}
+
+// ===== API CALLS =====
+async function api(path, body){
+  const r = await fetch('/api/'+path, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+  return r.json();
+}
+
+// ===== ACCESS STATUS =====
+function canAccess(){
+  if(!S.user) return false;
+  const s = S.user.accessStatus;
+  return s==='active'||s==='paid'||s==='trial'||S.user.role==='admin';
+}
+
+function showAccessBanner(){
+  const b = document.getElementById('accessBanner');
+  if(!S.user){ b.style.display='none'; return; }
+  const s = S.user.accessStatus, r = S.user.role;
+  if(r==='admin'){ b.style.display='none'; return; }
+  if(s==='trial'){
+    b.style.cssText='display:block;background:var(--amber-l);color:#7a4800;border-color:#f5d283;font-size:12px;font-weight:700;text-align:center;padding:8px 12px;border-bottom:1px solid var(--bdr)';
+    b.innerHTML=`🎓 Free trial: <b>${S.user.trialDaysLeft} day(s) left</b> · <a href="#" onclick="openPaywall();return false;" style="color:#7a4800;text-decoration:underline">Upgrade ₹799</a>`;
+  } else if(s==='expired'){
+    b.style.cssText='display:block;background:var(--red-l);color:#7a0c0c;border-color:#f5b5b5;font-size:12px;font-weight:700;text-align:center;padding:8px 12px;border-bottom:1px solid var(--bdr)';
+    b.innerHTML=`⛔ Trial ended · <a href="#" onclick="openPaywall();return false;" style="color:#7a0c0c;text-decoration:underline;font-weight:800">Pay ₹799 to continue</a>`;
+  } else {
+    b.style.display='none';
+  }
+}
+
+function updateSubCard(){
+  if(!S.user) return;
+  const u=S.user, s=u.accessStatus, r=u.role;
+  const t=document.getElementById('subTitle'), d=document.getElementById('subDesc'), p=document.getElementById('subPill'), pb=document.getElementById('payBtn');
+  if(r==='admin'){ t.textContent='NEETAce Pro — Admin'; d.textContent='Unlimited access · All features'; p.className='sp sp-admin'; p.textContent='ADMIN'; pb.style.display='none'; }
+  else if(s==='paid'){ t.textContent='NEETAce Pro'; d.textContent='Active · Valid till 31 May '+new Date(u.paidUntil).getFullYear(); p.className='sp sp-active'; p.textContent='ACTIVE'; pb.style.display='none'; }
+  else if(s==='trial'){ t.textContent='Free Trial'; d.textContent=`${u.trialDaysLeft} day(s) remaining · Ends ${new Date(u.trialEnd).toLocaleDateString('en-IN')}`; p.className='sp sp-trial'; p.textContent='TRIAL'; pb.style.display='flex'; }
+  else { t.textContent='Trial Ended'; d.textContent='Upgrade to continue'; p.className='sp sp-expired'; p.textContent='EXPIRED'; pb.style.display='flex'; }
+}
+
+// ===== SESSION VERIFICATION (runs every 2 min) =====
+async function verifySession(){
+  if(!S.user||!S.sessionToken) return;
+  try{
+    const r = await api('auth-verify', { uid:S.user.uid, sessionToken:S.sessionToken });
+    if(r.error==='SESSION_REPLACED'){
+      clearSession(); stopVerify();
+      toast('⚠️ You were signed in on another device. Signed out here.');
+      updateUI(); switchTab('home');
+    } else if(r.valid){
+      S.user = {...S.user, ...r.user};
+      saveSession(S.user, S.sessionToken);
+      showAccessBanner(); updateSubCard();
+    } else if(r.error==='ACCESS_DISABLED'){
+      clearSession(); stopVerify();
+      toast('⛔ Your access was disabled by admin.');
+      updateUI();
+    }
+  }catch(e){}
+}
+function startVerify(){ if(S.verifyInterval) clearInterval(S.verifyInterval); S.verifyInterval=setInterval(verifySession,120000); }
+function stopVerify(){ if(S.verifyInterval){ clearInterval(S.verifyInterval); S.verifyInterval=null; } }
+
+// ===== AUTH =====
+function openAuth(){ if(S.user){ signOut(); } else { document.getElementById('authModal').classList.add('active'); } }
+function switchAuthTab(tab, el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); el.classList.add('active');
+  document.getElementById('loginForm').style.display = tab==='login'?'block':'none';
+  document.getElementById('registerForm').style.display = tab==='register'?'block':'none';
+  document.getElementById('authErr').classList.remove('show');
+}
+function showAuthErr(msg){ const e=document.getElementById('authErr'); e.textContent=msg; e.classList.add('show'); }
+
+async function doLogin(){
+  const email=document.getElementById('loginEmail').value.trim();
+  const pass=document.getElementById('loginPass').value;
+  if(!email||!pass){ showAuthErr('Please enter email and password.'); return; }
+  const btn=document.getElementById('loginBtn'); btn.disabled=true; btn.textContent='Signing in...';
+  try{
+    // Step 1: Firebase client auth
+    const cred = await window._fbSignIn(window._fbAuth, email, pass);
+    const idToken = await cred.user.getIdToken();
+    // Step 2: Server session (kills old sessions on other devices)
+    const r = await api('auth-login', { idToken });
+    if(r.error){ showAuthErr(r.error); btn.disabled=false; btn.innerHTML='<i class="ti ti-login"></i> Sign In'; return; }
+    saveSession(r.user, r.sessionToken);
+    startVerify();
+    closeModal('authModal');
+    updateUI(); switchTab('home');
+    toast('Welcome back, '+r.user.name+'! 👋');
+  }catch(err){
+    const msg = err.code==='auth/invalid-credential'?'Incorrect email or password.':err.code==='auth/user-not-found'?'No account found. Please register.':'Login failed. Try again.';
+    showAuthErr(msg);
+  } finally { btn.disabled=false; btn.innerHTML='<i class="ti ti-login"></i> Sign In'; }
+}
+
+async function doRegister(){
+  const name=document.getElementById('regName').value.trim();
+  const email=document.getElementById('regEmail').value.trim();
+  const pass=document.getElementById('regPass').value;
+  if(!name||!email||!pass){ showAuthErr('All fields are required.'); return; }
+  if(pass.length<8){ showAuthErr('Password must be at least 8 characters.'); return; }
+  const btn=document.getElementById('regBtn'); btn.disabled=true; btn.textContent='Creating account...';
+  try{
+    // Step 1: Create Firestore profile via our API (sets trial start, role etc.)
+    const r = await api('auth-register', { email, password:pass, name });
+    if(r.error){ showAuthErr(r.error); btn.disabled=false; btn.innerHTML='<i class="ti ti-user-plus"></i> Create Account'; return; }
+    // Step 2: Auto sign-in after registration
+    toast('Account created! Signing you in...');
+    document.getElementById('loginEmail').value=email;
+    document.getElementById('loginPass').value=pass;
+    await doLogin();
+  }catch(err){
+    showAuthErr('Registration failed. '+err.message);
+  } finally { btn.disabled=false; btn.innerHTML='<i class="ti ti-user-plus"></i> Create Account'; }
+}
+
+async function signOut(){
+  try{ await window._fbSignOut(window._fbAuth); }catch(e){}
+  clearSession(); stopVerify(); updateUI(); switchTab('home');
+  toast('Signed out successfully.');
+}
+
+// ===== UI UPDATE =====
+function updateUI(){
+  const u=S.user;
+  const isAdmin = u && u.role==='admin';
+  const isLoggedIn = !!u;
+  document.getElementById('welcomeName').textContent = u ? u.name.split(' ')[0] : 'Student';
+  document.getElementById('profileName').textContent = u ? u.name : 'Not signed in';
+  document.getElementById('profileEmail').textContent = u ? u.email : '';
+  document.getElementById('profileAv').textContent = u ? u.name[0].toUpperCase() : '?';
+  document.getElementById('lbName').textContent = u ? u.name.split(' ')[0] : 'You';
+  document.getElementById('adminBadge').style.display = isAdmin?'inline-block':'none';
+  document.getElementById('proBadge').style.display = (u && u.accessStatus==='paid')?'inline-block':'none';
+  document.getElementById('adminTab').style.display = isAdmin?'flex':'none';
+  document.getElementById('authBtn').title = isLoggedIn?'Sign Out':'Sign In';
+  showAccessBanner(); updateSubCard();
+}
+
+// ===== NAV =====
+function switchTab(tab){
+  const acc = canAccess();
+  if(GATED_TABS.includes(tab) && !acc){
+    if(!S.user){ document.getElementById('authModal').classList.add('active'); return; }
+    openPaywall(); return;
+  }
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
+  const sc=document.getElementById('screen-'+tab);
+  const bt=document.querySelector(`.nb[data-tab="${tab}"]`);
+  if(sc) sc.classList.add('active');
+  if(bt) bt.classList.add('active');
+  if(tab==='admin') loadAdminUsers();
+  if(tab==='flash') renderFlash();
+  if(tab==='practice') renderPracticeTopics('ALL');
+  if(tab==='search') renderAllTopics('ALL');
+  if(tab==='analytics') buildStreak();
+  if(tab==='mistakes') renderMistakes();
+  if(tab==='notes') renderNotes();
+}
+document.querySelectorAll('.nb').forEach(b=>b.addEventListener('click',function(){ switchTab(this.getAttribute('data-tab')); }));
+
+// ===== PAYWALL =====
+function openPaywall(){
+  if(!S.user){ document.getElementById('authModal').classList.add('active'); return; }
+  const s=S.user.accessStatus;
+  document.getElementById('pwTitle').textContent = s==='expired'?'Trial Ended':'Upgrade to Pro';
+  document.getElementById('pwDesc').textContent = s==='expired'?'Your 7-day free trial has ended. Pay ₹799 to unlock full access until 31 May.':'Unlock unlimited access, AI Tutor, all quizzes, flashcards, and more until 31 May.';
+  document.getElementById('paywallModal').classList.add('active');
+}
+
+// ===== PAYMENT =====
+async function startPayment(){
+  if(!S.user||!S.sessionToken){ toast('Please sign in first.'); return; }
+  const btn=document.getElementById('pwPayBtn'); btn.disabled=true; btn.textContent='Creating order...';
+  try{
+    const r = await api('create-order', { uid:S.user.uid, sessionToken:S.sessionToken });
+    if(r.error){ toast('⚠️ '+r.error); btn.disabled=false; btn.innerHTML='<i class="ti ti-lock-open"></i> Pay ₹799 — Unlock Full Access'; return; }
+    const rzp = new window.Razorpay({
+      key: r.keyId, amount: r.amount, currency: r.currency,
+      order_id: r.orderId, name:'NEETAce',
+      description:'NEETAce Pro — valid till 31 May',
+      image:'https://bluetrace.tech/logo.png',
+      handler: async function(resp){
+        toast('Verifying payment...');
+        const vr = await api('verify-payment',{
+          uid:S.user.uid, sessionToken:S.sessionToken,
+          razorpay_order_id:resp.razorpay_order_id,
+          razorpay_payment_id:resp.razorpay_payment_id,
+          razorpay_signature:resp.razorpay_signature,
+        });
+        if(vr.verified){
+          S.user.accessStatus='paid'; S.user.paidUntil=vr.paidUntil;
+          saveSession(S.user,S.sessionToken);
+          closeModal('paywallModal'); updateUI();
+          toast('✅ Payment verified! Access active till 31 May.');
+        } else {
+          toast('❌ Payment verification failed. Contact support with payment ID: '+resp.razorpay_payment_id);
+        }
+      },
+      prefill:{ name:r.userName, email:r.userEmail },
+      theme:{ color:'#1a56db' },
+      modal:{ ondismiss:function(){ toast('Payment cancelled.'); } }
+    });
+    rzp.on('payment.failed', r=>toast('❌ Payment failed: '+(r.error.description||'Unknown error')));
+    rzp.open();
+  }catch(e){ toast('Payment could not be started. Try again.'); }
+  finally{ btn.disabled=false; btn.innerHTML='<i class="ti ti-lock-open"></i> Pay ₹799 — Unlock Full Access'; }
+}
+
+// ===== THEME =====
+function toggleTheme(){
+  const d=document.documentElement.getAttribute('data-theme')==='dark';
+  document.documentElement.setAttribute('data-theme',d?'light':'dark');
+  document.getElementById('themeIco').className=d?'ti ti-moon':'ti ti-sun';
+  const dt=document.getElementById('darkToggle'); if(dt) d?dt.classList.remove('on'):dt.classList.add('on');
+}
+
+// ===== MODAL =====
+function closeModal(id){ document.getElementById(id).classList.remove('active'); }
+document.querySelectorAll('.mov').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m) m.classList.remove('active'); }));
+
+// ===== TOAST =====
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3000); }
+
+// ===== DAYS LEFT =====
+function calcDays(){ const d=Math.max(0,Math.ceil((new Date('2026-05-05')-new Date())/86400000)); document.getElementById('daysLeft').textContent=d; }
+
+// ===== TOPICS DATA =====
+const TOPICS = [
+  {id:'t1',name:'Laws of Motion',sub:'PHYSICS',qs:120,acc:82,diff:'easy',cl:11,ch:5,pg:'88–104',unit:'Mechanics',col:'var(--blue)'},
+  {id:'t2',name:'Electrostatics',sub:'PHYSICS',qs:95,acc:44,diff:'hard',cl:12,ch:1,pg:'6–18',unit:'Electricity',col:'#4a3aa7'},
+  {id:'t3',name:'Wave Optics',sub:'PHYSICS',qs:75,acc:60,diff:'medium',cl:12,ch:10,pg:'351–370',unit:'Optics',col:'#1baf7a'},
+  {id:'t4',name:'Thermodynamics',sub:'CHEMISTRY',qs:88,acc:38,diff:'hard',cl:11,ch:6,pg:'162–188',unit:'Physical Chemistry',col:'#eb6834'},
+  {id:'t5',name:'Organic Chemistry',sub:'CHEMISTRY',qs:210,acc:55,diff:'medium',cl:11,ch:12,pg:'314–345',unit:'Organic',col:'#1baf7a'},
+  {id:'t6',name:'Chemical Bonding',sub:'CHEMISTRY',qs:130,acc:70,diff:'medium',cl:11,ch:4,pg:'99–132',unit:'Physical Chemistry',col:'#f59e0b'},
+  {id:'t7',name:'Cell Biology',sub:'BIOLOGY',qs:180,acc:90,diff:'easy',cl:11,ch:8,pg:'131–147',unit:'Cell Structure',col:'#f59e0b'},
+  {id:'t8',name:'Genetics & Evolution',sub:'BIOLOGY',qs:145,acc:70,diff:'medium',cl:12,ch:5,pg:'83–115',unit:'Genetics',col:'#e34948'},
+  {id:'t9',name:'Human Physiology',sub:'BIOLOGY',qs:230,acc:65,diff:'medium',cl:11,ch:21,pg:'310–385',unit:'Physiology',col:'#1baf7a'},
+];
+
+const QUESTIONS = [
+  {id:1,sub:'PHYSICS',ch:'Laws of Motion',tid:'t1',text:'A block of mass 5 kg is on a frictionless surface. A 20 N force is applied. What is the acceleration?',opts:['2 m/s²','4 m/s²','10 m/s²','25 m/s²'],correct:1,explanation:'F = ma → a = F/m = 20/5 = 4 m/s². Newton\'s Second Law on a frictionless surface.',ncertCl:11,ncertCh:5,ncertPg:'94',unit:'Mechanics — Newton\'s Laws',pyq:true,pyqYr:2023,diff:'easy'},
+  {id:2,sub:'CHEMISTRY',ch:'Organic Chemistry',tid:'t5',text:'What is the correct IUPAC name for CH₃–CH₂–OH?',opts:['Methanol','Ethanol','Propanol','Butanol'],correct:1,explanation:'2 carbons with –OH at C-1. Parent chain = eth- (2C). Suffix = -anol. IUPAC: Ethan-1-ol.',ncertCl:11,ncertCh:12,ncertPg:'339',unit:'Organic Chemistry — Alcohols',pyq:false,diff:'easy'},
+  {id:3,sub:'BIOLOGY',ch:'Cell Biology',tid:'t7',text:'Which organelle is called the "powerhouse of the cell" and has a double membrane?',opts:['Ribosome','Mitochondria','Lysosome','Golgi Apparatus'],correct:1,explanation:'Mitochondria produce ATP via oxidative phosphorylation. They have inner and outer membranes (cristae inside).',ncertCl:11,ncertCh:8,ncertPg:'135',unit:'Cell Structure — Organelles',pyq:true,pyqYr:2022,diff:'easy'},
+  {id:4,sub:'PHYSICS',ch:'Waves',tid:'t11',text:'Speed of sound in air at 0°C is approximately:',opts:['232 m/s','332 m/s','432 m/s','532 m/s'],correct:1,explanation:'Speed of sound in air at 0°C ≈ 332 m/s. Increases with temperature: v ∝ √T.',ncertCl:11,ncertCh:15,ncertPg:'368',unit:'Waves — Mechanical Waves',pyq:false,diff:'medium'},
+  {id:5,sub:'BIOLOGY',ch:'Genetics',tid:'t8',text:'DNA replication is semi-conservative because:',opts:['Both strands newly made','One old + one new strand per copy','Two replication forks','DNA polymerase conserves energy'],correct:1,explanation:'Meselson & Stahl (1958): each daughter DNA has one parental strand + one new strand.',ncertCl:12,ncertCh:6,ncertPg:'108',unit:'Genetics — Molecular Basis of Inheritance',pyq:true,pyqYr:2024,diff:'medium'},
+  {id:6,sub:'PHYSICS',ch:'Atoms & Nuclei',tid:'t2',text:'The number of neutrons in ₂₀Ca⁴⁰ is:',opts:['20','40','18','22'],correct:0,explanation:'Neutrons = Mass number − Atomic number = 40 − 20 = 20.',ncertCl:12,ncertCh:12,ncertPg:'408',unit:'Modern Physics — Nuclei',pyq:false,diff:'easy'},
+];
+
+// ===== QUIZ STATE =====
+let quizList=[], curQ=0, answered=false, timerInt=null, timeLeft=1500, activeTopic=null;
+let mistakes=[], notes=[], fcIdx=0;
+
+// ===== SEARCH =====
+function doSearch(val, resId){
+  const box=document.getElementById(resId); if(!box) return;
+  if(!val.trim()){ box.classList.remove('show'); return; }
+  const q=val.toLowerCase();
+  const hits=TOPICS.filter(t=>t.name.toLowerCase().includes(q)||t.sub.toLowerCase().includes(q)||t.unit.toLowerCase().includes(q));
+  if(!hits.length){ box.innerHTML='<div class="sri" style="color:var(--mute)">No topics found. Try: Mitosis, Ohm\'s Law...</div>'; box.classList.add('show'); return; }
+  box.innerHTML=hits.slice(0,6).map(t=>`<div class="sri" onclick="startTopicQuiz('${t.name}','${t.sub}');document.getElementById('${resId}').classList.remove('show')"><div style="width:30px;height:30px;border-radius:8px;background:${t.sub==='PHYSICS'?'var(--blue-l)':t.sub==='CHEMISTRY'?'var(--green-l)':'var(--amber-l)'};display:flex;align-items:center;justify-content:center;flex-shrink:0">${t.sub==='PHYSICS'?'⚛️':t.sub==='CHEMISTRY'?'🧪':'🧬'}</div><div style="flex:1"><div style="font-size:13px;font-weight:600">${t.name}</div><div style="font-size:11px;color:var(--mute)">${t.sub} · NCERT Cl.${t.cl} Ch.${t.ch} Pg.${t.pg}</div></div><span class="badge ${t.diff==='easy'?'be':t.diff==='medium'?'bm':'bh'}">${t.diff}</span></div>`).join('');
+  box.classList.add('show');
+}
+document.addEventListener('click',e=>{ if(!e.target.closest('.swrap')) document.querySelectorAll('.sres').forEach(r=>r.classList.remove('show')); });
+
+function topicRowHTML(t){ return `<div class="trow" onclick="startTopicQuiz('${t.name}','${t.sub}')"><div class="tdot" style="background:${t.col}"></div><div style="flex:1;margin-left:9px"><div style="font-size:13px;font-weight:600">${t.name}</div><div style="font-size:11px;color:var(--mute)">${t.sub} · NCERT Cl.${t.cl}, Ch.${t.ch} · Pg ${t.pg} · ${t.qs} Qs</div></div><div style="display:flex;align-items:center;gap:7px;flex-shrink:0"><span style="font-size:11px;font-weight:700;color:${t.acc>=70?'var(--green)':t.acc>=50?'#7a4800':'var(--red)'}">${t.acc}%</span><span class="badge ${t.diff==='easy'?'be':t.diff==='medium'?'bm':'bh'}">${t.diff}</span></div></div>`; }
+
+function renderAllTopics(filter){ const el=document.getElementById('allTopics'); if(!el) return; const list=filter==='ALL'?TOPICS:TOPICS.filter(t=>t.sub===filter); el.innerHTML=list.map(topicRowHTML).join(''); }
+function renderPracticeTopics(filter){ const el=document.getElementById('practiceTopics'); if(!el) return; const list=filter==='ALL'?TOPICS:TOPICS.filter(t=>t.sub===filter); el.innerHTML=list.map(topicRowHTML).join(''); }
+function filterTopics(el,f){ el.closest('.chips').querySelectorAll('.chip').forEach(c=>c.classList.remove('active')); el.classList.add('active'); renderAllTopics(f); }
+function filterPractice(el,f){ el.closest('.chips').querySelectorAll('.chip').forEach(c=>c.classList.remove('active')); el.classList.add('active'); renderPracticeTopics(f); }
+function goSubject(s){ switchTab('practice'); renderPracticeTopics(s); }
+
+// ===== QUIZ =====
+function startTopicQuiz(name, subject){
+  if(!canAccess()){ openPaywall(); return; }
+  const t=TOPICS.find(x=>x.name===name)||TOPICS.find(x=>x.sub===subject)||TOPICS[0];
+  activeTopic=t;
+  quizList=QUESTIONS.filter(q=>q.tid===t.id); if(!quizList.length) quizList=QUESTIONS.filter(q=>q.sub===t.sub); if(!quizList.length) quizList=[...QUESTIONS];
+  curQ=0; switchTab('quiz'); renderQuiz();
+}
+function startFullPractice(){ if(!canAccess()){ openPaywall(); return; } activeTopic=null; quizList=[...QUESTIONS]; curQ=0; switchTab('quiz'); renderQuiz(); }
+
+function renderQuiz(){
+  document.getElementById('quizView').style.display='block';
+  document.getElementById('resultView').style.display='none';
+  answered=false;
+  const q=quizList[curQ];
+  const hdr=activeTopic?`<div class="tqhdr"><div style="font-size:10px;opacity:.75;text-transform:uppercase;letter-spacing:.8px">Smart Topic Test</div><div style="font-size:16px;font-weight:800;margin-top:2px">${activeTopic.name}</div><div style="font-size:11px;opacity:.7;margin-top:3px">${activeTopic.sub} · NCERT Class ${activeTopic.cl}, Ch.${activeTopic.ch} · Pages ${activeTopic.pg}</div></div>`:'';
+  document.getElementById('quizView').innerHTML=`${hdr}
+  <div class="qmeta"><span class="qcnt">Q <span id="qN">${curQ+1}</span> of ${quizList.length}</span><div class="timer"><i class="ti ti-clock"></i><span id="tVal">25:00</span></div></div>
+  <div class="qpbg"><div class="qpfill" id="qProg" style="width:${(curQ+1)/quizList.length*100}%"></div></div>
+  <div class="qcard">
+    <div class="qtag">${q.sub} · ${q.ch}${q.pyq?' · PYQ '+q.pyqYr:''}</div>
+    <div class="qtext">${q.text}</div>
+    <div class="opts" id="optList">${['A','B','C','D'].map((l,i)=>q.opts[i]?`<div class="opt" data-i="${i}" onclick="handleAns(this,${i})"><div class="oltr">${l}</div>${q.opts[i]}</div>`:'').join('')}</div>
+    <div class="expl" id="explBox">
+      <b>Explanation:</b><br><span id="explTxt"></span>
+      <div style="margin-top:10px;background:var(--surf2);border-radius:8px;padding:10px;font-size:12px;line-height:1.6" id="sylBox"></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px" id="refTags"></div>
+    </div>
+    <div class="conf-row" id="confRow" style="display:none">
+      <div style="font-size:11px;color:var(--mute);display:flex;align-items:center;margin-right:4px">Rate it:</div>
+      <button class="cbtn ce" onclick="logConf('easy')">Easy 😊</button>
+      <button class="cbtn cm" onclick="logConf('medium')">Medium 🤔</button>
+      <button class="cbtn ch" onclick="logConf('hard')">Hard 😓</button>
+    </div>
+  </div>
+  <div class="qactions">
+    <button class="btn btn-ghost" onclick="showHint()" style="padding:9px 13px"><i class="ti ti-lightbulb"></i> Hint</button>
+    <button class="btn btn-ghost" onclick="bookmarkQ()" style="padding:9px 13px"><i class="ti ti-bookmark"></i></button>
+    <button class="btn btn-blue" style="flex:1" onclick="nextQ()">Next <i class="ti ti-arrow-right"></i></button>
+  </div>`;
+  if(!timerInt) startTimer();
+}
+
+function handleAns(el, idx){
+  if(answered) return; answered=true;
+  document.querySelectorAll('.opt').forEach(o=>o.classList.add('locked'));
+  const q=quizList[curQ];
+  if(idx===q.correct){ el.classList.add('correct'); el.querySelector('.oltr').style.cssText='background:var(--green);color:#fff'; toast('✅ Correct! +4 marks'); }
+  else {
+    el.classList.add('wrong'); el.querySelector('.oltr').style.cssText='background:var(--red);color:#fff';
+    const cEl=document.querySelectorAll('.opt')[q.correct]; if(cEl){ cEl.classList.add('correct'); cEl.querySelector('.oltr').style.cssText='background:var(--green);color:#fff'; }
+    addMistake(q,idx); toast('❌ Wrong. Study the explanation below.');
+  }
+  document.getElementById('explTxt').textContent=q.explanation;
+  document.getElementById('sylBox').innerHTML=`<b>NCERT Reference:</b> Class ${q.ncertCl}, Chapter ${q.ncertCh}, Page ${q.ncertPg}<br><b>Syllabus Unit:</b> ${q.unit}${q.pyq?`<br><b style="color:var(--red)">⭐ PYQ ${q.pyqYr} — High priority!</b>`:''}`;
+  document.getElementById('refTags').innerHTML=`<span class="ncert-tag"><i class="ti ti-book"></i> NCERT Cl.${q.ncertCl} Ch.${q.ncertCh} Pg.${q.ncertPg}</span><span class="syl-tag"><i class="ti ti-list"></i> ${q.unit}</span>${q.pyq?`<span class="badge bh">PYQ ${q.pyqYr}</span>`:''}`;
+  document.getElementById('explBox').classList.add('show');
+  document.getElementById('confRow').style.display='flex';
+}
+
+function showHint(){ const q=quizList[curQ]; toast(`Hint: NCERT Class ${q.ncertCl}, Ch.${q.ncertCh}, Page ${q.ncertPg} — ${q.unit}`); }
+function bookmarkQ(){ toast('🔖 Question bookmarked!'); }
+function logConf(l){ toast(`Logged as ${l}`); document.getElementById('confRow').style.display='none'; }
+
+function nextQ(){
+  if(curQ<quizList.length-1){ curQ++; renderQuiz(); }
+  else { clearInterval(timerInt); timerInt=null; showResult(); }
+}
+
+function showResult(){
+  const total=quizList.length, pct=68;
+  document.getElementById('quizView').style.display='none';
+  document.getElementById('resultView').style.display='block';
+  document.getElementById('resultView').innerHTML=`
+  <div class="rhero">
+    <div class="sring"><div class="spct">${pct}%</div><div style="font-size:10px;opacity:.7">Score</div></div>
+    <div style="font-size:18px;font-weight:800">${pct>=60?'Great work! 🎉':'Keep going! 💪'}</div>
+    ${activeTopic?`<div style="font-size:12px;opacity:.75;margin-top:4px">${activeTopic.name} · NCERT Cl.${activeTopic.cl} Ch.${activeTopic.ch}</div>`:''}
+  </div>
+  <div class="rgrid">
+    <div class="rstat"><div class="rn" style="color:var(--green)">${Math.round(total*.68)}</div><div style="font-size:11px;color:var(--mute)">Correct</div></div>
+    <div class="rstat"><div class="rn" style="color:var(--red)">${Math.round(total*.32)}</div><div style="font-size:11px;color:var(--mute)">Wrong</div></div>
+    <div class="rstat"><div class="rn" style="color:var(--blue)">${pct}%</div><div style="font-size:11px;color:var(--mute)">Accuracy</div></div>
+  </div>
+  ${mistakes.length?`<div class="card" style="border-color:var(--red)"><div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:4px">${mistakes.length} mistake(s) logged → Galti Copy</div></div>`:''}
+  <button class="btn btn-blue btn-full" style="margin-bottom:9px" onclick="${activeTopic?`startTopicQuiz('${activeTopic.name}','${activeTopic.sub}')`:'startFullPractice()'}"><i class="ti ti-refresh"></i> Retry</button>
+  <button class="btn btn-ghost btn-full" onclick="switchTab('mistakes')"><i class="ti ti-notebook"></i> Review Galti Copy</button>`;
+  activeTopic=null;
+}
+
+function startTimer(){
+  timeLeft=1500;
+  timerInt=setInterval(()=>{
+    timeLeft--;
+    const m=Math.floor(timeLeft/60),s=timeLeft%60;
+    const el=document.getElementById('tVal'); if(el) el.textContent=m+':'+(s<10?'0':'')+s;
+    if(timeLeft<=0){ clearInterval(timerInt); timerInt=null; showResult(); }
+  },1000);
+}
+
+// ===== MISTAKES =====
+function addMistake(q,sel){
+  if(!mistakes.some(m=>m.id===q.id)){
+    mistakes.push({...q,userIdx:sel,errTag:'Conceptual Error',loggedOn:new Date().toLocaleDateString('en-IN')});
+    const dot=document.getElementById('mistakeDot'); dot.textContent=mistakes.length; dot.style.display='inline-block';
+  }
+}
+function renderMistakes(){
+  const box=document.getElementById('mistakeArea'); if(!box) return;
+  if(!mistakes.length){ box.innerHTML='<div style="text-align:center;padding:40px 20px;color:var(--mute)"><i class="ti ti-mood-happy" style="font-size:36px;display:block;margin-bottom:9px"></i><div style="font-size:13px;font-weight:600">Galti Copy is empty!</div><div style="font-size:11px;margin-top:4px">Wrong answers appear here automatically.</div></div>'; return; }
+  box.innerHTML=mistakes.map((m,i)=>`<div class="mc"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px"><span style="font-size:10px;font-weight:700;color:var(--red);text-transform:uppercase">${m.sub} · ${m.ch}</span><div style="display:flex;align-items:center;gap:7px"><span style="font-size:10px;background:var(--purple-l);color:var(--purple);padding:2px 7px;border-radius:6px;font-weight:700">${m.loggedOn}</span><select style="padding:3px 6px;border-radius:6px;border:1px solid var(--bdr);font-size:11px;background:var(--surf);color:var(--txt)" onchange="mistakes[${i}].errTag=this.value"><option>Conceptual Error</option><option>Calculation Error</option><option>Silly Mistake</option><option>Time Crunch</option></select></div></div><div style="font-size:13px;font-weight:600;margin-bottom:7px">${m.text}</div><div style="font-size:12px;color:var(--mute);margin-bottom:7px">Your answer: <b style="color:var(--red)">${m.opts[m.userIdx]}</b> | Correct: <b style="color:var(--green)">${m.opts[m.correct]}</b></div><div style="font-size:12px;background:var(--surf2);padding:10px;border-radius:8px;margin-bottom:7px;line-height:1.6">${m.explanation}</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:7px"><span class="ncert-tag"><i class="ti ti-book"></i> NCERT Cl.${m.ncertCl} Ch.${m.ncertCh} Pg.${m.ncertPg}</span><span class="syl-tag"><i class="ti ti-list"></i> ${m.unit}</span>${m.pyq?`<span class="badge bh">PYQ ${m.pyqYr}</span>`:''}</div><div style="text-align:right"><button onclick="mistakes.splice(${i},1);if(!mistakes.length)document.getElementById('mistakeDot').style.display='none';else document.getElementById('mistakeDot').textContent=mistakes.length;renderMistakes();toast('✅ Marked mastered!')" style="background:none;border:none;color:var(--mute);font-size:11px;cursor:pointer;font-weight:700;padding:4px 8px;border-radius:6px"><i class="ti ti-check"></i> Mark Mastered</button></div></div>`).join('');
+}
+function practiceMistakes(){ if(!mistakes.length){ toast('No mistakes yet!'); return; } quizList=[...mistakes]; activeTopic=null; curQ=0; switchTab('quiz'); renderQuiz(); }
+
+// ===== NOTES =====
+function saveNote(){
+  const s=document.getElementById('noteSubj').value, t=document.getElementById('noteTopic').value.trim()||'General', x=document.getElementById('noteText').value.trim();
+  if(!x){ toast('Write something first!'); return; }
+  notes.unshift({subject:s,topic:t,text:x,date:new Date().toLocaleDateString('en-IN')});
+  document.getElementById('noteText').value=''; document.getElementById('noteTopic').value='';
+  renderNotes(); toast('Note saved!');
+}
+function renderNotes(){
+  const box=document.getElementById('notesArea'); if(!box) return;
+  if(!notes.length){ box.innerHTML='<div style="text-align:center;padding:30px;color:var(--mute);font-size:13px">No notes yet.</div>'; return; }
+  box.innerHTML=notes.map((n,i)=>`<div class="ncard"><div style="font-size:10px;font-weight:700;color:var(--blue);margin-bottom:5px">${n.subject} · ${n.topic}</div><div style="font-size:13px;line-height:1.6;white-space:pre-wrap">${n.text}</div><div style="display:flex;justify-content:space-between;margin-top:8px"><span style="font-size:10px;color:var(--mute)">${n.date}</span><button onclick="notes.splice(${i},1);renderNotes()" style="background:none;border:none;color:var(--mute);font-size:11px;cursor:pointer"><i class="ti ti-trash"></i> Delete</button></div></div>`).join('');
+}
+
+// ===== FLASHCARDS =====
+const FC=[
+  {s:'Biology • Cell Biology',q:'What is the Golgi Apparatus function?',a:'Modifies, packages, and transports proteins and lipids — the "post office" of the cell.',ref:'NCERT Class 11, Ch.8, Pg 136'},
+  {s:'Physics • Laws of Motion',q:"State Newton's First Law.",a:'A body stays at rest or in uniform motion unless acted on by an external unbalanced force (Law of Inertia).',ref:'NCERT Class 11, Ch.5, Pg 90'},
+  {s:'Chemistry • Chemical Bonding',q:'What is a covalent bond?',a:'Formed by mutual sharing of electron pairs between two atoms to achieve stable configuration.',ref:'NCERT Class 11, Ch.4, Pg 99'},
+  {s:'Biology • Genetics',q:'State the Central Dogma.',a:'DNA → (Transcription) → RNA → (Translation) → Protein. Information flows from DNA to protein.',ref:'NCERT Class 12, Ch.6, Pg 110'},
+  {s:'Physics • Thermodynamics',q:'State First Law of Thermodynamics.',a:'ΔU = Q − W. Energy cannot be created or destroyed; change in internal energy = heat absorbed − work done.',ref:'NCERT Class 11, Ch.12, Pg 298'},
+];
+function renderFlash(){
+  const fc=FC[fcIdx];
+  document.getElementById('fcSub').textContent=fc.s; document.getElementById('fcQ').textContent=fc.q; document.getElementById('fcA').textContent=fc.a; document.getElementById('fcRef').innerHTML=`<i class="ti ti-book"></i> ${fc.ref}`;
+  document.getElementById('fcNum').textContent=fcIdx+1; document.getElementById('fcTot').textContent=FC.length;
+  document.getElementById('flashcard').classList.remove('flipped');
+  document.getElementById('fcDots').innerHTML=FC.map((_,i)=>`<div class="dot${i===fcIdx?' active':''}"></div>`).join('');
+}
+function flipCard(){ document.getElementById('flashcard').classList.toggle('flipped'); }
+function nextFlash(){ fcIdx=(fcIdx+1)%FC.length; renderFlash(); }
+function prevFlash(){ fcIdx=(fcIdx-1+FC.length)%FC.length; renderFlash(); }
+function rateFlash(l){ toast(l==='easy'?'✅ Easy — 1 week':l==='medium'?'📅 Medium — 3 days':'❗ Hard — Tomorrow'); setTimeout(nextFlash,400); }
+
+// ===== AI TUTOR =====
+const AI_RESP={
+  'newton':"Newton's Third Law: Every action has an equal and opposite reaction.\n\nExample: Feet push ground (action) → ground pushes you up (reaction). Same magnitude, opposite directions, different bodies.\n\nNCERT: Class 11, Ch.5, Page 97.\n\n💡 NEET Tip: Paired forces act on DIFFERENT bodies — don't confuse with equilibrium.",
+  'dna':"DNA Replication (Semi-Conservative):\n\n1️⃣ Helicase unwinds the helix\n2️⃣ Primase adds RNA primer\n3️⃣ DNA Pol III adds nucleotides (5'→3')\n4️⃣ Leading strand: continuous; Lagging strand: Okazaki fragments\n5️⃣ DNA Ligase seals fragments\n\nNCERT: Class 12, Ch.6, Pages 106–112.",
+  'mitosis':"Mitosis (PMAT):\nProphase → Metaphase → Anaphase → Telophase\n\n2n → 2n + 2n (2 identical diploid cells)\n\nImportant: Karyokinesis = nuclear division; Cytokinesis = cytoplasmic division\n\nNCERT: Class 11, Ch.10, Pages 171–177.",
+  'meiosis':"Meiosis — 2 divisions:\n\nMeiosis I (Reductional): 2n → n\nProphase I has 5 sub-stages: Leptotene, Zygotene, Pachytene, Diplotene, Diakinesis\nCrossing over at Pachytene → genetic recombination\n\nMeiosis II (Equational): n → n + n\nResult: 4 haploid cells\n\nNCERT: Class 11, Ch.10, Pages 177–182.",
+  'le chatelier':"Le Chatelier's Principle: System at equilibrium shifts to OPPOSE any disturbance.\n\nEffects:\n• ↑ Pressure → shift toward fewer moles of gas\n• ↑ Temperature → shift toward endothermic side\n• Add reactant → shift toward products\n\nNCERT: Class 11, Ch.7, Pages 199–207.\n\n💡 Haber process: N₂+3H₂→2NH₃ uses high pressure, moderate temperature.",
+  'faraday':"Faraday's Laws of Electromagnetic Induction:\n\n1st Law: EMF is induced when magnetic flux changes\n2nd Law: EMF = −dΦ/dt (Lenz's law gives the negative sign)\n\nNCERT: Class 12, Ch.6, Pages 202–215.\n\n💡 Remember: the negative sign means the induced EMF opposes the change (Lenz's law).",
+  'important':"NEET 2026 Most Important Chapters:\n\nPhysics (25 Qs): Electrostatics, Current Electricity, Optics, Modern Physics, Mechanics\nChemistry (25 Qs): Organic (IUPAC, GOC, Biomolecules), Equilibrium, Electrochemistry, Coordination\nBiology (50 Qs): Genetics, Human Physiology, Plant Physiology, Cell Biology, Ecology\n\n💡 Biology has 50 questions — give it the most time!\nTarget 70%+ in Biology for a good rank.",
+  'default':"Great question! Based on the NEET 2026 syllabus:\n\nThis is a high-yield topic. I recommend:\n1️⃣ Read the NCERT chapter carefully first\n2️⃣ Note key formulas and definitions\n3️⃣ Solve 15–20 past NEET questions on this topic\n4️⃣ Use Smart Test feature to check your understanding\n\nWhich specific concept would you like me to explain in detail?",
+};
+function askAI(q){ document.getElementById('aiIn').value=q; sendAI(); }
+function sendAI(){
+  const inp=document.getElementById('aiIn'); const q=inp.value.trim(); if(!q) return;
+  const wrap=document.getElementById('aiWrap');
+  wrap.innerHTML+=`<div class="aimsg user">${q}</div>`; inp.value=''; wrap.scrollTop=wrap.scrollHeight;
+  setTimeout(()=>{
+    const key=Object.keys(AI_RESP).find(k=>q.toLowerCase().includes(k));
+    const reply=(AI_RESP[key]||AI_RESP.default).replace(/\n/g,'<br>');
+    wrap.innerHTML+=`<div class="aimsg bot">${reply}</div>`; wrap.scrollTop=wrap.scrollHeight;
+  },700);
+}
+
+// ===== STREAK =====
+function buildStreak(){
+  const sg=document.getElementById('streakGrid'); if(!sg) return;
+  const p=[2,1,1,0,1,1,2,0,1,1,1,2,2,1,1,1,0,0,1,2,1,1,2,1,1,2,2,1];
+  const d=['S','M','T','W','T','F','S'];
+  sg.innerHTML=p.map((v,i)=>`<div class="sgcell ${v===2?'great':v===1?'done':''}">${d[i%7]}</div>`).join('');
+}
+
+// ===== ADMIN =====
+async function loadAdminUsers(){
+  if(!S.user||S.user.role!=='admin') return;
+  const tbody=document.getElementById('userTable'); if(!tbody) return;
+  try{
+    const r=await api('admin',{action:'list_users',uid:S.user.uid,sessionToken:S.sessionToken});
+    if(r.error){ tbody.innerHTML=`<tr><td colspan="5" style="color:var(--red);text-align:center;padding:20px">${r.error}</td></tr>`; return; }
+    document.getElementById('admU').textContent=r.users.length;
+    document.getElementById('admA').textContent=r.users.filter(u=>u.status==='paid'||u.status==='trial'||u.status==='admin').length;
+    tbody.innerHTML=r.users.map(u=>`<tr>
+      <td><b>${u.email}</b></td>
+      <td><span class="sp ${u.role==='admin'?'sp-admin':'sp-active'}">${u.role.toUpperCase()}</span></td>
+      <td><span class="sp ${u.status==='paid'||u.status==='admin'?'sp-active':u.status==='trial'?'sp-trial':'sp-expired'}">${u.status.toUpperCase()}</span></td>
+      <td style="font-size:11px;color:var(--mute)">${u.paidUntil?new Date(u.paidUntil).toLocaleDateString('en-IN'):u.trialEnd?'Trial: '+new Date(u.trialEnd).toLocaleDateString('en-IN'):'—'}</td>
+      <td style="display:flex;gap:5px;flex-wrap:wrap">${u.role!=='admin'?`<button class="ab ab-k" onclick="adminUserAction('disable','${u.uid}')">Kill</button><button class="ab ab-t" onclick="adminUserAction('enable','${u.uid}')">Enable</button><button class="ab ab-g" onclick="adminUserAction('grant_pro','${u.uid}')">Grant Pro</button>`:'<span style="font-size:11px;color:var(--mute)">Protected</span>'}</td>
+    </tr>`).join('');
+  }catch(e){ tbody.innerHTML='<tr><td colspan="5" style="color:var(--mute);text-align:center;padding:20px">Could not load users</td></tr>'; }
+}
+
+async function adminUserAction(action, targetUid){
+  const r=await api('admin',{action,uid:S.user.uid,sessionToken:S.sessionToken,targetUid});
+  if(r.ok){ toast('Done: '+action+' for user'); loadAdminUsers(); } else toast('Error: '+(r.error||'Failed'));
+}
+
+async function adminAction(action){
+  if(action==='enable_all') action='kill_all'; // reuse endpoint differently
+  const r=await api('admin',{action:action==='enable_all'?'kill_all':'set_expiry'===action?'set_expiry':action,uid:S.user.uid,sessionToken:S.sessionToken});
+  if(r.ok){ toast('Done!'); document.getElementById('killLog').textContent=action+' at '+new Date().toLocaleString(); loadAdminUsers(); }
+}
+
+// ===== CSV =====
+function handleCSV(){
+  const fi=document.getElementById('csvFile'); if(!fi.files.length){ toast('Select a CSV file'); return; }
+  const r=new FileReader(); r.onload=function(e){
+    const rows=parseCSV(e.target.result); let cnt=0;
+    rows.forEach(row=>{
+      if(row.question&&row.opt_a){
+        const ci={'A':0,'B':1,'C':2,'D':3}[(row.correct||'A').toUpperCase()]??0;
+        QUESTIONS.push({id:QUESTIONS.length+1,sub:(row.subject||'BIOLOGY').toUpperCase(),ch:row.chapter||'NCERT',tid:'t7',text:row.question,opts:[row.opt_a,row.opt_b||'',row.opt_c||'',row.opt_d||''],correct:ci,explanation:row.explanation||'Refer NCERT.',ncertCl:parseInt(row.ncert_class)||11,ncertCh:parseInt(row.ncert_chapter)||1,ncertPg:row.ncert_page||'1',unit:row.syllabus_unit||'NCERT',pyq:false,diff:'medium'});
+        cnt++;
+      }
+    });
+    document.getElementById('admQ').textContent=QUESTIONS.length;
+    toast('✅ Imported '+cnt+' questions!');
+  }; r.readAsText(fi.files[0]);
+}
+function parseCSV(txt){
+  const lines=txt.split(/\r\n|\n/); if(lines.length<2) return [];
+  const hdrs=lines[0].split(',').map(h=>h.trim().replace(/^"|"$/g,'').toLowerCase());
+  const res=[];
+  for(let i=1;i<lines.length;i++){
+    if(!lines[i].trim()) continue;
+    const row=[];let inQ=false,cur='';
+    for(const ch of lines[i]){if(ch==='"'){inQ=!inQ;}else if(ch===','&&!inQ){row.push(cur.trim());cur='';}else{cur+=ch;}}
+    row.push(cur.trim());
+    const obj={};hdrs.forEach((h,idx)=>{obj[h]=row[idx]||'';});res.push(obj);
+  }return res;
+}
+function downloadSample(){
+  const csv=`subject,chapter,question,opt_a,opt_b,opt_c,opt_d,correct,explanation,ncert_class,ncert_chapter,ncert_page,syllabus_unit\nBiology,Cell Biology,Which organelle contains hydrolytic enzymes?,Lysosome,Ribosome,Mitochondria,Nucleus,A,Lysosomes contain hydrolytic enzymes and are called suicidal bags.,11,8,136,Cell Structure\nPhysics,Work Energy,Work done by centripetal force is?,Zero,Maximum,Negative,Infinite,A,Centripetal force is perpendicular to displacement so W=0.,11,6,118,Mechanics`;
+  const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([csv],{type:'text/csv'})),download:'NEETAce_Sample.csv'});a.click();toast('Sample CSV downloaded!');
+}
+
+// ===== INIT =====
+window.addEventListener('load', async ()=>{
+  calcDays(); buildStreak(); renderPracticeTopics('ALL'); renderAllTopics('ALL'); renderFlash();
+  // Restore session if available
+  if(loadSession()){
+    // Verify the restored session is still valid
+    try{
+      const r=await api('auth-verify',{uid:S.user.uid,sessionToken:S.sessionToken});
+      if(r.valid){ S.user={...S.user,...r.user}; saveSession(S.user,S.sessionToken); startVerify(); updateUI(); toast('Welcome back, '+S.user.name+'! 👋'); }
+      else { clearSession(); updateUI(); }
+    }catch(e){ clearSession(); updateUI(); }
+  } else { updateUI(); }
+  setTimeout(()=>{ if(!S.user) toast('👋 Sign in to start your free 7-day trial!'); },1500);
+});
+</script>
+</body>
+</html>
