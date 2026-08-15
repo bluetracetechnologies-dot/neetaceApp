@@ -292,12 +292,8 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     <div class="sc chem" onclick="goSubject('CHEMISTRY')"><div class="si">🧪</div><div class="sn">Chemistry</div><div style="font-size:10px;color:var(--mute)">3,800 Qs</div><div class="pbg"><div class="pfill" style="width:48%;background:var(--teal)"></div></div><div style="font-size:10px;color:var(--mute);margin-top:4px">48% done</div></div>
     <div class="sc bio" onclick="goSubject('BIOLOGY')"><div class="si">🧬</div><div class="sn">Biology</div><div style="font-size:10px;color:var(--mute)">5,600 Qs</div><div class="pbg"><div class="pfill" style="width:75%;background:var(--amber)"></div></div><div style="font-size:10px;color:var(--mute);margin-top:4px">75% done</div></div>
   </div>
-  <div class="sec-hd"><i class="ti ti-target"></i> Today's Targets</div>
-  <div id="targetsArea">
-    <div class="tgt done"><i class="ti ti-circle-check" style="color:var(--green);font-size:20px"></i><div style="flex:1"><div style="font-size:13px;font-weight:600">Laws of Motion · Daily Quiz</div><div style="font-size:11px;color:var(--mute)">20 Qs · Scored 85%</div></div><span class="badge be">Done</span></div>
-    <div class="tgt pending" onclick="startTopicQuiz('Organic Chemistry','CHEMISTRY')"><i class="ti ti-circle" style="color:var(--amber);font-size:20px"></i><div style="flex:1"><div style="font-size:13px;font-weight:600">Organic Chemistry · Revision</div><div style="font-size:11px;color:var(--mute)">30 Qs · 35 min</div></div><span class="badge bm">Pending</span></div>
-    <div class="tgt hard" onclick="startTopicQuiz('Cell Biology','BIOLOGY')"><i class="ti ti-circle" style="color:var(--red);font-size:20px"></i><div style="flex:1"><div style="font-size:13px;font-weight:600">Full Mock · Biology</div><div style="font-size:11px;color:var(--mute)">50 Qs · 60 min</div></div><span class="badge bh">Hard</span></div>
-  </div>
+  <div class="sec-hd"><i class="ti ti-target"></i> Daily Mission</div>
+  <div id="targetsArea"></div>
   <div class="sec-hd" style="margin-top:14px"><i class="ti ti-trophy"></i> Leaderboard</div>
   <div class="card">
     <div class="lbrow"><div class="lbrank gold">1</div><div style="flex:1"><div style="font-size:13px;font-weight:600">Priya S., Mumbai</div><div style="font-size:11px;color:var(--mute)">92% · 8,400 Qs</div></div><span style="font-weight:800;color:var(--green)">92%</span></div>
@@ -384,9 +380,11 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 <!-- GALTI COPY -->
 <div class="screen" id="screen-mistakes">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:13px">
-    <div><div class="sec-hd" style="margin-bottom:2px"><i class="ti ti-notebook"></i> Galti Copy</div><div style="font-size:11px;color:var(--mute)">Wrong answers auto-logged with NCERT reference</div></div>
+    <div><div class="sec-hd" style="margin-bottom:2px"><i class="ti ti-notebook"></i> Galti Recovery Hub</div><div style="font-size:11px;color:var(--mute)">Wrong answers, weak concepts, and revision due in one place</div></div>
     <button class="btn btn-blue" style="font-size:11px;padding:7px 12px" onclick="practiceMistakes()"><i class="ti ti-zap"></i> Practice All</button>
   </div>
+  <div id="galtiInsights" style="margin-bottom:9px"></div>
+  <div id="galtiRevisionDue" style="margin-bottom:9px"></div>
   <div id="mistakeArea"><div style="text-align:center;padding:40px 20px;color:var(--mute)"><i class="ti ti-mood-happy" style="font-size:36px;display:block;margin-bottom:9px"></i><div style="font-size:13px;font-weight:600">Notebook is empty — keep solving!</div></div></div>
 </div>
 
@@ -411,14 +409,11 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 <div class="screen" id="screen-analytics">
   <div class="quad"><div class="qbox"><div class="qn">3,240</div><div class="ql">Qs Solved</div></div><div class="qbox"><div class="qn" style="color:var(--teal)">68%</div><div class="ql">Accuracy</div></div><div class="qbox"><div class="qn" style="color:var(--red)">12</div><div class="ql">Day Streak</div></div><div class="qbox"><div class="qn" style="color:var(--purple)">47h</div><div class="ql">Study Time</div></div></div>
   <div class="sec-hd"><i class="ti ti-list-check"></i> Chapter Accuracy</div>
-  <div class="card">
-    <div class="prow"><div class="plbl">Cell Biology</div><div class="pbarbg"><div class="pbar" style="width:90%;background:var(--green)"></div></div><div class="ppct" style="color:var(--green)">90%</div></div>
-    <div class="prow"><div class="plbl">Laws of Motion</div><div class="pbarbg"><div class="pbar" style="width:82%;background:var(--blue)"></div></div><div class="ppct" style="color:var(--blue)">82%</div></div>
-    <div class="prow"><div class="plbl">Genetics</div><div class="pbarbg"><div class="pbar" style="width:70%;background:var(--purple)"></div></div><div class="ppct" style="color:var(--purple)">70%</div></div>
-    <div class="prow"><div class="plbl">Organic Chemistry</div><div class="pbarbg"><div class="pbar" style="width:55%;background:var(--amber)"></div></div><div class="ppct" style="color:#7a4800">55%</div></div>
-    <div class="prow"><div class="plbl">Electrostatics</div><div class="pbarbg"><div class="pbar" style="width:44%;background:var(--red)"></div></div><div class="ppct" style="color:var(--red)">44%</div></div>
-    <div class="prow"><div class="plbl">Thermodynamics</div><div class="pbarbg"><div class="pbar" style="width:38%;background:var(--red)"></div></div><div class="ppct" style="color:var(--red)">38%</div></div>
-  </div>
+  <div class="card" id="chapterMasteryList"></div>
+  <div class="sec-hd"><i class="ti ti-dna-2"></i> Learning DNA</div>
+  <div class="card" id="learningDNABox"></div>
+  <div class="sec-hd"><i class="ti ti-chart-line"></i> Score Predictor</div>
+  <div class="card" id="scorePredictorBox"></div>
   <div class="sec-hd"><i class="ti ti-calendar"></i> Study Streak</div>
   <div class="card"><div id="streakGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px"></div></div>
 </div>
@@ -962,8 +957,9 @@ function switchTab(tab){
   if(tab==='flash') renderFlash();
   if(tab==='practice') renderPracticeTopics('ALL');
   if(tab==='search') renderAllTopics('ALL');
-  if(tab==='analytics') buildStreak();
-  if(tab==='mistakes') renderMistakes();
+  if(tab==='analytics'){ buildStreak(); renderAnalyticsIntelligence(); }
+  if(tab==='mistakes'){ renderMistakes(); renderGaltiInsights(); }
+  if(tab==='home') renderDailyMission();
   if(tab==='notes') renderNotes();
 }
 document.querySelectorAll('.nb').forEach(b=>b.addEventListener('click',function(){ switchTab(this.getAttribute('data-tab')); }));
@@ -1056,9 +1052,121 @@ const QUESTIONS = [
   {id:6,sub:'PHYSICS',ch:'Atoms & Nuclei',tid:'t2',text:'The number of neutrons in ₂₀Ca⁴⁰ is:',opts:['20','40','18','22'],correct:0,explanation:'Neutrons = Mass number − Atomic number = 40 − 20 = 20.',ncertCl:12,ncertCh:12,ncertPg:'408',unit:'Modern Physics — Nuclei',pyq:false,diff:'easy'},
 ];
 
+const DIAGNOSIS_TYPES = {
+  concept_error:'concept_error',
+  formula_recall_error:'formula_recall_error',
+  unit_conversion_error:'unit_conversion_error',
+  calculation_error:'calculation_error',
+  careless_error:'careless_error',
+  time_pressure_error:'time_pressure_error',
+};
+const REVISION_DAY_PLAN = [1,3,7,15,30];
+const MISTAKE_LABELS = {
+  [DIAGNOSIS_TYPES.concept_error]:'Concept Error',
+  [DIAGNOSIS_TYPES.formula_recall_error]:'Formula Recall Error',
+  [DIAGNOSIS_TYPES.unit_conversion_error]:'Unit Conversion Error',
+  [DIAGNOSIS_TYPES.calculation_error]:'Calculation Error',
+  [DIAGNOSIS_TYPES.careless_error]:'Careless Error',
+  [DIAGNOSIS_TYPES.time_pressure_error]:'Time Pressure Error',
+};
+const SUBJECT_DNA_DIMENSIONS = {
+  PHYSICS:['conceptUnderstanding','formulaRecall','unitConversion','calculation','speed','retention'],
+  CHEMISTRY:['conceptUnderstanding','formulaRecall','unitConversion','calculation','speed','retention'],
+  BIOLOGY:['conceptUnderstanding','recall','retention','ncertAccuracy','speed'],
+};
+
 // ===== QUIZ STATE =====
 let quizList=[], curQ=0, answered=false, timerInt=null, timeLeft=1500, activeTopic=null;
 let mistakes=[], notes=[], fcIdx=0;
+let qStartAt=Date.now(), questionAttempts=[], revisionQueue=[], scoreSnapshot={correct:0,wrong:0};
+let learningDNA = createInitialLearningDNA();
+let galtiHub = createInitialGaltiHub();
+
+function normalizeDifficulty(diff){
+  const d=(diff||'').toLowerCase();
+  if(d==='easy'||d==='medium'||d==='hard') return d;
+  return d==='starter' ? 'easy' : (d==='exam' ? 'hard' : 'medium');
+}
+function safeText(v, fallback){ return typeof v==='string'&&v.trim()?v.trim():fallback; }
+function slugify(v){ return safeText(v,'general').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'')||'general'; }
+function metadataFromLegacyQuestion(q){
+  const subject=safeText(q.subject||q.sub,'BIOLOGY').toUpperCase();
+  const chapter=safeText(q.chapter||q.ch,'General');
+  const unitType=safeText(q.unitType||q.unit,'NCERT');
+  const concept=q.concept||unitType.split('—')[0].trim()||chapter;
+  const subconcept=q.subconcept||unitType.split('—')[1]?.trim()||concept;
+  const difficulty=normalizeDifficulty(q.difficulty||q.diff);
+  return {
+    subject,
+    chapter,
+    concept,
+    subconcept,
+    difficulty,
+    formula:safeText(q.formula||q.trick,''),
+    unitType,
+    questionType:q.questionType||(q.pyq?'pyq':'mcq'),
+    commonMistake:q.commonMistake||'concept_error',
+    variantGroup:q.variantGroup||`${slugify(subject)}_${slugify(chapter)}_${slugify(concept)}`,
+    estimatedTime:Number.isFinite(q.estimatedTime)?q.estimatedTime:({easy:60,medium:90,hard:120}[difficulty]),
+    neetWeightage:Number.isFinite(q.neetWeightage)?q.neetWeightage:(q.pyq?3:2),
+  };
+}
+function backfillQuestionMetadata(question){
+  const meta={...metadataFromLegacyQuestion(question), ...(question.meta||{})};
+  question.subject=meta.subject; question.chapter=meta.chapter; question.concept=meta.concept; question.subconcept=meta.subconcept;
+  question.difficulty=meta.difficulty; question.formula=meta.formula; question.unitType=meta.unitType; question.questionType=meta.questionType;
+  question.commonMistake=meta.commonMistake; question.variantGroup=meta.variantGroup; question.estimatedTime=meta.estimatedTime; question.neetWeightage=meta.neetWeightage;
+  question.diff=normalizeDifficulty(question.diff||meta.difficulty);
+  question.meta={...meta};
+  return question;
+}
+function applyQuestionMetadataBackfill(pool){ (pool||[]).forEach(backfillQuestionMetadata); }
+function createInitialGaltiHub(){
+  return {
+    wrongQuestions:[],
+    repeatedMistakes:[],
+    weakConcepts:{},
+    formulaErrors:[],
+    unitConversionErrors:[],
+    recoveryProgress:{completed:0,total:0},
+    revisionDueToday:[],
+  };
+}
+function createInitialLearningDNA(){
+  const base={
+    PHYSICS:{conceptUnderstanding:50,formulaRecall:50,unitConversion:50,calculation:50,speed:50,retention:50},
+    CHEMISTRY:{conceptUnderstanding:50,formulaRecall:50,unitConversion:50,calculation:50,speed:50,retention:50},
+    BIOLOGY:{conceptUnderstanding:50,recall:50,retention:50,ncertAccuracy:50,speed:50},
+  };
+  return { ...base };
+}
+function clampScore(v){ return Math.max(0, Math.min(100, Math.round(v*10)/10)); }
+function getTodayDateKey(){ return new Date().toISOString().slice(0,10); }
+function persistIntelligenceState(){
+  try{
+    localStorage.setItem('na_intel_mistakes', JSON.stringify(mistakes));
+    localStorage.setItem('na_intel_attempts', JSON.stringify(questionAttempts));
+    localStorage.setItem('na_intel_revision', JSON.stringify(revisionQueue));
+    localStorage.setItem('na_intel_dna', JSON.stringify(learningDNA));
+    localStorage.setItem('na_intel_galti', JSON.stringify(galtiHub));
+  }catch(e){}
+}
+function restoreIntelligenceState(){
+  try{
+    const ms=JSON.parse(localStorage.getItem('na_intel_mistakes')||'[]');
+    const at=JSON.parse(localStorage.getItem('na_intel_attempts')||'[]');
+    const rv=JSON.parse(localStorage.getItem('na_intel_revision')||'[]');
+    const dna=JSON.parse(localStorage.getItem('na_intel_dna')||'null');
+    const galti=JSON.parse(localStorage.getItem('na_intel_galti')||'null');
+    if(Array.isArray(ms)) mistakes=ms.map(m=>backfillQuestionMetadata(m));
+    if(Array.isArray(at)) questionAttempts=at;
+    if(Array.isArray(rv)) revisionQueue=rv;
+    if(dna&&typeof dna==='object') learningDNA={...createInitialLearningDNA(), ...dna};
+    if(galti&&typeof galti==='object') galtiHub={...createInitialGaltiHub(), ...galti};
+    const dot=document.getElementById('mistakeDot');
+    if(dot){ dot.textContent=mistakes.length; dot.style.display=mistakes.length?'inline-block':'none'; }
+  }catch(e){}
+}
 
 // ===== SEARCH =====
 function doSearch(val, resId){
@@ -1087,21 +1195,33 @@ function startTopicQuiz(name, subject){
   const t=TOPICS.find(x=>x.name===name)||TOPICS.find(x=>x.sub===subject)||TOPICS[0];
   activeTopic=t;
   quizList=QUESTIONS.filter(q=>q.tid===t.id); if(!quizList.length) quizList=QUESTIONS.filter(q=>q.sub===t.sub); if(!quizList.length) quizList=[...QUESTIONS];
+  quizList=quizList.map(q=>backfillQuestionMetadata({...q}));
+  scoreSnapshot={correct:0,wrong:0};
   curQ=0; switchTab('quiz'); renderQuiz();
 }
-function startFullPractice(){ if(!canAccess()){ openPaywall(); return; } activeTopic=null; quizList=[...QUESTIONS]; curQ=0; switchTab('quiz'); renderQuiz(); }
+function startFullPractice(){
+  if(!canAccess()){ openPaywall(); return; }
+  activeTopic=null;
+  quizList=[...QUESTIONS].map(q=>backfillQuestionMetadata({...q}));
+  scoreSnapshot={correct:0,wrong:0};
+  curQ=0;
+  switchTab('quiz');
+  renderQuiz();
+}
 
 function renderQuiz(){
   document.getElementById('quizView').style.display='block';
   document.getElementById('resultView').style.display='none';
   answered=false;
   const q=quizList[curQ];
+  qStartAt=Date.now();
+  const metaLine=`${q.subject||q.sub} · ${q.chapter||q.ch} · ${(q.concept||q.unit||'Concept')} · ${normalizeDifficulty(q.difficulty||q.diff).toUpperCase()}`;
   const hdr=activeTopic?`<div class="tqhdr"><div style="font-size:10px;opacity:.75;text-transform:uppercase;letter-spacing:.8px">Smart Topic Test</div><div style="font-size:16px;font-weight:800;margin-top:2px">${activeTopic.name}</div><div style="font-size:11px;opacity:.7;margin-top:3px">${activeTopic.sub} · NCERT Class ${activeTopic.cl}, Ch.${activeTopic.ch} · Pages ${activeTopic.pg}</div></div>`:'';
   document.getElementById('quizView').innerHTML=`${hdr}
   <div class="qmeta"><span class="qcnt">Q <span id="qN">${curQ+1}</span> of ${quizList.length}</span><div class="timer"><i class="ti ti-clock"></i><span id="tVal">25:00</span></div></div>
   <div class="qpbg"><div class="qpfill" id="qProg" style="width:${(curQ+1)/quizList.length*100}%"></div></div>
   <div class="qcard">
-    <div class="qtag">${q.sub} · ${q.ch}${q.pyq?' · PYQ '+q.pyqYr:''}</div>
+    <div class="qtag">${metaLine}${q.pyq?' · PYQ '+q.pyqYr:''}${q.diagnosticStage?` · ${q.diagnosticStage}`:''}</div>
     <div class="qtext">${q.text}</div>
     <div class="opts" id="optList">${['A','B','C','D'].map((l,i)=>q.opts[i]?`<div class="opt" data-i="${i}" onclick="handleAns(this,${i})"><div class="oltr">${l}</div>${q.opts[i]}</div>`:'').join('')}</div>
     <div class="expl" id="explBox">
@@ -1128,12 +1248,43 @@ function handleAns(el, idx){
   if(answered) return; answered=true;
   document.querySelectorAll('.opt').forEach(o=>o.classList.add('locked'));
   const q=quizList[curQ];
+  const timeTakenSec=Math.max(1, Math.round((Date.now()-qStartAt)/1000));
+  let diagnosisType=null, recoveryPath=[];
   if(idx===q.correct){ el.classList.add('correct'); el.querySelector('.oltr').style.cssText='background:var(--green);color:#fff'; toast('✅ Correct! +4 marks'); }
   else {
     el.classList.add('wrong'); el.querySelector('.oltr').style.cssText='background:var(--red);color:#fff';
     const cEl=document.querySelectorAll('.opt')[q.correct]; if(cEl){ cEl.classList.add('correct'); cEl.querySelector('.oltr').style.cssText='background:var(--green);color:#fff'; }
-    addMistake(q,idx); toast('❌ Wrong. Study the explanation below.');
+    diagnosisType=classifyWrongAnswer(q, idx, timeTakenSec);
+    recoveryPath=buildDiagnosticPath(q, diagnosisType);
+    addMistake(q,idx,{diagnosisType,timeTakenSec,recoveryPath}); toast('❌ Wrong. Study the explanation below.');
+    if(recoveryPath.length){
+      quizList.splice(curQ+1,0,...recoveryPath);
+      toast('Concept Doctor added a recovery path: Easy → Medium → Hard → Reinforcement');
+    }
   }
+  if(idx===q.correct) scoreSnapshot.correct++; else scoreSnapshot.wrong++;
+  const attemptRecord={
+    questionId:q.id,
+    subject:q.subject||q.sub,
+    chapter:q.chapter||q.ch,
+    concept:q.concept||q.unit||'Concept',
+    difficulty:normalizeDifficulty(q.difficulty||q.diff),
+    correct:idx===q.correct,
+    selectedIndex:idx,
+    correctIndex:q.correct,
+    timeTakenSec,
+    diagnosisType,
+    diagnosticStage:q.diagnosticStage||null,
+    answeredAt:new Date().toISOString(),
+  };
+  if(q.diagnosticStage && idx===q.correct){
+    galtiHub.recoveryProgress.completed = Math.min(galtiHub.recoveryProgress.total, galtiHub.recoveryProgress.completed + 1);
+  }
+  questionAttempts.push(attemptRecord);
+  updateLearningDNA(attemptRecord);
+  scheduleRevision(q, attemptRecord);
+  updateGaltiDerivedViews();
+  persistIntelligenceState();
   document.getElementById('explTxt').textContent=q.explanation;
   document.getElementById('sylBox').innerHTML=`<b>NCERT Reference:</b> Class ${q.ncertCl}, Chapter ${q.ncertCh}, Page ${q.ncertPg}<br><b>Syllabus Unit:</b> ${q.unit}${q.pyq?`<br><b style="color:var(--red)">⭐ PYQ ${q.pyqYr} — High priority!</b>`:''}`;
   document.getElementById('refTags').innerHTML=`<span class="ncert-tag"><i class="ti ti-book"></i> NCERT Cl.${q.ncertCl} Ch.${q.ncertCh} Pg.${q.ncertPg}</span><span class="syl-tag"><i class="ti ti-list"></i> ${q.unit}</span>${q.pyq?`<span class="badge bh">PYQ ${q.pyqYr}</span>`:''}`;
@@ -1151,7 +1302,8 @@ function nextQ(){
 }
 
 function showResult(){
-  const total=quizList.length, pct=68;
+  const total=Math.max(1, scoreSnapshot.correct+scoreSnapshot.wrong);
+  const pct=Math.round((scoreSnapshot.correct/total)*100);
   document.getElementById('quizView').style.display='none';
   document.getElementById('resultView').style.display='block';
   document.getElementById('resultView').innerHTML=`
@@ -1161,11 +1313,11 @@ function showResult(){
     ${activeTopic?`<div style="font-size:12px;opacity:.75;margin-top:4px">${activeTopic.name} · NCERT Cl.${activeTopic.cl} Ch.${activeTopic.ch}</div>`:''}
   </div>
   <div class="rgrid">
-    <div class="rstat"><div class="rn" style="color:var(--green)">${Math.round(total*.68)}</div><div style="font-size:11px;color:var(--mute)">Correct</div></div>
-    <div class="rstat"><div class="rn" style="color:var(--red)">${Math.round(total*.32)}</div><div style="font-size:11px;color:var(--mute)">Wrong</div></div>
+    <div class="rstat"><div class="rn" style="color:var(--green)">${scoreSnapshot.correct}</div><div style="font-size:11px;color:var(--mute)">Correct</div></div>
+    <div class="rstat"><div class="rn" style="color:var(--red)">${scoreSnapshot.wrong}</div><div style="font-size:11px;color:var(--mute)">Wrong</div></div>
     <div class="rstat"><div class="rn" style="color:var(--blue)">${pct}%</div><div style="font-size:11px;color:var(--mute)">Accuracy</div></div>
   </div>
-  ${mistakes.length?`<div class="card" style="border-color:var(--red)"><div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:4px">${mistakes.length} mistake(s) logged → Galti Copy</div></div>`:''}
+  ${mistakes.length?`<div class="card" style="border-color:var(--red)"><div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:4px">${mistakes.length} mistake(s) logged → Galti Recovery Hub</div><div style="font-size:11px;color:var(--mute)">Recovery progress: ${galtiHub.recoveryProgress.completed}/${galtiHub.recoveryProgress.total}</div></div>`:''}
   <button class="btn btn-blue btn-full" style="margin-bottom:9px" onclick="${activeTopic?`startTopicQuiz('${activeTopic.name}','${activeTopic.sub}')`:'startFullPractice()'}"><i class="ti ti-refresh"></i> Retry</button>
   <button class="btn btn-ghost btn-full" onclick="switchTab('mistakes')"><i class="ti ti-notebook"></i> Review Galti Copy</button>`;
   activeTopic=null;
@@ -1182,18 +1334,141 @@ function startTimer(){
 }
 
 // ===== MISTAKES =====
-function addMistake(q,sel){
-  if(!mistakes.some(m=>m.id===q.id)){
-    mistakes.push({...q,userIdx:sel,errTag:'Conceptual Error',loggedOn:new Date().toLocaleDateString('en-IN')});
-    const dot=document.getElementById('mistakeDot'); dot.textContent=mistakes.length; dot.style.display='inline-block';
+function addMistake(q,sel,details={}){
+  const diagnosisType=details.diagnosisType||DIAGNOSIS_TYPES.concept_error;
+  const recoveryPath=details.recoveryPath||[];
+  const existing=mistakes.find(m=>m.id===q.id);
+  if(!existing){
+    mistakes.push({...q,userIdx:sel,errTag:MISTAKE_LABELS[diagnosisType],diagnosisType,timeTakenSec:details.timeTakenSec||null,loggedOn:new Date().toLocaleDateString('en-IN')});
+  }else{
+    existing.userIdx=sel;
+    existing.diagnosisType=diagnosisType;
+    existing.errTag=MISTAKE_LABELS[diagnosisType];
+    existing.timeTakenSec=details.timeTakenSec||existing.timeTakenSec;
   }
+  galtiHub.wrongQuestions=mistakes.map(m=>m.id);
+  const key=slugify((q.subject||q.sub)+'_'+(q.concept||q.unit||q.ch));
+  galtiHub.weakConcepts[key]=(galtiHub.weakConcepts[key]||0)+1;
+  if(galtiHub.weakConcepts[key]>1 && !galtiHub.repeatedMistakes.includes(key)) galtiHub.repeatedMistakes.push(key);
+  if(diagnosisType===DIAGNOSIS_TYPES.formula_recall_error) galtiHub.formulaErrors.push(q.id);
+  if(diagnosisType===DIAGNOSIS_TYPES.unit_conversion_error) galtiHub.unitConversionErrors.push(q.id);
+  galtiHub.formulaErrors=[...new Set(galtiHub.formulaErrors)];
+  galtiHub.unitConversionErrors=[...new Set(galtiHub.unitConversionErrors)];
+  galtiHub.recoveryProgress.total += recoveryPath.length;
+  const dot=document.getElementById('mistakeDot'); dot.textContent=mistakes.length; dot.style.display=mistakes.length?'inline-block':'none';
 }
 function renderMistakes(){
   const box=document.getElementById('mistakeArea'); if(!box) return;
   if(!mistakes.length){ box.innerHTML='<div style="text-align:center;padding:40px 20px;color:var(--mute)"><i class="ti ti-mood-happy" style="font-size:36px;display:block;margin-bottom:9px"></i><div style="font-size:13px;font-weight:600">Galti Copy is empty!</div><div style="font-size:11px;margin-top:4px">Wrong answers appear here automatically.</div></div>'; return; }
-  box.innerHTML=mistakes.map((m,i)=>`<div class="mc"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px"><span style="font-size:10px;font-weight:700;color:var(--red);text-transform:uppercase">${m.sub} · ${m.ch}</span><div style="display:flex;align-items:center;gap:7px"><span style="font-size:10px;background:var(--purple-l);color:var(--purple);padding:2px 7px;border-radius:6px;font-weight:700">${m.loggedOn}</span><select style="padding:3px 6px;border-radius:6px;border:1px solid var(--bdr);font-size:11px;background:var(--surf);color:var(--txt)" onchange="mistakes[${i}].errTag=this.value"><option>Conceptual Error</option><option>Calculation Error</option><option>Silly Mistake</option><option>Time Crunch</option></select></div></div><div style="font-size:13px;font-weight:600;margin-bottom:7px">${m.text}</div><div style="font-size:12px;color:var(--mute);margin-bottom:7px">Your answer: <b style="color:var(--red)">${m.opts[m.userIdx]}</b> | Correct: <b style="color:var(--green)">${m.opts[m.correct]}</b></div><div style="font-size:12px;background:var(--surf2);padding:10px;border-radius:8px;margin-bottom:7px;line-height:1.6">${m.explanation}</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:7px"><span class="ncert-tag"><i class="ti ti-book"></i> NCERT Cl.${m.ncertCl} Ch.${m.ncertCh} Pg.${m.ncertPg}</span><span class="syl-tag"><i class="ti ti-list"></i> ${m.unit}</span>${m.pyq?`<span class="badge bh">PYQ ${m.pyqYr}</span>`:''}</div><div style="text-align:right"><button onclick="mistakes.splice(${i},1);if(!mistakes.length)document.getElementById('mistakeDot').style.display='none';else document.getElementById('mistakeDot').textContent=mistakes.length;renderMistakes();toast('✅ Marked mastered!')" style="background:none;border:none;color:var(--mute);font-size:11px;cursor:pointer;font-weight:700;padding:4px 8px;border-radius:6px"><i class="ti ti-check"></i> Mark Mastered</button></div></div>`).join('');
+  box.innerHTML=mistakes.map((m,i)=>`<div class="mc"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px"><span style="font-size:10px;font-weight:700;color:var(--red);text-transform:uppercase">${m.subject||m.sub} · ${m.chapter||m.ch}</span><div style="display:flex;align-items:center;gap:7px"><span style="font-size:10px;background:var(--purple-l);color:var(--purple);padding:2px 7px;border-radius:6px;font-weight:700">${m.loggedOn}</span><select style="padding:3px 6px;border-radius:6px;border:1px solid var(--bdr);font-size:11px;background:var(--surf);color:var(--txt)" onchange="mistakes[${i}].errTag=this.value;mistakes[${i}].diagnosisType=Object.keys(MISTAKE_LABELS).find(k=>MISTAKE_LABELS[k]===this.value)||mistakes[${i}].diagnosisType;persistIntelligenceState();"><option ${m.errTag==='Concept Error'?'selected':''}>Concept Error</option><option ${m.errTag==='Formula Recall Error'?'selected':''}>Formula Recall Error</option><option ${m.errTag==='Unit Conversion Error'?'selected':''}>Unit Conversion Error</option><option ${m.errTag==='Calculation Error'?'selected':''}>Calculation Error</option><option ${m.errTag==='Careless Error'?'selected':''}>Careless Error</option><option ${m.errTag==='Time Pressure Error'?'selected':''}>Time Pressure Error</option></select></div></div><div style="font-size:13px;font-weight:600;margin-bottom:7px">${m.text}</div><div style="font-size:12px;color:var(--mute);margin-bottom:7px">Concept: <b>${m.concept||m.unit||m.ch}</b> · Diagnosis: <b style="color:var(--red)">${m.errTag||'Concept Error'}</b>${m.timeTakenSec?` · Time: ${m.timeTakenSec}s`:''}</div><div style="font-size:12px;color:var(--mute);margin-bottom:7px">Your answer: <b style="color:var(--red)">${m.opts[m.userIdx]}</b> | Correct: <b style="color:var(--green)">${m.opts[m.correct]}</b></div><div style="font-size:12px;background:var(--surf2);padding:10px;border-radius:8px;margin-bottom:7px;line-height:1.6">${m.explanation}</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:7px"><span class="ncert-tag"><i class="ti ti-book"></i> NCERT Cl.${m.ncertCl} Ch.${m.ncertCh} Pg.${m.ncertPg}</span><span class="syl-tag"><i class="ti ti-list"></i> ${m.unit}</span>${m.pyq?`<span class="badge bh">PYQ ${m.pyqYr}</span>`:''}</div><div style="text-align:right"><button onclick="mistakes.splice(${i},1);galtiHub.wrongQuestions=mistakes.map(x=>x.id);if(!mistakes.length)document.getElementById('mistakeDot').style.display='none';else document.getElementById('mistakeDot').textContent=mistakes.length;updateGaltiDerivedViews();persistIntelligenceState();renderMistakes();toast('✅ Marked mastered!')" style="background:none;border:none;color:var(--mute);font-size:11px;cursor:pointer;font-weight:700;padding:4px 8px;border-radius:6px"><i class="ti ti-check"></i> Mark Mastered</button></div></div>`).join('');
 }
-function practiceMistakes(){ if(!mistakes.length){ toast('No mistakes yet!'); return; } quizList=[...mistakes]; activeTopic=null; curQ=0; switchTab('quiz'); renderQuiz(); }
+function practiceMistakes(){
+  if(!mistakes.length){ toast('No mistakes yet!'); return; }
+  const dueSet=new Set(getRevisionDueToday().map(r=>r.questionId));
+  quizList=mistakes.map(m=>backfillQuestionMetadata({...m})).map(m=>dueSet.has(m.id)?evolveQuestion(m,'change_variables','medium','Revision Due'):m);
+  activeTopic=null;
+  scoreSnapshot={correct:0,wrong:0};
+  curQ=0;
+  switchTab('quiz');
+  renderQuiz();
+}
+
+function classifyWrongAnswer(q, selectedIndex, timeTakenSec){
+  const selected=(q.opts?.[selectedIndex]||'').toLowerCase();
+  const expectedSec=Number(q.estimatedTime)||90;
+  const difficulty=normalizeDifficulty(q.difficulty||q.diff);
+  if(timeTakenSec > expectedSec*1.5) return DIAGNOSIS_TYPES.time_pressure_error;
+  if(timeTakenSec <= Math.max(8, Math.floor(expectedSec*0.2)) && difficulty==='easy') return DIAGNOSIS_TYPES.careless_error;
+  if((q.formula&&q.formula.length>6) || /formula|law|equation/i.test(q.text)) return DIAGNOSIS_TYPES.formula_recall_error;
+  if(/unit|convert|si|m\/s|km\/h|mol\/l|°c|k\b|cm|mm|kg|g\b/i.test((q.unitType||'')+' '+q.text+' '+selected)) return DIAGNOSIS_TYPES.unit_conversion_error;
+  if(/\d/.test(selected) && /\d/.test(q.opts?.[q.correct]||'')) return DIAGNOSIS_TYPES.calculation_error;
+  return DIAGNOSIS_TYPES.concept_error;
+}
+
+function evolveQuestion(baseQuestion, mode, targetDifficulty, stage){
+  const q=backfillQuestionMetadata({...baseQuestion});
+  let text=q.text;
+  let opts=[...(q.opts||[])];
+  if(mode==='change_variables'){
+    text=text.replace(/(\d+(\.\d+)?)/, n=>String(Math.round(Number(n)*1.2)));
+  }else if(mode==='change_units'){
+    const pairs=[['m/s','km/h'],['cm','m'],['g','kg'],['mL','L'],['°C','K']];
+    for(const [from,to] of pairs){
+      if(text.includes(from)){ text=text.replace(from,to); opts=opts.map(o=>String(o).replace(from,to)); break; }
+    }
+  }else if(mode==='change_context'){
+    text='NEET clinic context: '+text;
+  }else if(mode==='reverse_known_unknown'){
+    text=text+' (Identify the required variable first, then compute.)';
+  }
+  return {
+    ...q,
+    id:`${q.id}_v_${mode}_${Date.now()}_${Math.floor(Math.random()*1000)}`,
+    text,
+    opts,
+    diff:targetDifficulty,
+    difficulty:targetDifficulty,
+    questionType:'evolved_variant',
+    diagnosticStage:stage,
+    evolutionMode:mode,
+  };
+}
+
+function buildDiagnosticPath(question, diagnosisType){
+  const base=backfillQuestionMetadata({...question, commonMistake:diagnosisType});
+  const chain = [
+    ['change_variables','easy','Easy Diagnostic'],
+    ['change_context','medium','Medium Confirmation'],
+    ['reverse_known_unknown','hard','Hard Retry/Recovery'],
+    ['change_units','medium','Reinforcement'],
+  ];
+  return chain.map(([mode,diff,stage])=>evolveQuestion(base, mode, diff, stage));
+}
+
+function getRevisionDueToday(){
+  const today=getTodayDateKey();
+  return revisionQueue.filter(item => item.dueAt <= today);
+}
+
+function scheduleRevision(question, attempt){
+  const baseDate=new Date();
+  const newItems=REVISION_DAY_PLAN.map((day,idx)=>{
+    const d=new Date(baseDate); d.setDate(baseDate.getDate()+day);
+    return {
+      id:`${question.id}_${attempt.answeredAt}_${day}`,
+      questionId:question.id,
+      concept:question.concept||question.unit||question.ch,
+      dueAt:d.toISOString().slice(0,10),
+      stage:`D${day}`,
+      source:attempt.correct?'chapter':'galti',
+      variantRequired:day>1,
+      subject:question.subject||question.sub,
+      chapter:question.chapter||question.ch,
+    };
+  });
+  revisionQueue=revisionQueue.concat(newItems).slice(-400);
+}
+
+function updateLearningDNA(attempt){
+  const sub=(attempt.subject||'BIOLOGY').toUpperCase();
+  const profile=learningDNA[sub] || createInitialLearningDNA()[sub];
+  const dims=SUBJECT_DNA_DIMENSIONS[sub]||[];
+  const delta=attempt.correct?1.8:-2.6;
+  dims.forEach(dim=>{ profile[dim]=clampScore((profile[dim]||50)+delta); });
+  if(attempt.diagnosisType===DIAGNOSIS_TYPES.formula_recall_error && profile.formulaRecall!=null) profile.formulaRecall=clampScore(profile.formulaRecall-3);
+  if(attempt.diagnosisType===DIAGNOSIS_TYPES.unit_conversion_error && profile.unitConversion!=null) profile.unitConversion=clampScore(profile.unitConversion-3);
+  if(attempt.diagnosisType===DIAGNOSIS_TYPES.calculation_error && profile.calculation!=null) profile.calculation=clampScore(profile.calculation-2.5);
+  if(attempt.timeTakenSec>120 && profile.speed!=null) profile.speed=clampScore(profile.speed-2);
+  if(attempt.correct && profile.retention!=null) profile.retention=clampScore(profile.retention+1.2);
+  learningDNA[sub]=profile;
+}
+
+function updateGaltiDerivedViews(){
+  galtiHub.revisionDueToday=getRevisionDueToday();
+  renderGaltiInsights();
+  renderDailyMission();
+  renderAnalyticsIntelligence();
+}
 
 // ===== NOTES =====
 function saveNote(){
@@ -1260,6 +1535,102 @@ function buildStreak(){
   sg.innerHTML=p.map((v,i)=>`<div class="sgcell ${v===2?'great':v===1?'done':''}">${d[i%7]}</div>`).join('');
 }
 
+function renderGaltiInsights(){
+  const insightsEl=document.getElementById('galtiInsights');
+  const dueEl=document.getElementById('galtiRevisionDue');
+  if(!insightsEl||!dueEl) return;
+  const weakEntries=Object.entries(galtiHub.weakConcepts||{}).sort((a,b)=>b[1]-a[1]).slice(0,3);
+  insightsEl.innerHTML=`<div class="card" style="padding:11px 12px">
+    <div style="font-size:12px;font-weight:700;margin-bottom:6px">Recovery Snapshot</div>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;font-size:11px">
+      <div>Wrong Qs: <b>${galtiHub.wrongQuestions.length}</b></div>
+      <div>Repeated Mistakes: <b>${galtiHub.repeatedMistakes.length}</b></div>
+      <div>Formula Errors: <b>${galtiHub.formulaErrors.length}</b></div>
+      <div>Unit Errors: <b>${galtiHub.unitConversionErrors.length}</b></div>
+      <div style="grid-column:1/-1">Recovery Progress: <b>${galtiHub.recoveryProgress.completed}/${galtiHub.recoveryProgress.total}</b></div>
+    </div>
+    ${weakEntries.length?`<div style="margin-top:7px;font-size:11px;color:var(--mute)">Weak concepts: ${weakEntries.map(([k,v])=>`${k.replace(/_/g,' ')} (${v})`).join(', ')}</div>`:''}
+  </div>`;
+  const dueToday=getRevisionDueToday();
+  dueEl.innerHTML=`<div class="card" style="padding:11px 12px"><div style="font-size:12px;font-weight:700;margin-bottom:6px">Revision Due Today</div>${dueToday.length?dueToday.slice(0,6).map(r=>`<div style="font-size:11px;padding:4px 0;border-bottom:1px dashed var(--bdr)">${r.subject} · ${r.chapter} · ${r.stage}${r.variantRequired?' · Evolved Variant':''}</div>`).join(''):'<div style="font-size:11px;color:var(--mute)">No pending revision today.</div>'}</div>`;
+}
+
+function buildDailyMissionItems(){
+  const weakEntries=Object.entries(galtiHub.weakConcepts||{}).sort((a,b)=>b[1]-a[1]).slice(0,2);
+  const dueToday=getRevisionDueToday().slice(0,2);
+  const challenge=TOPICS.filter(t=>t.diff==='hard').sort((a,b)=>(a.acc-b.acc))[0]||TOPICS[0];
+  const recovery=mistakes.slice(0,2);
+  const items=[];
+  weakEntries.forEach(([k])=>items.push({type:'weak',title:`Weak Topic Recovery · ${k.replace(/_/g,' ')}`,meta:'10 Qs · Concept repair',badge:'Weak'}));
+  recovery.forEach(m=>items.push({type:'galti',title:`GALTI Recovery · ${m.chapter||m.ch}`,meta:`Diagnosis: ${m.errTag}`,badge:'GALTI'}));
+  dueToday.forEach(d=>items.push({type:'revision',title:`Revision ${d.stage} · ${d.chapter}`,meta:d.variantRequired?'Evolved variant preferred':'Standard recall',badge:'Due'}));
+  if(challenge) items.push({type:'challenge',title:`Challenge · ${challenge.name}`,meta:`${challenge.sub} · ${challenge.diff}`,badge:'Hard',topic:challenge});
+  return items.slice(0,6);
+}
+
+async function renderDailyMission(){
+  const el=document.getElementById('targetsArea');
+  if(!el) return;
+  let items=buildDailyMissionItems();
+  try{
+    if(S.user?.uid && S.sessionToken){
+      const r=await api('intelligence',{action:'daily_mission',uid:S.user.uid,sessionToken:S.sessionToken,items});
+      if(r?.ok && Array.isArray(r.items) && r.items.length) items=r.items;
+    }
+  }catch(e){}
+  if(!items.length){
+    el.innerHTML='<div class="tgt pending"><i class="ti ti-circle" style="color:var(--amber);font-size:20px"></i><div style="flex:1"><div style="font-size:13px;font-weight:600">Start a topic quiz to generate your mission.</div><div style="font-size:11px;color:var(--mute)">Weak topics, GALTI recovery, revision and challenge tasks will appear here.</div></div><span class="badge bm">Pending</span></div>';
+    return;
+  }
+  el.innerHTML=items.map(it=>`<div class="tgt ${it.badge==='Hard'?'hard':'pending'}" ${it.topic?`onclick="startTopicQuiz('${it.topic.name}','${it.topic.sub}')"`:''}><i class="ti ${it.badge==='Hard'?'ti-bolt':'ti-circle'}" style="color:${it.badge==='Hard'?'var(--red)':'var(--amber)'};font-size:20px"></i><div style="flex:1"><div style="font-size:13px;font-weight:600">${it.title}</div><div style="font-size:11px;color:var(--mute)">${it.meta}</div></div><span class="badge ${it.badge==='Hard'?'bh':'bm'}">${it.badge}</span></div>`).join('');
+}
+
+function computeChapterMastery(){
+  const chapterStats={};
+  TOPICS.forEach(t=>chapterStats[t.name]={chapter:t.name,subject:t.sub,accuracy:t.acc,attempted:Math.max(1,t.qs),correct:Math.round(t.qs*t.acc/100)});
+  questionAttempts.forEach(a=>{
+    const key=a.chapter||'General';
+    const cur=chapterStats[key]||{chapter:key,subject:a.subject,attempted:0,correct:0,accuracy:0};
+    cur.attempted+=1; if(a.correct) cur.correct+=1; cur.accuracy=clampScore((cur.correct/Math.max(1,cur.attempted))*100);
+    chapterStats[key]=cur;
+  });
+  return Object.values(chapterStats).sort((a,b)=>b.accuracy-a.accuracy).slice(0,8);
+}
+
+function computeScorePredictor(chapters){
+  const mastery=chapters.length?chapters.reduce((s,c)=>s+c.accuracy,0)/chapters.length:55;
+  const attemptCount=questionAttempts.length;
+  const confidence=Math.min(18, Math.max(6, Math.round(22 - Math.min(16, attemptCount/5))));
+  const score=Math.round((mastery/100)*720);
+  const low=Math.max(0, score - confidence*4);
+  const high=Math.min(720, score + confidence*4);
+  const improvement=chapters.slice().sort((a,b)=>a.accuracy-b.accuracy).slice(0,3).map(c=>c.chapter);
+  return {score,low,high,improvement};
+}
+
+async function renderAnalyticsIntelligence(){
+  const chapters=computeChapterMastery();
+  const chEl=document.getElementById('chapterMasteryList');
+  if(chEl){
+    chEl.innerHTML=chapters.map(c=>`<div class="prow"><div class="plbl">${c.chapter}</div><div class="pbarbg"><div class="pbar" style="width:${c.accuracy}%;background:${c.accuracy>=70?'var(--green)':c.accuracy>=50?'var(--amber)':'var(--red)'}"></div></div><div class="ppct" style="color:${c.accuracy>=70?'var(--green)':c.accuracy>=50?'#7a4800':'var(--red)'}">${c.accuracy}%</div></div>`).join('');
+  }
+  const dnaEl=document.getElementById('learningDNABox');
+  if(dnaEl){
+    dnaEl.innerHTML=Object.entries(learningDNA).map(([subject,profile])=>`<div style="margin-bottom:8px"><div style="font-size:11px;font-weight:700">${subject}</div><div style="font-size:11px;color:var(--mute);line-height:1.7">${Object.entries(profile).map(([k,v])=>`${k.replace(/[A-Z]/g,m=>' '+m.toLowerCase())}: <b>${v}%</b>`).join(' · ')}</div></div>`).join('');
+  }
+  const predictor=computeScorePredictor(chapters);
+  try{
+    if(S.user?.uid && S.sessionToken){
+      const r=await api('intelligence',{action:'score_predictor',uid:S.user.uid,sessionToken:S.sessionToken,predictor,chapters});
+      if(r?.ok && r.predictor) Object.assign(predictor, r.predictor);
+    }
+  }catch(e){}
+  const pEl=document.getElementById('scorePredictorBox');
+  if(pEl){
+    pEl.innerHTML=`<div style="font-size:24px;font-weight:800;color:var(--blue)">${predictor.score}</div><div style="font-size:12px;color:var(--mute);margin-top:2px">Predicted NEET score (${predictor.low}–${predictor.high})</div><div style="font-size:11px;color:var(--txt);margin-top:8px">Highest improvement potential: ${(predictor.improvement||[]).join(', ')||'Keep practicing to unlock'}</div>`;
+  }
+}
+
 // ===== ADMIN =====
 async function loadAdminUsers(){
   if(!S.user||S.user.role!=='admin') return;
@@ -1298,7 +1669,7 @@ function handleCSV(){
     rows.forEach(row=>{
       if(row.question&&row.opt_a){
         const ci={'A':0,'B':1,'C':2,'D':3}[(row.correct||'A').toUpperCase()]??0;
-        QUESTIONS.push({id:QUESTIONS.length+1,sub:(row.subject||'BIOLOGY').toUpperCase(),ch:row.chapter||'NCERT',tid:'t7',text:row.question,opts:[row.opt_a,row.opt_b||'',row.opt_c||'',row.opt_d||''],correct:ci,explanation:row.explanation||'Refer NCERT.',ncertCl:parseInt(row.ncert_class)||11,ncertCh:parseInt(row.ncert_chapter)||1,ncertPg:row.ncert_page||'1',unit:row.syllabus_unit||'NCERT',pyq:false,diff:'medium'});
+        QUESTIONS.push(backfillQuestionMetadata({id:QUESTIONS.length+1,sub:(row.subject||'BIOLOGY').toUpperCase(),ch:row.chapter||'NCERT',tid:'t7',text:row.question,opts:[row.opt_a,row.opt_b||'',row.opt_c||'',row.opt_d||''],correct:ci,explanation:row.explanation||'Refer NCERT.',ncertCl:parseInt(row.ncert_class)||11,ncertCh:parseInt(row.ncert_chapter)||1,ncertPg:row.ncert_page||'1',unit:row.syllabus_unit||'NCERT',pyq:false,diff:'medium'}));
         cnt++;
       }
     });
@@ -1613,7 +1984,7 @@ async function loadContentPacks(){
     if(d.questions && d.questions.length){
       // Merge pack questions into the live QUESTIONS pool, avoiding id collisions
       const existingIds = new Set(QUESTIONS.map(q=>q.id));
-      d.questions.forEach(q=>{ if(!existingIds.has(q.id)) QUESTIONS.push(q); });
+      d.questions.forEach(q=>{ if(!existingIds.has(q.id)) QUESTIONS.push(backfillQuestionMetadata(q)); });
       console.log('Loaded', d.questions.length, 'questions from', d.activePacks.length, 'active content packs');
     }
   }catch(e){ console.log('Content packs not available yet'); }
@@ -1748,12 +2119,15 @@ async function uploadPack(){
 // ===== INIT =====
 window.addEventListener('load', async ()=>{
   loadPricing(); loadFestival(); loadLevels(); loadContentPacks();
+  applyQuestionMetadataBackfill(QUESTIONS);
+  restoreIntelligenceState();
+  updateGaltiDerivedViews();
   
   // Apply referral code from URL if present
   const urlRef = new URLSearchParams(window.location.search).get('ref');
   if(urlRef){ sessionStorage.setItem('na_ref', urlRef); }
 
-calcDays(); buildStreak(); renderPracticeTopics('ALL'); renderAllTopics('ALL'); renderFlash();
+calcDays(); buildStreak(); renderPracticeTopics('ALL'); renderAllTopics('ALL'); renderFlash(); renderDailyMission(); renderAnalyticsIntelligence();
   // Restore session if available
   if(loadSession()){
     // Verify the restored session is still valid
