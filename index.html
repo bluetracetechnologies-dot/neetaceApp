@@ -953,7 +953,7 @@ function switchTab(tab){
   if(sc) sc.classList.add('active');
   if(bt) bt.classList.add('active');
   if(tab==='admin') loadAdminUsers();
-  if(tab==='about') initAbout();
+  if(tab==='about'){ initAbout(); loadReferral(); }
   if(tab==='flash') renderFlash();
   if(tab==='practice') renderPracticeTopics('ALL');
   if(tab==='search') renderAllTopics('ALL');
