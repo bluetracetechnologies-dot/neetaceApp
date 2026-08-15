@@ -1257,7 +1257,7 @@ function handleAns(el, idx){
     diagnosisType=classifyWrongAnswer(q, idx, timeTakenSec);
     recoveryPath=buildDiagnosticPath(q, diagnosisType);
     addMistake(q,idx,{diagnosisType,timeTakenSec,recoveryPath}); toast('❌ Wrong. Study the explanation below.');
-    if(recoveryPath.length){
+    if(recoveryPath.length && !q.diagnosticStage){
       quizList.splice(curQ+1,0,...recoveryPath);
       toast('Concept Doctor added a recovery path: Easy → Medium → Hard → Reinforcement');
     }
@@ -1340,6 +1340,7 @@ function addMistake(q,sel,details={}){
   const existing=mistakes.find(m=>m.id===q.id);
   if(!existing){
     mistakes.push({...q,userIdx:sel,errTag:MISTAKE_LABELS[diagnosisType],diagnosisType,timeTakenSec:details.timeTakenSec||null,loggedOn:new Date().toLocaleDateString('en-IN')});
+    galtiHub.recoveryProgress.total += recoveryPath.length;
   }else{
     existing.userIdx=sel;
     existing.diagnosisType=diagnosisType;
@@ -1354,7 +1355,6 @@ function addMistake(q,sel,details={}){
   if(diagnosisType===DIAGNOSIS_TYPES.unit_conversion_error) galtiHub.unitConversionErrors.push(q.id);
   galtiHub.formulaErrors=[...new Set(galtiHub.formulaErrors)];
   galtiHub.unitConversionErrors=[...new Set(galtiHub.unitConversionErrors)];
-  galtiHub.recoveryProgress.total += recoveryPath.length;
   const dot=document.getElementById('mistakeDot'); dot.textContent=mistakes.length; dot.style.display=mistakes.length?'inline-block':'none';
 }
 function renderMistakes(){
@@ -1377,7 +1377,7 @@ function classifyWrongAnswer(q, selectedIndex, timeTakenSec){
   const selected=(q.opts?.[selectedIndex]||'').toLowerCase();
   const expectedSec=Number(q.estimatedTime)||90;
   const difficulty=normalizeDifficulty(q.difficulty||q.diff);
-  if(timeTakenSec > expectedSec*1.5) return DIAGNOSIS_TYPES.time_pressure_error;
+  if(timeTakenSec < expectedSec*0.45 && (difficulty==='medium' || difficulty==='hard')) return DIAGNOSIS_TYPES.time_pressure_error;
   if(timeTakenSec <= Math.max(8, Math.floor(expectedSec*0.2)) && difficulty==='easy') return DIAGNOSIS_TYPES.careless_error;
   if((q.formula&&q.formula.length>6) || /formula|law|equation/i.test(q.text)) return DIAGNOSIS_TYPES.formula_recall_error;
   if(/unit|convert|si|m\/s|km\/h|mol\/l|°c|k\b|cm|mm|kg|g\b/i.test((q.unitType||'')+' '+q.text+' '+selected)) return DIAGNOSIS_TYPES.unit_conversion_error;
@@ -1390,7 +1390,7 @@ function evolveQuestion(baseQuestion, mode, targetDifficulty, stage){
   let text=q.text;
   let opts=[...(q.opts||[])];
   if(mode==='change_variables'){
-    text=text.replace(/(\d+(\.\d+)?)/, n=>String(Math.round(Number(n)*1.2)));
+    text=text+' (Variable drill: practice with proportionally scaled values while preserving the same concept and answer structure.)';
   }else if(mode==='change_units'){
     const pairs=[['m/s','km/h'],['cm','m'],['g','kg'],['mL','L'],['°C','K']];
     for(const [from,to] of pairs){
@@ -1446,7 +1446,10 @@ function scheduleRevision(question, attempt){
       chapter:question.chapter||question.ch,
     };
   });
-  revisionQueue=revisionQueue.concat(newItems).slice(-400);
+  const merged=revisionQueue.concat(newItems);
+  const byId=new Map();
+  merged.forEach(item=>{ if(!byId.has(item.id)) byId.set(item.id, item); });
+  revisionQueue=[...byId.values()].sort((a,b)=>String(a.dueAt).localeCompare(String(b.dueAt))).slice(0,400);
 }
 
 function updateLearningDNA(attempt){
@@ -1587,7 +1590,7 @@ async function renderDailyMission(){
 
 function computeChapterMastery(){
   const chapterStats={};
-  TOPICS.forEach(t=>chapterStats[t.name]={chapter:t.name,subject:t.sub,accuracy:t.acc,attempted:Math.max(1,t.qs),correct:Math.round(t.qs*t.acc/100)});
+  TOPICS.forEach(t=>chapterStats[t.name]={chapter:t.name,subject:t.sub,accuracy:0,attempted:0,correct:0});
   questionAttempts.forEach(a=>{
     const key=a.chapter||'General';
     const cur=chapterStats[key]||{chapter:key,subject:a.subject,attempted:0,correct:0,accuracy:0};
