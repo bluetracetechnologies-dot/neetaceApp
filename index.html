@@ -956,7 +956,7 @@ function switchTab(tab){
   const bt=document.querySelector(`.nb[data-tab="${tab}"]`);
   if(sc) sc.classList.add('active');
   if(bt) bt.classList.add('active');
-  if(tab==='admin') loadAdminUsers();
+  if(tab==='admin'){ loadAdminUsers(); loadPacksList(); }
   if(tab==='about'){ initAbout(); loadReferral(); }
   if(tab==='flash') renderFlash();
   if(tab==='practice') renderPracticeTopics('ALL');
@@ -1616,6 +1616,74 @@ async function loadContentPacks(){
       console.log('Loaded', d.questions.length, 'questions from', d.activePacks.length, 'active content packs');
     }
   }catch(e){ console.log('Content packs not available yet'); }
+}
+
+
+// ===== ADMIN: CONTENT PACK MANAGEMENT =====
+async function loadPacksList(){
+  if(!S.user||S.user.role!=='admin') return;
+  const el=document.getElementById('packsList'); if(!el) return;
+  try{
+    const r=await api('packs',{action:'admin_list',uid:S.user.uid,sessionToken:S.sessionToken});
+    if(!r.packs||!r.packs.length){
+      el.innerHTML='<div style="text-align:center;padding:16px;color:var(--mute);font-size:12px">No content packs yet. Click "Load Starter Packs" to begin.</div>';
+      return;
+    }
+    el.innerHTML=r.packs.map(p=>`
+      <div class="card" style="display:flex;justify-content:space-between;align-items:center;padding:11px 14px;margin-bottom:8px">
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:700">${p.name} <span style="font-size:10px;color:var(--mute);font-weight:400">· ${p.subject}</span></div>
+          <div style="font-size:11px;color:var(--mute);margin-top:2px">${p.description||''} · ${p.questionCount} questions · ${p.source==='prebuilt'?'Built-in':'Uploaded'}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="tsw ${p.enabled?'on':''}" onclick="togglePack('${p.id}',${!p.enabled})" aria-label="Toggle pack"></button>
+          ${p.source!=='prebuilt'?`<button onclick="deletePack('${p.id}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px"><i class="ti ti-trash"></i></button>`:''}
+        </div>
+      </div>`).join('');
+  }catch(e){ el.innerHTML='<div style="text-align:center;padding:16px;color:var(--red);font-size:12px">Could not load packs</div>'; }
+}
+
+async function togglePack(packId, enabled){
+  const r=await api('packs',{action:'admin_toggle',uid:S.user.uid,sessionToken:S.sessionToken,packId,enabled});
+  if(r.ok){ toast(enabled?'Pack enabled':'Pack disabled'); loadPacksList(); }
+  else toast('Error: '+(r.error||'Failed'));
+}
+
+async function deletePack(packId){
+  if(!confirm('Delete this pack permanently? This cannot be undone.')) return;
+  const r=await api('packs',{action:'admin_delete',uid:S.user.uid,sessionToken:S.sessionToken,packId});
+  if(r.ok){ toast('Pack deleted'); loadPacksList(); }
+}
+
+async function seedStarterPacks(){
+  toast('Loading starter packs...');
+  const r=await api('packs',{action:'seed_starter_packs',uid:S.user.uid,sessionToken:S.sessionToken});
+  if(r.ok){
+    const total=(r.results||[]).reduce((s,x)=>s+(x.count||0),0);
+    toast('Loaded '+total+' questions across '+(r.results||[]).length+' starter packs!');
+    loadPacksList();
+  } else toast('Error loading starter packs');
+}
+
+async function uploadPack(){
+  const name=document.getElementById('packName').value.trim();
+  const fi=document.getElementById('packCsvFile');
+  if(!name){ toast('Enter a pack name first'); return; }
+  if(!fi.files.length){ toast('Select a CSV file'); return; }
+  const reader=new FileReader();
+  reader.onload=async function(e){
+    const csvText=e.target.result;
+    const r=await api('packs',{action:'admin_upload',uid:S.user.uid,sessionToken:S.sessionToken,
+      name, subject:'MIXED', description:'Uploaded '+new Date().toLocaleDateString('en-IN'),
+      csvText, enabledByDefault:false});
+    if(r.ok){
+      toast('✅ '+r.message);
+      document.getElementById('packName').value='';
+      fi.value='';
+      loadPacksList();
+    } else toast('Error: '+(r.error||'Upload failed'));
+  };
+  reader.readAsText(fi.files[0]);
 }
 
 // ===== INIT =====
