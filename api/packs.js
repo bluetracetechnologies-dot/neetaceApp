@@ -1,29 +1,27 @@
 // api/packs.js
-// Content Pack System — replaces the old "CSV import wipes on refresh" flow.
+// Content Pack System with VERSION CONTROL.
 //
-// Each pack is a Firestore document in content_packs/{packId}:
-//   { id, name, subject, description, source, enabled, questionCount, questions[], createdAt }
+// Firestore structure:
+//   content_packs/{packId}                    → live pack (current version served to app)
+//     { id, name, subject, description, source, enabled, questionCount,
+//       questions[], version, versionHistory[] }
+//   content_packs/{packId}/versions/{version}  → full snapshot of every version ever uploaded
+//     { version, questions[], questionCount, uploadedAt, uploadedBy, changeNote }
 //
-// GET  ?active=true          → merged questions from all ENABLED packs (public, used by quiz engine)
-// POST { action:'admin_*' }  → admin manages packs (upload CSV, toggle, delete, list)
-//
-// This fixes two problems from the old system:
-//   1. Uploaded questions used to live only in browser memory — lost on refresh. Now persisted in Firestore.
-//   2. No way to turn a batch of questions off without deleting them — now a single toggle.
+// versionHistory on the live doc is a LIGHTWEIGHT summary (no question arrays) for fast admin listing.
+// Full question data for any past version lives only in the versions subcollection — fetched on demand.
 
 const { db } = require('./_firebase');
 const fs = require('fs');
 const path = require('path');
 
-// ── CSV parsing (server-side, handles quoted commas) ──
 function parseCSV(text) {
   const lines = text.split(/\r\n|\n/).filter(l => l.trim());
   if (lines.length < 2) return [];
   const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
   const rows = [];
   for (let i = 1; i < lines.length; i++) {
-    const row = [];
-    let cur = '', inQ = false;
+    const row = []; let cur = '', inQ = false;
     for (const ch of lines[i]) {
       if (ch === '"') inQ = !inQ;
       else if (ch === ',' && !inQ) { row.push(cur.trim()); cur = ''; }
@@ -59,12 +57,19 @@ function csvRowToQuestion(row, packId, idx) {
   };
 }
 
-// Prebuilt starter packs — bundled CSV files shipped with the app
+function bumpVersion(current) {
+  // "1.0" -> "1.1", "1.9" -> "1.10". Simple monotonic minor bump.
+  if (!current) return '1.0';
+  const parts = current.split('.');
+  const minor = parseInt(parts[1] || '0') + 1;
+  return `${parts[0]}.${minor}`;
+}
+
 const STARTER_PACKS = [
-  { id: 'pack_physics_core',   name: 'Physics Core',        subject: 'PHYSICS',   file: 'pack_physics_core.csv',   description: 'Foundational Physics questions across Mechanics, Electricity, Modern Physics' },
-  { id: 'pack_chemistry_core', name: 'Chemistry Core',      subject: 'CHEMISTRY', file: 'pack_chemistry_core.csv', description: 'Physical, Organic, and Inorganic Chemistry fundamentals' },
-  { id: 'pack_biology_core',   name: 'Biology Core',        subject: 'BIOLOGY',   file: 'pack_biology_core.csv',   description: 'Cell Biology, Genetics, Physiology, Ecology fundamentals' },
-  { id: 'pack_pyq_highlights', name: 'PYQ Highlights',      subject: 'ALL',       file: 'pack_pyq_highlights.csv', description: 'Previous Year Questions across all subjects, 2019-2024' },
+  { id: 'pack_physics_core',   name: 'Physics Core',   subject: 'PHYSICS',   file: 'pack_physics_core.csv',   description: 'Foundational Physics — Mechanics, Electricity, Modern Physics' },
+  { id: 'pack_chemistry_core', name: 'Chemistry Core', subject: 'CHEMISTRY', file: 'pack_chemistry_core.csv', description: 'Physical, Organic, and Inorganic Chemistry fundamentals' },
+  { id: 'pack_biology_core',   name: 'Biology Core',   subject: 'BIOLOGY',   file: 'pack_biology_core.csv',   description: 'Cell Biology, Genetics, Physiology, Ecology fundamentals' },
+  { id: 'pack_pyq_highlights', name: 'PYQ Highlights', subject: 'ALL',       file: 'pack_pyq_highlights.csv', description: 'Previous Year Questions across all subjects, 2019-2024' },
 ];
 
 async function verifyAdmin(uid, sessionToken) {
@@ -75,34 +80,55 @@ async function verifyAdmin(uid, sessionToken) {
   return u;
 }
 
+// Writes a new version snapshot + updates the live pack doc in one place
+async function saveNewVersion(packId, meta, questions, uid, changeNote, existingHistory) {
+  const version = bumpVersion(meta.currentVersion);
+  const now = new Date().toISOString();
+
+  // Full snapshot goes into the versions subcollection — never overwritten
+  await db.collection('content_packs').doc(packId).collection('versions').doc(version).set({
+    version, questions, questionCount: questions.length,
+    uploadedAt: now, uploadedBy: uid, changeNote: changeNote || '',
+  });
+
+  const historyEntry = { version, questionCount: questions.length, uploadedAt: now, changeNote: changeNote || '' };
+  const versionHistory = [...(existingHistory || []), historyEntry];
+
+  await db.collection('content_packs').doc(packId).set({
+    id: packId, name: meta.name, subject: meta.subject, description: meta.description,
+    source: meta.source, enabled: meta.enabled,
+    questionCount: questions.length, questions,
+    version, versionHistory,
+    updatedAt: now, updatedBy: uid,
+    createdAt: meta.createdAt || now,
+  }, { merge: false });
+
+  return version;
+}
+
 module.exports = async function handler(req, res) {
 
-  // ─────────────────────────────────────────────
-  // GET — public, returns merged active questions
-  // ─────────────────────────────────────────────
+  // GET — public, merged questions from enabled packs (always serves current live version)
   if (req.method === 'GET') {
     try {
       const snap = await db.collection('content_packs').where('enabled', '==', true).get();
       let questions = [];
+      const packMeta = [];
       snap.forEach(doc => {
         const pack = doc.data();
         if (pack.questions) questions = questions.concat(pack.questions);
+        packMeta.push({ id: doc.id, name: pack.name, count: pack.questionCount, version: pack.version });
       });
-      const packMeta = snap.docs.map(d => ({ id: d.id, name: d.data().name, count: d.data().questionCount }));
       return res.status(200).json({ questions, activePacks: packMeta, totalQuestions: questions.length });
     } catch (err) {
-      console.error('packs GET error', err);
       return res.status(200).json({ questions: [], activePacks: [], totalQuestions: 0 });
     }
   }
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-
   const { action, uid, sessionToken } = req.body || {};
 
-  // ─────────────────────────────────────────────
-  // SEED — one-time load of bundled starter packs into Firestore
-  // ─────────────────────────────────────────────
+  // SEED — first-time load of bundled starter packs (each becomes v1.0)
   if (action === 'seed_starter_packs') {
     const admin = await verifyAdmin(uid, sessionToken);
     if (!admin) return res.status(403).json({ error: 'Admin only' });
@@ -110,18 +136,22 @@ module.exports = async function handler(req, res) {
     const results = [];
     for (const pack of STARTER_PACKS) {
       try {
+        const existing = await db.collection('content_packs').doc(pack.id).get();
+        if (existing.exists) {
+          results.push({ id: pack.id, status: 'skipped', reason: 'already exists — use update to add a new version' });
+          continue;
+        }
         const csvPath = path.join(__dirname, '..', 'data', 'packs', pack.file);
         const csvText = fs.readFileSync(csvPath, 'utf-8');
         const rows = parseCSV(csvText);
         const questions = rows.map((row, i) => csvRowToQuestion(row, pack.id, i));
 
-        await db.collection('content_packs').doc(pack.id).set({
-          id: pack.id, name: pack.name, subject: pack.subject,
-          description: pack.description, source: 'prebuilt',
-          enabled: true, questionCount: questions.length,
-          questions, createdAt: new Date().toISOString(),
-        });
-        results.push({ id: pack.id, status: 'seeded', count: questions.length });
+        const version = await saveNewVersion(
+          pack.id,
+          { name: pack.name, subject: pack.subject, description: pack.description, source: 'prebuilt', enabled: true, currentVersion: null },
+          questions, uid, 'Initial seed', []
+        );
+        results.push({ id: pack.id, status: 'seeded', count: questions.length, version });
       } catch (err) {
         results.push({ id: pack.id, status: 'error', error: err.message });
       }
@@ -129,9 +159,7 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ ok: true, results });
   }
 
-  // ─────────────────────────────────────────────
-  // ADMIN: list all packs with metadata
-  // ─────────────────────────────────────────────
+  // ADMIN: list all packs (lightweight — includes version + history summary, no question arrays)
   if (action === 'admin_list') {
     const admin = await verifyAdmin(uid, sessionToken);
     if (!admin) return res.status(403).json({ error: 'Admin only' });
@@ -142,15 +170,14 @@ module.exports = async function handler(req, res) {
       return {
         id: d.id, name: p.name, subject: p.subject, description: p.description,
         source: p.source, enabled: p.enabled, questionCount: p.questionCount,
-        createdAt: p.createdAt,
+        version: p.version, versionHistory: p.versionHistory || [],
+        createdAt: p.createdAt, updatedAt: p.updatedAt,
       };
     });
     return res.status(200).json({ packs });
   }
 
-  // ─────────────────────────────────────────────
-  // ADMIN: upload new pack from CSV text
-  // ─────────────────────────────────────────────
+  // ADMIN: upload a brand NEW pack (v1.0)
   if (action === 'admin_upload') {
     const admin = await verifyAdmin(uid, sessionToken);
     if (!admin) return res.status(403).json({ error: 'Admin only' });
@@ -161,51 +188,121 @@ module.exports = async function handler(req, res) {
     const packId = 'pack_' + name.toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 40) + '_' + Date.now().toString(36);
     const rows = parseCSV(csvText);
     if (!rows.length) return res.status(400).json({ error: 'CSV has no valid rows' });
-
     const questions = rows.map((row, i) => csvRowToQuestion(row, packId, i));
 
-    await db.collection('content_packs').doc(packId).set({
-      id: packId, name, subject: subject || 'MIXED',
-      description: description || '', source: 'csv_upload',
-      enabled: enabledByDefault === true, // defaults to FALSE — admin reviews before going live
-      questionCount: questions.length,
-      questions,
-      uploadedBy: uid,
-      createdAt: new Date().toISOString(),
-    });
+    const version = await saveNewVersion(
+      packId,
+      { name, subject: subject || 'MIXED', description: description || '', source: 'csv_upload', enabled: enabledByDefault === true, currentVersion: null },
+      questions, uid, 'Initial upload', []
+    );
 
     return res.status(200).json({
-      ok: true, packId, questionCount: questions.length,
-      message: `Pack "${name}" uploaded with ${questions.length} questions. ${enabledByDefault ? 'Live now.' : 'Disabled — enable it when ready.'}`,
+      ok: true, packId, version, questionCount: questions.length,
+      message: `Pack "${name}" created as v${version} with ${questions.length} questions. ${enabledByDefault ? 'Live now.' : 'Disabled — enable when ready.'}`,
     });
   }
 
-  // ─────────────────────────────────────────────
-  // ADMIN: toggle pack on/off
-  // ─────────────────────────────────────────────
-  if (action === 'admin_toggle') {
+  // ADMIN: upload a NEW VERSION of an EXISTING pack — old version preserved, never lost
+  if (action === 'admin_upload_version') {
     const admin = await verifyAdmin(uid, sessionToken);
     if (!admin) return res.status(403).json({ error: 'Admin only' });
 
-    const { packId, enabled } = req.body;
-    if (!packId) return res.status(400).json({ error: 'packId required' });
+    const { packId, csvText, changeNote } = req.body;
+    if (!packId || !csvText) return res.status(400).json({ error: 'packId and csvText required' });
 
-    await db.collection('content_packs').doc(packId).update({ enabled, updatedAt: new Date().toISOString() });
-    return res.status(200).json({ ok: true, message: `Pack ${enabled ? 'enabled' : 'disabled'}` });
+    const existing = await db.collection('content_packs').doc(packId).get();
+    if (!existing.exists) return res.status(404).json({ error: 'Pack not found' });
+    const meta = existing.data();
+
+    const rows = parseCSV(csvText);
+    if (!rows.length) return res.status(400).json({ error: 'CSV has no valid rows' });
+    const questions = rows.map((row, i) => csvRowToQuestion(row, packId, i));
+
+    const version = await saveNewVersion(
+      packId,
+      { name: meta.name, subject: meta.subject, description: meta.description, source: meta.source, enabled: meta.enabled, currentVersion: meta.version, createdAt: meta.createdAt },
+      questions, uid, changeNote || 'Updated content', meta.versionHistory || []
+    );
+
+    return res.status(200).json({
+      ok: true, packId, version, questionCount: questions.length,
+      message: `Pack "${meta.name}" updated to v${version} with ${questions.length} questions. Previous version v${meta.version} preserved and can be restored.`,
+    });
   }
 
-  // ─────────────────────────────────────────────
-  // ADMIN: delete pack permanently
-  // ─────────────────────────────────────────────
-  if (action === 'admin_delete') {
+  // ADMIN: get full version history for one pack (metadata only, lightweight)
+  if (action === 'admin_get_history') {
     const admin = await verifyAdmin(uid, sessionToken);
     if (!admin) return res.status(403).json({ error: 'Admin only' });
 
     const { packId } = req.body;
+    const snap = await db.collection('content_packs').doc(packId).get();
+    if (!snap.exists) return res.status(404).json({ error: 'Pack not found' });
+    const p = snap.data();
+    return res.status(200).json({ currentVersion: p.version, history: p.versionHistory || [] });
+  }
+
+  // ADMIN: rollback to a previous version — restores that snapshot as the live version
+  if (action === 'admin_rollback') {
+    const admin = await verifyAdmin(uid, sessionToken);
+    if (!admin) return res.status(403).json({ error: 'Admin only' });
+
+    const { packId, version } = req.body;
+    if (!packId || !version) return res.status(400).json({ error: 'packId and version required' });
+
+    const versionSnap = await db.collection('content_packs').doc(packId).collection('versions').doc(version).get();
+    if (!versionSnap.exists) return res.status(404).json({ error: `Version ${version} not found` });
+    const snapshot = versionSnap.data();
+
+    const packSnap = await db.collection('content_packs').doc(packId).get();
+    if (!packSnap.exists) return res.status(404).json({ error: 'Pack not found' });
+    const meta = packSnap.data();
+
+    // Rolling back is itself logged as a new history entry, but reuses the OLD question data
+    const now = new Date().toISOString();
+    const historyEntry = {
+      version: meta.version + '→rollback→' + version,
+      questionCount: snapshot.questionCount,
+      uploadedAt: now,
+      changeNote: `Rolled back to v${version}`,
+    };
+    const versionHistory = [...(meta.versionHistory || []), historyEntry];
+
+    await db.collection('content_packs').doc(packId).update({
+      questions: snapshot.questions,
+      questionCount: snapshot.questionCount,
+      version: version, // now serving the restored version number
+      versionHistory,
+      updatedAt: now, updatedBy: uid,
+    });
+
+    return res.status(200).json({ ok: true, message: `Rolled back to v${version} (${snapshot.questionCount} questions)` });
+  }
+
+  // ADMIN: toggle pack on/off
+  if (action === 'admin_toggle') {
+    const admin = await verifyAdmin(uid, sessionToken);
+    if (!admin) return res.status(403).json({ error: 'Admin only' });
+    const { packId, enabled } = req.body;
+    if (!packId) return res.status(400).json({ error: 'packId required' });
+    await db.collection('content_packs').doc(packId).update({ enabled, updatedAt: new Date().toISOString() });
+    return res.status(200).json({ ok: true, message: `Pack ${enabled ? 'enabled' : 'disabled'}` });
+  }
+
+  // ADMIN: delete pack + all its version history permanently
+  if (action === 'admin_delete') {
+    const admin = await verifyAdmin(uid, sessionToken);
+    if (!admin) return res.status(403).json({ error: 'Admin only' });
+    const { packId } = req.body;
     if (!packId) return res.status(400).json({ error: 'packId required' });
 
-    await db.collection('content_packs').doc(packId).delete();
-    return res.status(200).json({ ok: true, message: 'Pack deleted' });
+    const versionsSnap = await db.collection('content_packs').doc(packId).collection('versions').get();
+    const batch = db.batch();
+    versionsSnap.forEach(doc => batch.delete(doc.ref));
+    batch.delete(db.collection('content_packs').doc(packId));
+    await batch.commit();
+
+    return res.status(200).json({ ok: true, message: 'Pack and all version history deleted' });
   }
 
   return res.status(400).json({ error: 'Unknown action' });
