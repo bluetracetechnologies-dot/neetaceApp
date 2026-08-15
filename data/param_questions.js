@@ -157,31 +157,31 @@ trick:'1 glucose = 38 ATP aerobic. Glycolysis=2, Krebs=2, ETC=34.'},
 // ENGINE — Seeded random with attempt/session variation
 // ============================================================
 const PARAM_HISTORY_BY_STUDENT_TEMPLATE = new Map();
-const questionEngineUtils=(typeof module!=='undefined'&&module.exports)
+const questionEngineUtils=(typeof require==='function')
   ?require('./question_engine_utils')
   :(typeof globalThis!=='undefined'?globalThis.QuestionEngineUtils:undefined)||{};
 const hashCode=questionEngineUtils.hashCode||function(str){let h=0;for(let i=0;i<str.length;i++){h=((h<<5)-h)+str.charCodeAt(i);h|=0;}return Math.abs(h);};
 const seededRandom=questionEngineUtils.seededRandom||function(seed){let s=seed;return function(){s+=0x6D2B79F5;let t=s;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;};};
 const shuffleSeeded=questionEngineUtils.shuffleSeeded||function(arr,seed){const rng=seededRandom(seed);const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+const getAttemptBucket=questionEngineUtils.getAttemptBucket||function(ts=Date.now()){return Math.floor(Number(ts)/(24*60*60*1000));};
 const normalizeGenerationOptions=questionEngineUtils.normalizeGenerationOptions||function(optionsOrAttemptSeed){
   const opts=(optionsOrAttemptSeed&&typeof optionsOrAttemptSeed==='object'&&!Array.isArray(optionsOrAttemptSeed))
     ?{...optionsOrAttemptSeed}
     :{attemptSeed:optionsOrAttemptSeed};
-  if(opts.attemptSeed==null) opts.attemptSeed=Math.floor(Date.now()/(24*60*60*1000));
+  if(opts.attemptSeed==null) opts.attemptSeed=opts.sessionId??opts.attemptId??opts.nonce??getAttemptBucket();
   if(opts.varyStrategy!=='holdOneConstant') opts.varyStrategy='all';
   const maxRerolls=Number(opts.maxRerolls);
   opts.maxRerolls=Number.isFinite(maxRerolls)&&maxRerolls>=0?Math.floor(maxRerolls):10;
   return opts;
 };
-
-function toSignature(value){
+const toSignature=questionEngineUtils.toSignature||function(value){
   if(typeof value==='string') return value;
   if(value&&typeof value==='object'){
     try{return JSON.stringify(value);}catch(e){return null;}
   }
   return null;
-}
-function extractLastHistoryValue(history){
+};
+const extractLastHistoryValue=questionEngineUtils.extractLastHistoryValue||function(history){
   if(history instanceof Set){
     let last;
     for(const item of history) last=item;
@@ -189,7 +189,7 @@ function extractLastHistoryValue(history){
   }
   if(Array.isArray(history)&&history.length) return history[history.length-1];
   return null;
-}
+};
 
 function generateQuestion(tmpl, studentId, optionsOrAttemptSeed){
   const opts=normalizeGenerationOptions(optionsOrAttemptSeed);
@@ -221,15 +221,17 @@ function generateQuestion(tmpl, studentId, optionsOrAttemptSeed){
     })();
   const paramKeys=Object.keys(tmpl.params);
   const canHoldOne=opts.varyStrategy==='holdOneConstant'&&previousVals&&paramKeys.length>1;
-  const holdKey=canHoldOne?paramKeys[hashCode(`${studentId}${tmpl.id}:${opts.attemptSeed}:hold`)%paramKeys.length]:null;
+  const holdKey=canHoldOne?paramKeys[hashCode(`${studentId}:${tmpl.id}:${opts.attemptSeed}:hold`)%paramKeys.length]:null;
 
   let seed=0;
-  let rng=seededRandom(0);
   let vals={};
   let signature='';
+  let fallbackVals={};
+  let fallbackSignature='';
+  let accepted=false;
   for(let reroll=0;reroll<=opts.maxRerolls;reroll++){
-    seed=hashCode(`${studentId}${tmpl.id}:${opts.attemptSeed}:${reroll}`);
-    rng=seededRandom(seed);
+    seed=hashCode(`${studentId}:${tmpl.id}:${opts.attemptSeed}:${reroll}`);
+    const rng=seededRandom(seed);
     const candidateVals={};
     for(const[k,p]of Object.entries(tmpl.params)){
       const steps=Math.round((p.max-p.min)/p.step);
@@ -238,9 +240,18 @@ function generateQuestion(tmpl, studentId, optionsOrAttemptSeed){
     }
     if(holdKey&&previousVals[holdKey]!=null) candidateVals[holdKey]=previousVals[holdKey];
     const candidateSignature=JSON.stringify(candidateVals);
-    vals=candidateVals;
-    signature=candidateSignature;
-    if(!seenSignatures.has(candidateSignature)) break;
+    fallbackVals=candidateVals;
+    fallbackSignature=candidateSignature;
+    if(!seenSignatures.has(candidateSignature)){
+      vals=candidateVals;
+      signature=candidateSignature;
+      accepted=true;
+      break;
+    }
+  }
+  if(!accepted){
+    vals=fallbackVals;
+    signature=fallbackSignature;
   }
   const updatedHistory=[...inMemoryHistory,signature].slice(-historyLimit);
   PARAM_HISTORY_BY_STUDENT_TEMPLATE.set(historyKey,updatedHistory);

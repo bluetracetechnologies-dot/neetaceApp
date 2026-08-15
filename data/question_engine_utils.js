@@ -1,7 +1,11 @@
 (function(root,factory){
-  const exports=factory();
-  if(typeof module!=='undefined'&&module.exports) module.exports=exports;
-  if(root) root.QuestionEngineUtils=Object.assign({},root.QuestionEngineUtils,exports);
+  const utilsExports=factory();
+  const isNodeModule=typeof module!=='undefined'&&typeof module.exports!=='undefined';
+  if(isNodeModule){
+    module.exports=utilsExports;
+  }else if(root){
+    root.QuestionEngineUtils=Object.assign({},root.QuestionEngineUtils,utilsExports);
+  }
 })(typeof globalThis!=='undefined'?globalThis:(typeof window!=='undefined'?window:undefined),function(){
   const DAY_MS=24*60*60*1000;
   const DEFAULT_MAX_REROLLS=10;
@@ -21,5 +25,21 @@
     opts.maxRerolls=Number.isFinite(maxRerolls)&&maxRerolls>=0?Math.floor(maxRerolls):DEFAULT_MAX_REROLLS;
     return opts;
   }
-  return {hashCode,seededRandom,shuffleSeeded,getAttemptBucket,normalizeGenerationOptions,DEFAULT_MAX_REROLLS};
+  function toSignature(value){
+    if(typeof value==='string') return value;
+    if(value&&typeof value==='object'){
+      try{return JSON.stringify(value);}catch(e){return null;}
+    }
+    return null;
+  }
+  function extractLastHistoryValue(history){
+    if(history instanceof Set){
+      let last;
+      for(const item of history) last=item;
+      return last;
+    }
+    if(Array.isArray(history)&&history.length) return history[history.length-1];
+    return null;
+  }
+  return {hashCode,seededRandom,shuffleSeeded,getAttemptBucket,normalizeGenerationOptions,toSignature,extractLastHistoryValue,DEFAULT_MAX_REROLLS};
 });
