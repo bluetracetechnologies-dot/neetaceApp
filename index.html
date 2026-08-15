@@ -480,17 +480,21 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     <div class="qbox"><div class="qn" style="color:var(--teal)" id="admA">0</div><div class="ql">Active</div></div>
     <div class="qbox"><div class="qn" style="color:var(--purple)">₹0</div><div class="ql">Revenue</div></div>
   </div>
-  <div class="sec-hd"><i class="ti ti-upload"></i> Bulk Upload (CSV)</div>
-  <div class="ub">
-    <i class="ti ti-file-spreadsheet" style="font-size:30px;color:var(--blue)"></i>
-    <div style="font-size:13px;font-weight:700;margin-top:7px">Upload NCERT Question Bank</div>
-    <div style="font-size:10px;color:var(--mute);margin:5px 0">Columns: subject, chapter, question, opt_a, opt_b, opt_c, opt_d, correct(A/B/C/D), explanation, ncert_class, ncert_chapter, ncert_page, syllabus_unit</div>
-    <input type="file" id="csvFile" accept=".csv" style="margin:9px 0;font-size:12px">
+  <div class="sec-hd"><i class="ti ti-packages"></i> Content Packs</div>
+  <div style="font-size:11px;color:var(--mute);margin-bottom:9px">Toggle question packs on/off instantly. New uploads default OFF until you review and enable them.</div>
+  <div class="ub" style="margin-bottom:11px">
+    <i class="ti ti-file-spreadsheet" style="font-size:26px;color:var(--blue)"></i>
+    <div style="font-size:13px;font-weight:700;margin-top:6px">Upload New Content Pack</div>
+    <div style="font-size:10px;color:var(--mute);margin:5px 0">Columns: subject, chapter, question, opt_a-d, correct(A/B/C/D), explanation, ncert_class/chapter/page, syllabus_unit, difficulty, pyq_year, trick</div>
+    <input id="packName" class="fin" style="margin-top:7px" placeholder="Pack name e.g. Physics Extra Set 2">
+    <input type="file" id="packCsvFile" accept=".csv" style="margin:9px 0;font-size:12px">
     <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
-      <button class="btn btn-blue" onclick="handleCSV()"><i class="ti ti-upload"></i> Import</button>
+      <button class="btn btn-blue" onclick="uploadPack()"><i class="ti ti-upload"></i> Upload Pack</button>
       <button class="btn btn-ghost" onclick="downloadSample()"><i class="ti ti-download"></i> Sample CSV</button>
+      <button class="btn btn-ghost" onclick="seedStarterPacks()"><i class="ti ti-rocket"></i> Load Starter Packs</button>
     </div>
   </div>
+  <div id="packsList"><div style="text-align:center;padding:16px;color:var(--mute);font-size:12px">Loading packs...</div></div>
   <div class="sec-hd"><i class="ti ti-lock"></i> Kill Switch</div>
   <div class="card" style="border-color:var(--red)">
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
@@ -1599,9 +1603,24 @@ const SLOGANS = {
   hindi:'NEET mein safalta, sabke liye.'
 };
 
+
+// ===== CONTENT PACKS — pulls questions from admin-enabled packs =====
+async function loadContentPacks(){
+  try{
+    const r = await fetch('/api/packs?active=true');
+    const d = await r.json();
+    if(d.questions && d.questions.length){
+      // Merge pack questions into the live QUESTIONS pool, avoiding id collisions
+      const existingIds = new Set(QUESTIONS.map(q=>q.id));
+      d.questions.forEach(q=>{ if(!existingIds.has(q.id)) QUESTIONS.push(q); });
+      console.log('Loaded', d.questions.length, 'questions from', d.activePacks.length, 'active content packs');
+    }
+  }catch(e){ console.log('Content packs not available yet'); }
+}
+
 // ===== INIT =====
 window.addEventListener('load', async ()=>{
-  loadPricing(); loadFestival(); loadLevels();
+  loadPricing(); loadFestival(); loadLevels(); loadContentPacks();
   
   // Apply referral code from URL if present
   const urlRef = new URLSearchParams(window.location.search).get('ref');
