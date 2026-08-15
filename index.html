@@ -1118,10 +1118,10 @@ function buildLocalDiagnosis(question, timeTakenSec, confidence){
 }
 function buildLocalRecoveryPath(question, diagnosis){
   const q=normalizeQuestionMeta(question), order=['starter','easy','medium','hard','exam'], base=order.indexOf(q.difficulty), stages=['diagnostic','confirmation','recovery','reinforcement'];
+  const normalizedBank=QUESTIONS.map(normalizeQuestionMeta).filter(x=>x.id!==q.id&&(x.variantGroup===q.variantGroup||(x.subject===q.subject&&x.chapter===q.chapter&&x.concept===q.concept)));
   return stages.map((stage, idx)=>{
     const target=order[Math.max(1, Math.min(order.length-1, base + (stage==='diagnostic'?-1:stage==='reinforcement'?(base>=3?0:1):0)))]||'medium';
-    const sameConcept=QUESTIONS.map(normalizeQuestionMeta).filter(x=>x.id!==q.id&&(x.variantGroup===q.variantGroup||(x.subject===q.subject&&x.chapter===q.chapter&&x.concept===q.concept)));
-    const candidate=sameConcept.find(x=>x.difficulty===target)||sameConcept[0];
+    const candidate=normalizedBank.find(x=>x.difficulty===target)||normalizedBank[0];
     if(candidate) return { stage, targetDifficulty:target, question:{...candidate,variantStage:stage,fromBank:true} };
     const optLen=(q.opts||[]).length, shift=optLen?((idx+1)%optLen):0, opts=optLen?(q.opts||[]).map((_,i,a)=>a[(i+shift)%a.length]):q.opts||[];
     return { stage, targetDifficulty:target, question:{...q,id:`${q.id}_${stage}`,text:`${stage==='diagnostic'?'Diagnostic check':stage==='confirmation'?'Confirmation check':stage==='recovery'?'Recovery drill':'Reinforcement round'}: ${q.text}`,opts,correct:optLen?((safeNum(q.correct)-shift+optLen)%optLen):safeNum(q.correct),difficulty:target,diff:target,variantOf:q.id,variantStage:stage,isGeneratedVariant:true} };

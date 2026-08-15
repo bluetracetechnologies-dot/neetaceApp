@@ -349,7 +349,9 @@ function buildGaltiEntries(existing = [], results = []) {
       const diagnosis = classifyAttempt(result);
       const recoveryPath = buildRecoveryPath(question, diagnosis, result.relatedQuestions || []);
       const existingIdx = galti.findIndex((entry) => entry.questionId === question.id);
-      const revisionPlan = buildRevisionSchedule(new Date());
+      const revisionPlan = existingIdx >= 0
+        ? (galti[existingIdx].revisionPlan || buildRevisionSchedule(new Date()))
+        : buildRevisionSchedule(new Date());
       const nextEntry = {
         questionId: question.id,
         subject: question.subject,
@@ -484,11 +486,12 @@ function buildLearningSnapshot({ user = {}, results = [], scores = {} }) {
       questionType: result.type,
     }),
   }));
+  const answeredResults = normalizedResults.filter((result) => result.correct === true || result.correct === false);
 
-  normalizedResults.forEach((result) => updateProfile(profile, result, classifyAttempt(result)));
+  answeredResults.forEach((result) => updateProfile(profile, result, classifyAttempt(result)));
 
-  const chapterMastery = mergeChapterMastery(user.chapterMastery || {}, normalizedResults);
-  const galti = buildRevisionPlan(buildGaltiEntries(user.galti || [], normalizedResults));
+  const chapterMastery = mergeChapterMastery(user.chapterMastery || {}, answeredResults);
+  const galti = buildRevisionPlan(buildGaltiEntries(user.galti || [], answeredResults));
   const galtiSummary = buildGaltiSummary(galti);
   const dailyMission = buildDailyMission(chapterMastery, galtiSummary);
   const scorePrediction = buildScorePrediction(scores, chapterMastery);
