@@ -35,9 +35,41 @@ function parseCSV(text) {
   return rows;
 }
 
+function normalizeDifficulty(diff) {
+  const d = String(diff || '').toLowerCase();
+  if (d === 'easy' || d === 'medium' || d === 'hard') return d;
+  if (d === 'starter') return 'easy';
+  if (d === 'exam') return 'hard';
+  return 'medium';
+}
+
+function backfillQuestionMetadata(q) {
+  const subject = (q.subject || q.sub || 'BIOLOGY').toUpperCase();
+  const chapter = q.chapter || q.ch || 'General';
+  const unitType = q.unitType || q.unit || 'NCERT';
+  const concept = (q.concept || String(unitType).split('—')[0] || chapter).trim();
+  const subconcept = (q.subconcept || String(unitType).split('—')[1] || concept).trim();
+  const difficulty = normalizeDifficulty(q.difficulty || q.diff);
+  return {
+    ...q,
+    subject,
+    chapter,
+    concept,
+    subconcept,
+    difficulty,
+    formula: q.formula || q.trick || '',
+    unitType,
+    questionType: q.questionType || (q.pyq ? 'pyq' : (q.isParameterized ? 'parameterized' : 'mcq')),
+    commonMistake: q.commonMistake || 'concept_error',
+    variantGroup: q.variantGroup || `${subject}_${chapter}_${concept}`.replace(/[^A-Za-z0-9]+/g, '_'),
+    estimatedTime: Number.isFinite(q.estimatedTime) ? q.estimatedTime : ({ easy: 60, medium: 90, hard: 120 }[difficulty]),
+    neetWeightage: Number.isFinite(q.neetWeightage) ? q.neetWeightage : (q.pyq ? 3 : 2),
+  };
+}
+
 function csvRowToQuestion(row, packId, idx) {
   const correctMap = { A: 0, B: 1, C: 2, D: 3 };
-  return {
+  return backfillQuestionMetadata({
     id: `${packId}_${idx}`,
     sub: (row.subject || row.sub || 'BIOLOGY').toUpperCase(),
     ch: row.chapter || row.ch || 'General',
@@ -54,7 +86,16 @@ function csvRowToQuestion(row, packId, idx) {
     pyq: !!(row.pyq_year),
     pyqYr: row.pyq_year ? parseInt(row.pyq_year) : undefined,
     trick: row.trick || '',
-  };
+    concept: row.concept || '',
+    subconcept: row.subconcept || '',
+    formula: row.formula || '',
+    unitType: row.unit_type || row.unittype || row.syllabus_unit || row.unit || 'NCERT',
+    questionType: row.question_type || row.questiontype || (row.pyq_year ? 'pyq' : 'mcq'),
+    commonMistake: row.common_mistake || row.commonmistake || '',
+    variantGroup: row.variant_group || row.variantgroup || '',
+    estimatedTime: row.estimated_time ? parseInt(row.estimated_time) : undefined,
+    neetWeightage: row.neet_weightage ? parseFloat(row.neet_weightage) : undefined,
+  });
 }
 
 function bumpVersion(current) {
