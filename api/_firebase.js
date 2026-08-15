@@ -1,19 +1,28 @@
-// api/_firebase.js  — shared Firebase Admin initialiser
-// Loaded by every API function. Vercel caches the module between warm invocations.
-// Required env vars (set in Vercel → Project → Environment Variables):
-//   FIREBASE_PROJECT_ID
-//   FIREBASE_CLIENT_EMAIL
-//   FIREBASE_PRIVATE_KEY   (the long -----BEGIN PRIVATE KEY----- string)
-
+// api/_firebase.js — shared Firebase Admin initialiser
 const admin = require('firebase-admin');
 
 if (!admin.apps.length) {
+  let privateKey = process.env.FIREBASE_PRIVATE_KEY || '';
+  
+  // Vercel sometimes wraps the value in quotes — strip them
+  if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+    privateKey = privateKey.slice(1, -1);
+  }
+  
+  // Convert literal \n strings to real newlines
+  privateKey = privateKey.replace(/\\n/g, '\n');
+  
+  // Debug: log first/last 30 chars to confirm format (never logs the full key)
+  console.log('Firebase key starts:', privateKey.substring(0, 30));
+  console.log('Firebase key ends:', privateKey.substring(privateKey.length - 30));
+  console.log('Project ID:', process.env.FIREBASE_PROJECT_ID);
+  console.log('Client email:', process.env.FIREBASE_CLIENT_EMAIL);
+
   admin.initializeApp({
     credential: admin.credential.cert({
       projectId:   process.env.FIREBASE_PROJECT_ID,
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      // Vercel stores \n as literal \\n in env vars — restore real newlines
-      privateKey:  (process.env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n'),
+      privateKey,
     }),
   });
 }
