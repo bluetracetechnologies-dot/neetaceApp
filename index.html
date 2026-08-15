@@ -323,14 +323,16 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 <!-- PRACTICE -->
 <div class="screen" id="screen-practice">
   <div class="card" style="margin-bottom:13px;padding:13px 15px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
       <span style="font-size:13px;font-weight:700">Difficulty</span>
-      <span style="font-size:12px;font-weight:700;color:var(--blue)" id="sliderLabel">Starter</span>
+      <span style="font-size:12px;font-weight:700;color:var(--blue)" id="sliderLabel">Free Practice</span>
     </div>
+    <div style="font-size:11px;color:var(--mute);margin-bottom:8px" id="sliderTagline">Get a feel for it</div>
     <input type="range" id="diffSlider" min="0" max="4" step="1" value="0" style="width:100%" oninput="updateSlider(this.value)">
-    <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--mute);margin-top:4px">
-      <span>Starter</span><span>Easy</span><span>Medium</span><span>Hard</span><span>Exam</span>
+    <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--mute);margin-top:4px">
+      <span>Free</span><span>Simple</span><span>Hard</span><span>V.Hard</span><span>Talent</span>
     </div>
+    <div id="freePracticeWarn" style="display:none;margin-top:9px;font-size:11px;background:var(--amber-l);color:#7a4800;padding:7px 10px;border-radius:8px"></div>
   </div>
   <div class="chips"><div class="chip active" onclick="filterPractice(this,'ALL')">All</div><div class="chip" onclick="filterPractice(this,'PHYSICS')">⚛️ Physics</div><div class="chip" onclick="filterPractice(this,'CHEMISTRY')">🧪 Chemistry</div><div class="chip" onclick="filterPractice(this,'BIOLOGY')">🧬 Biology</div><div class="chip" onclick="filterPractice(this,'PYQ')">📜 PYQ</div><div class="chip" onclick="filterPractice(this,'MOCK')">🎯 Mock</div></div>
   <div id="practiceTopics"></div>
@@ -1075,7 +1077,8 @@ function goSubject(s){ switchTab('practice'); renderPracticeTopics(s); }
 
 // ===== QUIZ =====
 function startTopicQuiz(name, subject){
-  if(!canAccess()){ openPaywall(); return; }
+  if(!canAccess() && !checkAnonymousFreeAccess()){ openPaywall(); return; }
+  if(!canAccess() && !S.user){ /* anonymous free tier, limited to easy */ }
   const t=TOPICS.find(x=>x.name===name)||TOPICS.find(x=>x.sub===subject)||TOPICS[0];
   activeTopic=t;
   quizList=QUESTIONS.filter(q=>q.tid===t.id); if(!quizList.length) quizList=QUESTIONS.filter(q=>q.sub===t.sub); if(!quizList.length) quizList=[...QUESTIONS];
@@ -1489,9 +1492,74 @@ async function loadFestival(){
 }
 
 // ===== DIFFICULTY SLIDER =====
-const LEVEL_NAMES = ['Starter','Easy','Medium','Hard','Exam'];
+let LEVELS_CONFIG = [
+  {id:0,key:'starter',name:'Free Practice',tagline:'Get a feel for it',color:'#22c55e',isFree:true,enabled:true,maxFreeDays:7},
+  {id:1,key:'easy',name:'Simple',tagline:'Build the basics',color:'#3b82f6',enabled:true},
+  {id:2,key:'medium',name:'Hard',tagline:'Real exam pressure',color:'#f59e0b',enabled:true},
+  {id:3,key:'hard',name:'Very Hard',tagline:'NEET topper standard',color:'#ef4444',enabled:true},
+  {id:4,key:'exam',name:'Talent Required',tagline:'AIR top 1000 level',color:'#7c3aed',enabled:true},
+];
+let freePracticeStatus = {enabled:true, daysLeft:null, expired:false};
+
+async function loadLevels(){
+  try{
+    const r = await fetch('/api/levels');
+    const d = await r.json();
+    if(d.levels && d.levels.length) LEVELS_CONFIG = d.levels;
+  }catch(e){}
+  renderSliderTicks();
+}
+
+function renderSliderTicks(){
+  const slider = document.getElementById('diffSlider');
+  if(!slider) return;
+  const enabledLevels = LEVELS_CONFIG.filter(l=>l.enabled!==false);
+  const minId = enabledLevels.length ? enabledLevels[0].id : 0;
+  slider.min = minId;
+  if(parseInt(slider.value) < minId) slider.value = minId;
+  updateSlider(slider.value);
+}
+
 function updateSlider(v){
-  document.getElementById('sliderLabel').textContent = LEVEL_NAMES[v]||'Starter';
+  const lvl = LEVELS_CONFIG.find(l=>l.id==v) || LEVELS_CONFIG[0];
+  const lbl = document.getElementById('sliderLabel');
+  if(lbl){
+    lbl.textContent = lvl.name;
+    lbl.style.color = lvl.color;
+  }
+  const tag = document.getElementById('sliderTagline');
+  if(tag) tag.textContent = lvl.tagline||'';
+  // Free Practice day-cap warning
+  const warn = document.getElementById('freePracticeWarn');
+  if(warn){
+    if(lvl.isFree && freePracticeStatus.daysLeft!==null && freePracticeStatus.daysLeft<=3 && !S.user){
+      warn.style.display='block';
+      warn.textContent = freePracticeStatus.expired
+        ? 'Free Practice period ended. Sign in to continue with a 7-day trial of all levels.'
+        : 'Free Practice: '+freePracticeStatus.daysLeft+' day(s) left. Sign in for full access.';
+    } else {
+      warn.style.display='none';
+    }
+  }
+}
+
+function checkAnonymousFreeAccess(){
+  if(S.user) return true; // logged in users tracked server-side
+  try{
+    let started = localStorage.getItem('na_free_started');
+    if(!started){
+      started = new Date().toISOString();
+      localStorage.setItem('na_free_started', started);
+    }
+    const daysUsed = (new Date() - new Date(started)) / 86400000;
+    const freeLevel = LEVELS_CONFIG.find(l=>l.isFree);
+    const cap = freeLevel?.maxFreeDays;
+    if(cap){
+      freePracticeStatus.daysLeft = Math.max(0, Math.ceil(cap - daysUsed));
+      freePracticeStatus.expired = daysUsed >= cap;
+    }
+    return !freePracticeStatus.expired;
+  }catch(e){ return true; }
 }
 
 // ===== REFERRAL =====
