@@ -373,6 +373,9 @@ function buildGaltiEntries(existing = [], results = []) {
 function buildRevisionPlan(galti = [], now = new Date()) {
   const startOfToday = new Date(now);
   startOfToday.setHours(0, 0, 0, 0);
+  const endOfToday = new Date(startOfToday);
+  endOfToday.setDate(endOfToday.getDate() + 1);
+  endOfToday.setMilliseconds(-1);
   return galti.map((entry) => {
     const dueSteps = (entry.revisionPlan || []).map((step) => ({
       ...step,
@@ -381,7 +384,7 @@ function buildRevisionPlan(galti = [], now = new Date()) {
     return {
       ...entry,
       revisionPlan: dueSteps,
-      dueToday: dueSteps.some((step) => !step.completedAt && new Date(step.dueAt) >= startOfToday && new Date(step.dueAt) <= now),
+      dueToday: dueSteps.some((step) => !step.completedAt && new Date(step.dueAt) >= startOfToday && new Date(step.dueAt) <= endOfToday),
     };
   });
 }
@@ -422,7 +425,7 @@ function buildGaltiSummary(galti = []) {
 function buildDailyMission(chapterMastery = {}, galtiSummary = {}) {
   const chapters = Object.values(chapterMastery).sort((a, b) => a.mastery - b.mastery);
   const weakest = chapters[0];
-  const challenge = chapters.sort((a, b) => b.mastery - a.mastery)[0];
+  const challenge = chapters[chapters.length - 1];
   return [
     weakest && {
       kind: 'weak_topic',

@@ -305,12 +305,20 @@ module.exports = async function handler(req, res) {
     if (!admin) return res.status(403).json({ error: 'Admin only' });
 
     const snap = await db.collection('content_packs').get();
-    const batch = db.batch();
     let updatedPacks = 0;
     let updatedQuestions = 0;
     const now = new Date().toISOString();
+    let batch = db.batch();
+    let opsInBatch = 0;
 
-    snap.forEach(doc => {
+    async function flushBatch() {
+      if (!opsInBatch) return;
+      await batch.commit();
+      batch = db.batch();
+      opsInBatch = 0;
+    }
+
+    for (const doc of snap.docs) {
       const pack = doc.data();
       const normalizedQuestions = normalizeQuestionList(pack.questions || []);
       batch.update(doc.ref, {
@@ -319,11 +327,13 @@ module.exports = async function handler(req, res) {
         updatedAt: now,
         updatedBy: uid,
       });
+      opsInBatch += 1;
       updatedPacks += 1;
       updatedQuestions += normalizedQuestions.length;
-    });
+      if (opsInBatch === 500) await flushBatch();
+    }
 
-    await batch.commit();
+    await flushBatch();
     return res.status(200).json({
       ok: true,
       updatedPacks,

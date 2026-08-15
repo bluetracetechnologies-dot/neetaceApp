@@ -39,8 +39,10 @@ module.exports = async function handler(req, res) {
     }
 
     if (action === 'recover') {
-      const { question, questionBank, attempt = {} } = req.body || {};
+      const { uid, sessionToken, question, questionBank, attempt = {} } = req.body || {};
       if (!question) return res.status(400).json({ error: 'question required' });
+      const verified = await verifyUser(uid, sessionToken);
+      if (!verified) return res.status(401).json({ error: 'Invalid session' });
 
       const normalizedQuestion = normalizeQuestion(question);
       const relatedBank = normalizeQuestionList(questionBank || []);

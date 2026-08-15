@@ -1123,8 +1123,8 @@ function buildLocalRecoveryPath(question, diagnosis){
     const sameConcept=QUESTIONS.map(normalizeQuestionMeta).filter(x=>x.id!==q.id&&(x.variantGroup===q.variantGroup||(x.subject===q.subject&&x.chapter===q.chapter&&x.concept===q.concept)));
     const candidate=sameConcept.find(x=>x.difficulty===target)||sameConcept[0];
     if(candidate) return { stage, targetDifficulty:target, question:{...candidate,variantStage:stage,fromBank:true} };
-    const shift=(idx+1)%4, opts=(q.opts||[]).length?(q.opts||[]).map((_,i,a)=>a[(i+shift)%a.length]):q.opts||[];
-    return { stage, targetDifficulty:target, question:{...q,id:`${q.id}_${stage}`,text:`${stage==='diagnostic'?'Diagnostic check':stage==='confirmation'?'Confirmation check':stage==='recovery'?'Recovery drill':'Reinforcement round'}: ${q.text}`,opts,correct:(safeNum(q.correct)-shift+(q.opts||[]).length)%((q.opts||[]).length||1),difficulty:target,diff:target,variantOf:q.id,variantStage:stage,isGeneratedVariant:true} };
+    const optLen=(q.opts||[]).length, shift=optLen?((idx+1)%optLen):0, opts=optLen?(q.opts||[]).map((_,i,a)=>a[(i+shift)%a.length]):q.opts||[];
+    return { stage, targetDifficulty:target, question:{...q,id:`${q.id}_${stage}`,text:`${stage==='diagnostic'?'Diagnostic check':stage==='confirmation'?'Confirmation check':stage==='recovery'?'Recovery drill':'Reinforcement round'}: ${q.text}`,opts,correct:optLen?((safeNum(q.correct)-shift+optLen)%optLen):safeNum(q.correct),difficulty:target,diff:target,variantOf:q.id,variantStage:stage,isGeneratedVariant:true} };
   });
 }
 function persistLocalLearning(){ try{ localStorage.setItem('na_learning', JSON.stringify({learningState, mistakes})); }catch(e){} }
@@ -1353,13 +1353,15 @@ async function addMistake(q,sel,attempt){
   const diagnosis=buildLocalDiagnosis(q, attempt.timeTaken, attempt.confidence);
   const existing=mistakes.find(m=>m.id===q.id);
   const base={...normalizeQuestionMeta(q),id:q.id,userIdx:sel,question:normalizeQuestionMeta(q),errTag:diagnosis.label,diagnosis,loggedOn:new Date().toLocaleDateString('en-IN'),repeatCount:(existing?.repeatCount||0)+1,revisionPlan:existing?.revisionPlan||[{dayOffset:1,dueAt:new Date(Date.now()+86400000).toISOString()}],recoveryProgress:existing?.recoveryProgress||{completed:0,total:4}};
+  const insertAt=curQ+1;
   if(!existing){
     mistakes.unshift(base);
     const dot=document.getElementById('mistakeDot'); dot.textContent=mistakes.length; dot.style.display='inline-block';
   } else Object.assign(existing, base);
   try{
+    if(!S.user||!S.sessionToken) throw new Error('auth-required');
     const related=QUESTIONS.map(normalizeQuestionMeta).filter(x=>x.id!==q.id&&(x.variantGroup===base.variantGroup||(x.subject===base.subject&&x.chapter===base.chapter))).slice(0,24);
-    const recovery=await api('learning',{action:'recover',question:base.question,questionBank:related,attempt});
+    const recovery=await api('learning',{action:'recover',uid:S.user.uid,sessionToken:S.sessionToken,question:base.question,questionBank:related,attempt});
     const target=mistakes.find(m=>m.id===q.id);
     if(target&&recovery.ok){
       target.diagnosis=recovery.diagnosis;
@@ -1368,8 +1370,8 @@ async function addMistake(q,sel,attempt){
       target.recoveryProgress={completed:0,total:(recovery.recoveryPath||[]).length||4};
       target.revisionPlan=(recovery.recoveryPath||[]).map((_,i)=>({dayOffset:[1,3,7,15,30][i]||30,dueAt:new Date(Date.now()+([1,3,7,15,30][i]||30)*86400000).toISOString(),completedAt:null}));
       const insert=(recovery.recoveryPath||[]).map(step=>normalizeQuestionMeta(step.question)).filter(step=>step&& !quizList.some(existingQ=>String(existingQ.id)===String(step.id)));
-      if(insert.length) quizList.splice(curQ+1, 0, ...insert);
-    }
+      if(insert.length) quizList.splice(insertAt, 0, ...insert);
+    } else throw new Error(recovery.error||'recover-failed');
   }catch(e){
     const target=mistakes.find(m=>m.id===q.id);
     if(target&&!target.recoveryPath){
