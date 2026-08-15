@@ -5,6 +5,12 @@
 // Called at end of every quiz session
 
 const { db } = require('./_firebase');
+const {
+  normalizeDifficulty,
+  normalizeQuestion,
+  buildLearningSnapshot,
+  classifyAttempt,
+} = require('./_learning');
 
 // Difficulty weights
 const WEIGHTS = { starter:1, easy:2, medium:4, hard:7, exam:10 };
@@ -50,12 +56,27 @@ module.exports = async function handler(req, res) {
   if (user.sessionToken !== sessionToken) return res.status(401).json({ error: 'Invalid session' });
 
   try {
+    const normalizedResults = results.map((r, idx) => {
+      const question = normalizeQuestion(r.question || {}, {
+        id: r.questionId || `session_${idx + 1}`,
+        difficulty: r.difficulty,
+        diff: r.difficulty,
+        questionType: r.type,
+      });
+      return {
+        ...r,
+        difficulty: normalizeDifficulty(r.difficulty || question.difficulty),
+        type: r.type || (question.unitType === 'converted_units' ? 'unit_variant' : 'standard'),
+        question,
+      };
+    });
+
     // Compute session score
     let sessionScore = 0;
     let correct = 0, wrong = 0, skipped = 0;
-    const timePerQ = sessionTimeSec ? sessionTimeSec / results.length : 30;
+    const timePerQ = sessionTimeSec ? sessionTimeSec / normalizedResults.length : 30;
 
-    for (const r of results) {
+    for (const r of normalizedResults) {
       const w  = WEIGHTS[r.difficulty] || 1;
       const tb = TYPE_BONUS[r.type]    || 1.0;
       const sb = speedBonus(r.timeTaken, timePerQ * 2);
@@ -82,7 +103,7 @@ module.exports = async function handler(req, res) {
     const prev     = existing[key] || { weighted: 0, attempted: 0, correct: 0, wrong: 0, currentLevel: 0 };
 
     // Detect level drop for decay
-    const currentLevel = results[0]?.levelIndex ?? prev.currentLevel ?? 0;
+    const currentLevel = normalizedResults[0]?.levelIndex ?? prev.currentLevel ?? 0;
     const drop = Math.max(0, (prev.currentLevel || 0) - currentLevel);
     const decayIdx = Math.min(drop, LEVEL_DECAY.length - 1);
     const decayFactor = LEVEL_DECAY[decayIdx];
@@ -91,11 +112,11 @@ module.exports = async function handler(req, res) {
     // Update subject scores
     const newSubScore = {
       weighted:     Math.round((prev.weighted + decayedScore) * 100) / 100,
-      attempted:    prev.attempted + results.length,
+      attempted:    prev.attempted + normalizedResults.length,
       correct:      (prev.correct  || 0) + correct,
       wrong:        (prev.wrong    || 0) + wrong,
       skipped:      (prev.skipped  || 0) + skipped,
-      accuracy:     Math.round(((prev.correct + correct) / (prev.attempted + results.length)) * 1000) / 10,
+      accuracy:     Math.round(((prev.correct + correct) / (prev.attempted + normalizedResults.length)) * 1000) / 10,
       currentLevel: currentLevel,
       lastUpdated:  new Date().toISOString(),
     };
@@ -104,10 +125,10 @@ module.exports = async function handler(req, res) {
     const prevGlobal = existing.global || { weighted: 0, attempted: 0, correct: 0, wrong: 0 };
     const newGlobal  = key !== 'global' ? {
       weighted:    Math.round((prevGlobal.weighted + decayedScore) * 100) / 100,
-      attempted:   prevGlobal.attempted + results.length,
+      attempted:   prevGlobal.attempted + normalizedResults.length,
       correct:     (prevGlobal.correct  || 0) + correct,
       wrong:       (prevGlobal.wrong    || 0) + wrong,
-      accuracy:    Math.round(((prevGlobal.correct + correct) / (prevGlobal.attempted + results.length)) * 1000) / 10,
+      accuracy:    Math.round(((prevGlobal.correct + correct) / (prevGlobal.attempted + normalizedResults.length)) * 1000) / 10,
       weeklyPoints: (prevGlobal.weeklyPoints || 0) + decayedScore,
       lastUpdated:  new Date().toISOString(),
     } : newSubScore;
@@ -115,21 +136,41 @@ module.exports = async function handler(req, res) {
     // Build update
     const scoresUpdate = { ...existing, [key]: newSubScore };
     if (key !== 'global') scoresUpdate.global = newGlobal;
+    const learning = buildLearningSnapshot({
+      user,
+      results: normalizedResults,
+      scores: scoresUpdate,
+    });
 
     // Write to Firestore
     await db.collection('users').doc(uid).update({
       scores: scoresUpdate,
-      totalQuestionsAttempted: (user.totalQuestionsAttempted || 0) + results.length,
+      totalQuestionsAttempted: (user.totalQuestionsAttempted || 0) + normalizedResults.length,
       lastSessionAt: new Date().toISOString(),
+      learningProfile: learning.learningProfile,
+      chapterMastery: learning.chapterMastery,
+      galti: learning.galti,
+      galtiSummary: learning.galtiSummary,
+      dailyMission: learning.dailyMission,
+      scorePrediction: learning.scorePrediction,
+      learningUpdatedAt: new Date().toISOString(),
     });
 
     // Log session for history
     await db.collection('sessions').add({
       uid, subject: key, sessionScore, decayedScore,
       correct, wrong, skipped,
-      questionsCount: results.length,
-      difficulty: results[0]?.difficulty || 'mixed',
+      questionsCount: normalizedResults.length,
+      difficulty: normalizedResults[0]?.difficulty || 'mixed',
       sessionTimeSec: sessionTimeSec || 0,
+      diagnostics: normalizedResults
+        .filter((r) => r.correct === false)
+        .map((r) => ({
+          questionId: r.question?.id || r.questionId,
+          chapter: r.question?.chapter,
+          concept: r.question?.concept,
+          diagnosis: classifyAttempt(r).code,
+        })),
       playedAt: new Date().toISOString(),
       expiresAt: nextMay31().toISOString(),
     });
@@ -149,6 +190,7 @@ module.exports = async function handler(req, res) {
       ok: true,
       session: { score: sessionScore, decayedScore, correct, wrong, skipped },
       updated: { [key]: newSubScore, global: newGlobal },
+      learning,
       rank: rank,
       qualifiesForLeaderboard: totalAttempted >= MIN_FOR_RANK,
       minQuestionsNeeded: Math.max(0, MIN_FOR_RANK - totalAttempted),
