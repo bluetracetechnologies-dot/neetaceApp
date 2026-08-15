@@ -486,6 +486,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     <i class="ti ti-file-spreadsheet" style="font-size:26px;color:var(--blue)"></i>
     <div style="font-size:13px;font-weight:700;margin-top:6px">Upload New Content Pack</div>
     <div style="font-size:10px;color:var(--mute);margin:5px 0">Columns: subject, chapter, question, opt_a-d, correct(A/B/C/D), explanation, ncert_class/chapter/page, syllabus_unit, difficulty, pyq_year, trick</div>
+    <select id="packUpdateTarget" style="width:100%;padding:9px 12px;border:1.5px solid var(--bdr);border-radius:9px;font-size:12px;background:var(--surf);color:var(--txt);margin-top:7px" onchange="document.getElementById('packName').style.display=this.value?'none':'block'"></select>
     <input id="packName" class="fin" style="margin-top:7px" placeholder="Pack name e.g. Physics Extra Set 2">
     <input type="file" id="packCsvFile" accept=".csv" style="margin:9px 0;font-size:12px">
     <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
@@ -1620,27 +1621,78 @@ async function loadContentPacks(){
 
 
 // ===== ADMIN: CONTENT PACK MANAGEMENT =====
+let PACKS_CACHE = [];
 async function loadPacksList(){
   if(!S.user||S.user.role!=='admin') return;
   const el=document.getElementById('packsList'); if(!el) return;
   try{
     const r=await api('packs',{action:'admin_list',uid:S.user.uid,sessionToken:S.sessionToken});
-    if(!r.packs||!r.packs.length){
+    PACKS_CACHE = r.packs||[];
+    if(!PACKS_CACHE.length){
       el.innerHTML='<div style="text-align:center;padding:16px;color:var(--mute);font-size:12px">No content packs yet. Click "Load Starter Packs" to begin.</div>';
       return;
     }
-    el.innerHTML=r.packs.map(p=>`
-      <div class="card" style="display:flex;justify-content:space-between;align-items:center;padding:11px 14px;margin-bottom:8px">
+    renderPacksList();
+    populatePackDropdown();
+  }catch(e){ el.innerHTML='<div style="text-align:center;padding:16px;color:var(--red);font-size:12px">Could not load packs</div>'; }
+}
+
+function renderPacksList(){
+  const el=document.getElementById('packsList'); if(!el) return;
+  el.innerHTML=PACKS_CACHE.map(p=>{
+    const histCount=(p.versionHistory||[]).length;
+    return `<div class="card" style="padding:11px 14px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
         <div style="flex:1">
-          <div style="font-size:13px;font-weight:700">${p.name} <span style="font-size:10px;color:var(--mute);font-weight:400">· ${p.subject}</span></div>
+          <div style="font-size:13px;font-weight:700">${p.name}
+            <span style="font-size:10px;color:var(--mute);font-weight:400">· ${p.subject}</span>
+            <span class="badge" style="background:var(--purple-l);color:var(--purple);margin-left:5px">v${p.version||'1.0'}</span>
+          </div>
           <div style="font-size:11px;color:var(--mute);margin-top:2px">${p.description||''} · ${p.questionCount} questions · ${p.source==='prebuilt'?'Built-in':'Uploaded'}</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
           <button class="tsw ${p.enabled?'on':''}" onclick="togglePack('${p.id}',${!p.enabled})" aria-label="Toggle pack"></button>
           ${p.source!=='prebuilt'?`<button onclick="deletePack('${p.id}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px"><i class="ti ti-trash"></i></button>`:''}
         </div>
+      </div>
+      <div style="margin-top:8px">
+        <button onclick="toggleHistory('${p.id}')" style="background:none;border:none;color:var(--blue);cursor:pointer;font-size:11px;font-weight:700;padding:0">
+          <i class="ti ti-history"></i> Version history (${histCount})
+        </button>
+        <div id="hist_${p.id}" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--bdr)"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleHistory(packId){
+  const el=document.getElementById('hist_'+packId);
+  if(!el) return;
+  if(el.style.display==='none'){
+    const p=PACKS_CACHE.find(x=>x.id===packId);
+    const hist=(p?.versionHistory||[]).slice().reverse();
+    if(!hist.length){ el.innerHTML='<div style="font-size:11px;color:var(--mute)">No previous versions</div>'; }
+    else{
+      el.innerHTML=hist.map(h=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:11px">
+        <div><b>v${h.version}</b> · ${h.questionCount} Qs · ${new Date(h.uploadedAt).toLocaleDateString('en-IN')}<div style="color:var(--mute)">${h.changeNote||''}</div></div>
+        ${h.version.includes('rollback')?'':`<button class="btn btn-ghost" style="font-size:10px;padding:4px 9px" onclick="rollbackPack('${packId}','${h.version}')">Restore</button>`}
       </div>`).join('');
-  }catch(e){ el.innerHTML='<div style="text-align:center;padding:16px;color:var(--red);font-size:12px">Could not load packs</div>'; }
+    }
+    el.style.display='block';
+  } else { el.style.display='none'; }
+}
+
+async function rollbackPack(packId, version){
+  if(!confirm('Restore pack to v'+version+'? This becomes the new live version immediately.')) return;
+  const r=await api('packs',{action:'admin_rollback',uid:S.user.uid,sessionToken:S.sessionToken,packId,version});
+  if(r.ok){ toast('✅ '+r.message); loadPacksList(); } else toast('Error: '+(r.error||'Rollback failed'));
+}
+
+function populatePackDropdown(){
+  const sel=document.getElementById('packUpdateTarget');
+  if(!sel) return;
+  sel.innerHTML='<option value="">— New pack —</option>' +
+    PACKS_CACHE.map(p=>`<option value="${p.id}">${p.name} (v${p.version||'1.0'})</option>`).join('');
 }
 
 async function togglePack(packId, enabled){
@@ -1666,16 +1718,23 @@ async function seedStarterPacks(){
 }
 
 async function uploadPack(){
+  const target=document.getElementById('packUpdateTarget')?.value||'';
   const name=document.getElementById('packName').value.trim();
   const fi=document.getElementById('packCsvFile');
-  if(!name){ toast('Enter a pack name first'); return; }
+  if(!target && !name){ toast('Enter a pack name or select an existing pack to update'); return; }
   if(!fi.files.length){ toast('Select a CSV file'); return; }
   const reader=new FileReader();
   reader.onload=async function(e){
     const csvText=e.target.result;
-    const r=await api('packs',{action:'admin_upload',uid:S.user.uid,sessionToken:S.sessionToken,
-      name, subject:'MIXED', description:'Uploaded '+new Date().toLocaleDateString('en-IN'),
-      csvText, enabledByDefault:false});
+    let r;
+    if(target){
+      const note=prompt('What changed in this version? (optional)')||'';
+      r=await api('packs',{action:'admin_upload_version',uid:S.user.uid,sessionToken:S.sessionToken,packId:target,csvText,changeNote:note});
+    } else {
+      r=await api('packs',{action:'admin_upload',uid:S.user.uid,sessionToken:S.sessionToken,
+        name, subject:'MIXED', description:'Uploaded '+new Date().toLocaleDateString('en-IN'),
+        csvText, enabledByDefault:false});
+    }
     if(r.ok){
       toast('✅ '+r.message);
       document.getElementById('packName').value='';
