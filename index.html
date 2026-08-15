@@ -276,8 +276,8 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     <div class="ai-av"><i class="ti ti-robot"></i></div>
     <div>
       <div style="font-size:11px;font-weight:700;color:var(--purple);margin-bottom:3px">AI INSIGHT</div>
-      <div style="font-size:12px;line-height:1.5">Your <b>Electrostatics</b> accuracy is 44% — weakest area. Recommended: 20 min on Coulomb's Law today (NCERT Class 12, Ch.1, Pg 6–18).</div>
-      <button class="btn btn-blue" style="font-size:11px;padding:5px 11px;margin-top:8px" onclick="startTopicQuiz('Electrostatics','PHYSICS')"><i class="ti ti-player-play"></i> Practice Now</button>
+      <div style="font-size:12px;line-height:1.5" id="aiInsightText">Your <b>Electrostatics</b> accuracy is 44% — weakest area. Recommended: 20 min on Coulomb's Law today (NCERT Class 12, Ch.1, Pg 6–18).</div>
+      <button class="btn btn-blue" style="font-size:11px;padding:5px 11px;margin-top:8px" id="aiInsightAction" onclick="startTopicQuiz('Electrostatics','PHYSICS')"><i class="ti ti-player-play"></i> Practice Now</button>
     </div>
   </div>
   <div class="sec-hd"><i class="ti ti-search"></i> Quick Topic Search</div>
@@ -297,6 +297,10 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     <div class="tgt done"><i class="ti ti-circle-check" style="color:var(--green);font-size:20px"></i><div style="flex:1"><div style="font-size:13px;font-weight:600">Laws of Motion · Daily Quiz</div><div style="font-size:11px;color:var(--mute)">20 Qs · Scored 85%</div></div><span class="badge be">Done</span></div>
     <div class="tgt pending" onclick="startTopicQuiz('Organic Chemistry','CHEMISTRY')"><i class="ti ti-circle" style="color:var(--amber);font-size:20px"></i><div style="flex:1"><div style="font-size:13px;font-weight:600">Organic Chemistry · Revision</div><div style="font-size:11px;color:var(--mute)">30 Qs · 35 min</div></div><span class="badge bm">Pending</span></div>
     <div class="tgt hard" onclick="startTopicQuiz('Cell Biology','BIOLOGY')"><i class="ti ti-circle" style="color:var(--red);font-size:20px"></i><div style="flex:1"><div style="font-size:13px;font-weight:600">Full Mock · Biology</div><div style="font-size:11px;color:var(--mute)">50 Qs · 60 min</div></div><span class="badge bh">Hard</span></div>
+  </div>
+  <div class="sec-hd" style="margin-top:14px"><i class="ti ti-chart-dots"></i> Chapter Mastery</div>
+  <div class="card" id="chapterMasteryArea">
+    <div style="font-size:12px;color:var(--mute)">Solve a few topic tests to unlock chapter mastery, learning DNA, and score prediction.</div>
   </div>
   <div class="sec-hd" style="margin-top:14px"><i class="ti ti-trophy"></i> Leaderboard</div>
   <div class="card">
@@ -387,6 +391,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     <div><div class="sec-hd" style="margin-bottom:2px"><i class="ti ti-notebook"></i> Galti Copy</div><div style="font-size:11px;color:var(--mute)">Wrong answers auto-logged with NCERT reference</div></div>
     <button class="btn btn-blue" style="font-size:11px;padding:7px 12px" onclick="practiceMistakes()"><i class="ti ti-zap"></i> Practice All</button>
   </div>
+  <div id="galtiSummaryArea" class="quad" style="margin-bottom:12px"></div>
   <div id="mistakeArea"><div style="text-align:center;padding:40px 20px;color:var(--mute)"><i class="ti ti-mood-happy" style="font-size:36px;display:block;margin-bottom:9px"></i><div style="font-size:13px;font-weight:600">Notebook is empty — keep solving!</div></div></div>
 </div>
 
@@ -409,15 +414,21 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 
 <!-- ANALYTICS -->
 <div class="screen" id="screen-analytics">
-  <div class="quad"><div class="qbox"><div class="qn">3,240</div><div class="ql">Qs Solved</div></div><div class="qbox"><div class="qn" style="color:var(--teal)">68%</div><div class="ql">Accuracy</div></div><div class="qbox"><div class="qn" style="color:var(--red)">12</div><div class="ql">Day Streak</div></div><div class="qbox"><div class="qn" style="color:var(--purple)">47h</div><div class="ql">Study Time</div></div></div>
+  <div class="quad"><div class="qbox"><div class="qn" id="statsSolved">3,240</div><div class="ql">Qs Solved</div></div><div class="qbox"><div class="qn" style="color:var(--teal)" id="statsAccuracy">68%</div><div class="ql">Accuracy</div></div><div class="qbox"><div class="qn" style="color:var(--red)">12</div><div class="ql">Day Streak</div></div><div class="qbox"><div class="qn" style="color:var(--purple)" id="statsScore">490</div><div class="ql">NEET Score</div></div></div>
   <div class="sec-hd"><i class="ti ti-list-check"></i> Chapter Accuracy</div>
-  <div class="card">
+  <div class="card" id="chapterAccuracyArea">
     <div class="prow"><div class="plbl">Cell Biology</div><div class="pbarbg"><div class="pbar" style="width:90%;background:var(--green)"></div></div><div class="ppct" style="color:var(--green)">90%</div></div>
     <div class="prow"><div class="plbl">Laws of Motion</div><div class="pbarbg"><div class="pbar" style="width:82%;background:var(--blue)"></div></div><div class="ppct" style="color:var(--blue)">82%</div></div>
     <div class="prow"><div class="plbl">Genetics</div><div class="pbarbg"><div class="pbar" style="width:70%;background:var(--purple)"></div></div><div class="ppct" style="color:var(--purple)">70%</div></div>
     <div class="prow"><div class="plbl">Organic Chemistry</div><div class="pbarbg"><div class="pbar" style="width:55%;background:var(--amber)"></div></div><div class="ppct" style="color:#7a4800">55%</div></div>
-    <div class="prow"><div class="plbl">Electrostatics</div><div class="pbarbg"><div class="pbar" style="width:44%;background:var(--red)"></div></div><div class="ppct" style="color:var(--red)">44%</div></div>
-    <div class="prow"><div class="plbl">Thermodynamics</div><div class="pbarbg"><div class="pbar" style="width:38%;background:var(--red)"></div></div><div class="ppct" style="color:var(--red)">38%</div></div>
+  </div>
+  <div class="sec-hd"><i class="ti ti-dna-2"></i> Learning DNA</div>
+  <div class="card" id="learningDnaArea">
+    <div style="font-size:12px;color:var(--mute)">Your subject-wise mastery profile will appear here after a few attempts.</div>
+  </div>
+  <div class="sec-hd"><i class="ti ti-target-arrow"></i> Score Predictor</div>
+  <div class="card" id="scorePredictionArea">
+    <div style="font-size:12px;color:var(--mute)">Current score estimate and highest improvement topics will appear here.</div>
   </div>
   <div class="sec-hd"><i class="ti ti-calendar"></i> Study Streak</div>
   <div class="card"><div id="streakGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px"></div></div>
@@ -485,7 +496,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
   <div class="ub" style="margin-bottom:11px">
     <i class="ti ti-file-spreadsheet" style="font-size:26px;color:var(--blue)"></i>
     <div style="font-size:13px;font-weight:700;margin-top:6px">Upload New Content Pack</div>
-    <div style="font-size:10px;color:var(--mute);margin:5px 0">Columns: subject, chapter, question, opt_a-d, correct(A/B/C/D), explanation, ncert_class/chapter/page, syllabus_unit, difficulty, pyq_year, trick</div>
+    <div style="font-size:10px;color:var(--mute);margin:5px 0">Columns: subject, chapter, concept, subconcept, question, opt_a-d, correct(A/B/C/D), explanation, ncert_class/chapter/page, syllabus_unit, difficulty, formula, unit_type, question_type, common_mistake, variant_group, estimated_time_sec, neet_weightage, pyq_year, trick</div>
     <select id="packUpdateTarget" style="width:100%;padding:9px 12px;border:1.5px solid var(--bdr);border-radius:9px;font-size:12px;background:var(--surf);color:var(--txt);margin-top:7px" onchange="document.getElementById('packName').style.display=this.value?'none':'block'"></select>
     <input id="packName" class="fin" style="margin-top:7px" placeholder="Pack name e.g. Physics Extra Set 2">
     <input type="file" id="packCsvFile" accept=".csv" style="margin:9px 0;font-size:12px">
@@ -815,7 +826,7 @@ async function verifySession(){
     if(r.error==='SESSION_REPLACED'){
       clearSession(); stopVerify();
       toast('⚠️ You were signed in on another device. Signed out here.');
-      updateUI(); switchTab('home');
+      updateUI(); loadLearningDashboard(); switchTab('home');
     } else if(r.valid){
       S.user = {...S.user, ...r.user};
       saveSession(S.user, S.sessionToken);
@@ -858,7 +869,7 @@ async function doGoogleSignIn(){
     saveSession(r.user, r.sessionToken);
     startVerify();
     closeModal('authModal');
-    updateUI(); switchTab('home');
+    updateUI(); loadLearningDashboard(); switchTab('home');
     toast('Welcome, ' + r.user.name + '! 👋');
   } catch(err){
     if(err.code === 'auth/popup-closed-by-user'){ /* user closed popup, do nothing */ }
@@ -892,7 +903,7 @@ async function doLogin(){
     saveSession(r.user, r.sessionToken);
     startVerify();
     closeModal('authModal');
-    updateUI(); switchTab('home');
+    updateUI(); loadLearningDashboard(); switchTab('home');
     toast('Welcome back, '+r.user.name+'! 👋');
   }catch(err){
     const msg = err.code==='auth/invalid-credential'?'Incorrect email or password.':err.code==='auth/user-not-found'?'No account found. Please register.':'Login failed. Try again.';
@@ -942,6 +953,15 @@ function updateUI(){
   document.getElementById('adminTab').style.display = isAdmin?'flex':'none';
   document.getElementById('authBtn').title = isLoggedIn?'Sign Out':'Sign In';
   showAccessBanner(); updateSubCard();
+  renderLearningUI();
+}
+
+async function loadLearningDashboard(){
+  if(!S.user||!S.sessionToken){ renderLearningUI(); return; }
+  try{
+    const r=await api('learning',{action:'dashboard',uid:S.user.uid,sessionToken:S.sessionToken});
+    if(r.ok) mergeLearningState(r);
+  }catch(e){ renderLearningUI(); }
 }
 
 // ===== NAV =====
@@ -1058,7 +1078,132 @@ const QUESTIONS = [
 
 // ===== QUIZ STATE =====
 let quizList=[], curQ=0, answered=false, timerInt=null, timeLeft=1500, activeTopic=null;
-let mistakes=[], notes=[], fcIdx=0;
+let mistakes=[], notes=[], fcIdx=0, sessionResults=[], questionStartedAt=0, sessionStartedAt=0;
+let learningState = { learningProfile:null, chapterMastery:{}, galtiSummary:null, dailyMission:[], scorePrediction:null };
+
+const ERROR_LABELS = {
+  concept_error:'Concept Error',
+  formula_recall_error:'Formula Recall Error',
+  unit_conversion_error:'Unit Conversion Error',
+  calculation_error:'Calculation Error',
+  careless_error:'Careless Error',
+  time_pressure_error:'Time Pressure Error'
+};
+
+function safeNum(v, fb=0){ const n=Number(v); return Number.isFinite(n)?n:fb; }
+function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+function slugify(v){ return String(v||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')||'general'; }
+function normalizeDifficulty(v){ v=String(v||'medium').toLowerCase(); return ['starter','easy','medium','hard','exam'].includes(v)?v:(v==='simple'?'easy':v==='very hard'?'hard':'medium'); }
+function defaultLearningState(){ return { learningProfile:null, chapterMastery:{}, galtiSummary:null, dailyMission:[], scorePrediction:null, galti:[] }; }
+function normalizeQuestionMeta(q){
+  const subject=String(q.subject||q.sub||'BIOLOGY').toUpperCase();
+  const chapter=q.chapter||q.ch||'General';
+  const difficulty=normalizeDifficulty(q.difficulty||q.diff||'medium');
+  const concept=q.concept||q.unit||chapter;
+  const blob=`${q.text||''} ${(q.opts||[]).join(' ')}`.toLowerCase();
+  const unitType=q.unitType||q.intelligence?.unitType||(subject==='BIOLOGY'?'ncert_recall':/(m\/s|km\/h|cm\/s|mol|molar|litre|liter|ml|kg|gram|°c|kelvin|atm|pascal|newton|joule|volt|amp)/.test(blob)?'converted_units':(/\d/.test(blob)?'calculation':'conceptual'));
+  const questionType=q.questionType||q.intelligence?.questionType||(/\d/.test(blob)?'numerical_mcq':'mcq');
+  const estimatedTimeSec=safeNum(q.estimatedTimeSec||q.intelligence?.estimatedTimeSec,{starter:35,easy:45,medium:60,hard:85,exam:100}[difficulty]||60);
+  return {...q,sub:subject,subject,ch:chapter,chapter,diff:difficulty,difficulty,concept,unit:q.unit||concept,formula:q.formula||q.intelligence?.formula||'',commonMistake:q.commonMistake||q.trick||q.intelligence?.commonMistake||'',variantGroup:q.variantGroup||q.intelligence?.variantGroup||slugify(`${subject}-${chapter}-${concept}`),estimatedTimeSec,neetWeightage:safeNum(q.neetWeightage||q.intelligence?.neetWeightage,q.pyq?1.3:1),metadataVersion:'v2',intelligence:{...(q.intelligence||{}),subject,chapter,concept,subconcept:q.subconcept||q.intelligence?.subconcept||concept,difficulty,formula:q.formula||q.intelligence?.formula||'',unitType,questionType,commonMistake:q.commonMistake||q.trick||q.intelligence?.commonMistake||'',variantGroup:q.variantGroup||q.intelligence?.variantGroup||slugify(`${subject}-${chapter}-${concept}`),estimatedTimeSec,neetWeightage:safeNum(q.neetWeightage||q.intelligence?.neetWeightage,q.pyq?1.3:1),metadataVersion:'v2'}};
+}
+function buildLocalDiagnosis(question, timeTakenSec, confidence){
+  const q=normalizeQuestionMeta(question), blob=`${q.text||''} ${(q.opts||[]).join(' ')}`.toLowerCase();
+  let code='concept_error';
+  if(timeTakenSec>q.estimatedTimeSec*1.35) code='time_pressure_error';
+  else if(confidence==='easy'||timeTakenSec<q.estimatedTimeSec*0.45) code='careless_error';
+  else if(q.intelligence.unitType==='converted_units'||/convert|unit|si unit|km\/h|m\/s|cm\/s|kelvin|celsius/.test(blob)) code='unit_conversion_error';
+  else if(q.formula||/formula|law|equation|constant/.test(blob)) code='formula_recall_error';
+  else if(q.intelligence.questionType==='numerical_mcq'||/calculate|find the value|how much|numerical/.test((q.text||'').toLowerCase())) code='calculation_error';
+  return { code, label: ERROR_LABELS[code]||'Concept Error' };
+}
+function buildLocalRecoveryPath(question, diagnosis){
+  const q=normalizeQuestionMeta(question), order=['starter','easy','medium','hard','exam'], base=order.indexOf(q.difficulty), stages=['diagnostic','confirmation','recovery','reinforcement'];
+  const normalizedBank=QUESTIONS.map(normalizeQuestionMeta).filter(x=>x.id!==q.id&&(x.variantGroup===q.variantGroup||(x.subject===q.subject&&x.chapter===q.chapter&&x.concept===q.concept)));
+  return stages.map((stage, idx)=>{
+    const target=order[Math.max(1, Math.min(order.length-1, base + (stage==='diagnostic'?-1:stage==='reinforcement'?(base>=3?0:1):0)))]||'medium';
+    const candidate=normalizedBank.find(x=>x.difficulty===target)||normalizedBank[0];
+    if(candidate) return { stage, targetDifficulty:target, question:{...candidate,variantStage:stage,fromBank:true} };
+    const optLen=(q.opts||[]).length, shift=optLen?((idx+1)%optLen):0, opts=optLen?(q.opts||[]).map((_,i,a)=>a[(i+shift)%a.length]):q.opts||[];
+    return { stage, targetDifficulty:target, question:{...q,id:`${q.id}_${stage}`,text:`${stage==='diagnostic'?'Diagnostic check':stage==='confirmation'?'Confirmation check':stage==='recovery'?'Recovery drill':'Reinforcement round'}: ${q.text}`,opts,correct:optLen?((safeNum(q.correct)-shift+optLen)%optLen):safeNum(q.correct),difficulty:target,diff:target,variantOf:q.id,variantStage:stage,isGeneratedVariant:true} };
+  });
+}
+function persistLocalLearning(){ try{ localStorage.setItem('na_learning', JSON.stringify({learningState, mistakes})); }catch(e){} }
+function restoreLocalLearning(){
+  try{
+    const raw=localStorage.getItem('na_learning'); if(!raw) return;
+    const parsed=JSON.parse(raw); learningState={...defaultLearningState(), ...(parsed.learningState||{})}; mistakes=(parsed.mistakes||[]).map(m=>({...m,question:normalizeQuestionMeta(m.question||m)}));
+    const dot=document.getElementById('mistakeDot'); if(dot&&mistakes.length){ dot.textContent=mistakes.length; dot.style.display='inline-block'; }
+  }catch(e){}
+}
+function mergeLearningState(next){ learningState={...defaultLearningState(), ...learningState, ...(next||{})}; persistLocalLearning(); renderLearningUI(); }
+function ensureLocalProfile(){
+  if(learningState.learningProfile) return;
+  learningState.learningProfile={physics:{conceptUnderstanding:50,formulaRecall:50,unitConversion:50,calculation:50,speed:50,retention:50},chemistry:{conceptUnderstanding:50,formulaRecall:50,unitConversion:50,calculation:50,speed:50,retention:50},biology:{conceptUnderstanding:50,recall:50,retention:50,ncertAccuracy:50,speed:50}};
+}
+function nudgeMetric(bucket,key,delta){ if(bucket&&bucket[key]!==undefined) bucket[key]=clamp(Math.round((bucket[key]+delta)*10)/10,0,100); }
+function updateLocalSignals(result){
+  const q=normalizeQuestionMeta(result.question||{}), key=slugify(`${q.subject}-${q.chapter}`), cm=learningState.chapterMastery||{}, current=cm[key]||{subject:q.subject,chapter:q.chapter,concept:q.concept,attempted:0,correct:0,wrong:0,mastery:50};
+  current.attempted+=1; if(result.correct===true) current.correct+=1; if(result.correct===false) current.wrong+=1;
+  current.mastery=clamp(Math.round((((current.correct/current.attempted)||0)*100-current.wrong*2)*10)/10,0,100);
+  cm[key]=current; learningState.chapterMastery=cm; ensureLocalProfile();
+  const bucket=learningState.learningProfile[q.subject.toLowerCase()]; const diagnosis=result.correct===false?buildLocalDiagnosis(q,result.timeTaken,result.confidence):null;
+  nudgeMetric(bucket,'speed', result.correct===true&&result.timeTaken<=q.estimatedTimeSec?2:-1);
+  nudgeMetric(bucket,'conceptUnderstanding', result.correct===true?1.5:diagnosis?.code==='concept_error'?-3:-1);
+  if(q.subject==='BIOLOGY'){ nudgeMetric(bucket,'recall', result.correct===true?1.5:-1.5); nudgeMetric(bucket,'retention', result.correct===true?1:-1); nudgeMetric(bucket,'ncertAccuracy', result.correct===true?1:-1); }
+  else {
+    nudgeMetric(bucket,'formulaRecall', diagnosis?.code==='formula_recall_error'?-3:(q.formula&&result.correct===true?1.5:0.5));
+    nudgeMetric(bucket,'unitConversion', diagnosis?.code==='unit_conversion_error'?-3:(q.unitType==='converted_units'&&result.correct===true?1.5:0));
+    nudgeMetric(bucket,'calculation', diagnosis?.code==='calculation_error'?-3:(q.intelligence.questionType==='numerical_mcq'&&result.correct===true?1.5:0));
+    nudgeMetric(bucket,'retention', result.correct===true?1:-1);
+  }
+  persistLocalLearning();
+}
+function buildLocalDashboard(){
+  const attempted=sessionResults.filter(r=>r.correct!==null).length;
+  const correct=sessionResults.filter(r=>r.correct===true).length;
+  const accuracy=attempted?Math.round(correct/attempted*100):0;
+  const chapterMastery={...(learningState.chapterMastery||{})};
+  const galti=mistakes.map(m=>m.serverGalti||m);
+  const repeated=mistakes.filter(m=>(m.repeatCount||1)>1).length;
+  const dueToday=mistakes.filter(m=>(m.revisionPlan||[]).some(s=>!s.completedAt&&new Date(s.dueAt)<=new Date())).length;
+  return {
+    chapterMastery,
+    galtiSummary:{
+      wrongQuestions:mistakes.length,
+      repeatedMistakes:repeated,
+      weakConcepts:Object.values(chapterMastery).sort((a,b)=>a.mastery-b.mastery).slice(0,4).map(c=>({subject:c.subject,concept:c.concept||c.chapter,chapter:c.chapter,count:c.wrong||1})),
+      formulaErrors:mistakes.filter(m=>m.diagnosis?.code==='formula_recall_error').length,
+      unitConversionErrors:mistakes.filter(m=>m.diagnosis?.code==='unit_conversion_error').length,
+      recoveryProgress:{completed:mistakes.reduce((s,m)=>s+(m.recoveryProgress?.completed||0),0),total:mistakes.reduce((s,m)=>s+(m.recoveryProgress?.total||0),0),percent:0},
+      revisionDueToday:dueToday
+    },
+    dailyMission:(learningState.dailyMission&&learningState.dailyMission.length)?learningState.dailyMission:[
+      {title:'Weak topic recovery',note:'Follow the next GALTI recovery question'},
+      {title:'Revision due today',note:`${dueToday||0} spaced-revision item(s)`},
+      {title:'Challenge question',note:'Push one stronger chapter at higher difficulty'}
+    ],
+    scorePrediction:learningState.scorePrediction||{currentNeetScore:Math.round(accuracy/100*720),confidenceRange:[Math.max(0,Math.round(accuracy/100*720)-80),Math.min(720,Math.round(accuracy/100*720)+80)],highestImprovementPotential:Object.values(chapterMastery).sort((a,b)=>a.mastery-b.mastery).slice(0,3).map(c=>({subject:c.subject,chapter:c.chapter,mastery:c.mastery,upliftPotential:Math.round((100-c.mastery)*0.7)}))},
+    accuracy, attempted
+  };
+}
+function renderLearningUI(){
+  const summary=buildLocalDashboard(), score=summary.scorePrediction||{}, galti=summary.galtiSummary||{}, chapters=Object.values(summary.chapterMastery||{}).sort((a,b)=>a.mastery-b.mastery);
+  const weak=chapters[0];
+  const hScore=document.getElementById('hScore'); if(hScore) hScore.textContent=(score.currentNeetScore||0)+' / 720';
+  const hSolved=document.getElementById('hSolved'); if(hSolved) hSolved.textContent=String((learningState.scorePrediction?.totalQuestionsAttempted)||summary.attempted||mistakes.length||0);
+  const hRank=document.getElementById('hRank'); if(hRank) hRank.textContent=score.confidenceRange?`${score.confidenceRange[0]}–${score.confidenceRange[1]}`:'#842';
+  const aiText=document.getElementById('aiInsightText'); if(aiText) aiText.innerHTML=weak?`Your <b>${weak.chapter}</b> mastery is ${Math.round(weak.mastery)}% — weakest area. Recommended: recovery on <b>${weak.concept||weak.chapter}</b> today.`:'Solve a few adaptive questions to unlock your weakest-area recommendation.';
+  const aiAction=document.getElementById('aiInsightAction'); if(aiAction&&weak){ aiAction.onclick=()=>startTopicQuiz(weak.chapter, weak.subject); }
+  const targets=document.getElementById('targetsArea'); if(targets){ targets.innerHTML=(summary.dailyMission||[]).slice(0,4).map((item,idx)=>`<div class="tgt ${idx===0?'pending':idx===1?'hard':'done'}"><i class="ti ${idx===0?'ti-circle':idx===1?'ti-target-arrow':'ti-circle-check'}" style="color:${idx===0?'var(--amber)':idx===1?'var(--red)':'var(--green)'};font-size:20px"></i><div style="flex:1"><div style="font-size:13px;font-weight:600">${item.title||item.kind||'Mission'}</div><div style="font-size:11px;color:var(--mute)">${item.note||''}</div></div><span class="badge ${idx===1?'bh':'bm'}">${idx===0?'Due':idx===1?'Push':'Plan'}</span></div>`).join('')||'<div style="font-size:12px;color:var(--mute)">No missions yet.</div>'; }
+  const chapterHome=document.getElementById('chapterMasteryArea'); if(chapterHome){ chapterHome.innerHTML=chapters.length?chapters.slice(0,4).map(c=>`<div class="prow"><div class="plbl">${c.chapter}</div><div class="pbarbg"><div class="pbar" style="width:${Math.round(c.mastery)}%;background:${c.mastery>=70?'var(--green)':c.mastery>=50?'var(--amber)':'var(--red)'}"></div></div><div class="ppct" style="color:${c.mastery>=70?'var(--green)':c.mastery>=50?'#7a4800':'var(--red)'}">${Math.round(c.mastery)}%</div></div>`).join(''):'<div style="font-size:12px;color:var(--mute)">Solve a few topic tests to unlock chapter mastery, learning DNA, and score prediction.</div>'; }
+  const gsum=document.getElementById('galtiSummaryArea'); if(gsum){ gsum.innerHTML=[['Wrong Qs',galti.wrongQuestions||0],['Repeated',galti.repeatedMistakes||0],['Weak Concepts',(galti.weakConcepts||[]).length],['Due Today',galti.revisionDueToday||0]].map(([l,v])=>`<div class="qbox"><div class="qn" style="font-size:18px">${v}</div><div class="ql">${l}</div></div>`).join(''); }
+  const statsSolved=document.getElementById('statsSolved'); if(statsSolved) statsSolved.textContent=String(summary.attempted||mistakes.length||0);
+  const statsAcc=document.getElementById('statsAccuracy'); if(statsAcc) statsAcc.textContent=(summary.accuracy||0)+'%';
+  const statsScore=document.getElementById('statsScore'); if(statsScore) statsScore.textContent=String(score.currentNeetScore||0);
+  const chapterAccuracy=document.getElementById('chapterAccuracyArea'); if(chapterAccuracy){ chapterAccuracy.innerHTML=chapters.length?chapters.slice(0,6).map(c=>`<div class="prow"><div class="plbl">${c.chapter}</div><div class="pbarbg"><div class="pbar" style="width:${Math.round(c.mastery)}%;background:${c.mastery>=70?'var(--green)':c.mastery>=50?'var(--blue)':'var(--red)'}"></div></div><div class="ppct" style="color:${c.mastery>=70?'var(--green)':c.mastery>=50?'var(--blue)':'var(--red)'}">${Math.round(c.mastery)}%</div></div>`).join(''):'<div style="font-size:12px;color:var(--mute)">No chapter accuracy data yet.</div>'; }
+  const dna=document.getElementById('learningDnaArea'); if(dna){ const lp=learningState.learningProfile||{}; dna.innerHTML=Object.keys(lp).length?Object.entries(lp).map(([subject, metrics])=>`<div style="margin-bottom:12px"><div style="font-size:12px;font-weight:700;margin-bottom:6px;text-transform:uppercase">${subject}</div>${Object.entries(metrics).map(([k,v])=>`<div class="prow"><div class="plbl">${k.replace(/([A-Z])/g,' $1')}</div><div class="pbarbg"><div class="pbar" style="width:${Math.round(v)}%;background:${v>=70?'var(--green)':v>=50?'var(--amber)':'var(--red)'}"></div></div><div class="ppct">${Math.round(v)}%</div></div>`).join('')}</div>`).join(''):'<div style="font-size:12px;color:var(--mute)">Your subject-wise mastery profile will appear here after a few attempts.</div>'; }
+  const prediction=document.getElementById('scorePredictionArea'); if(prediction){ prediction.innerHTML=score.confidenceRange?`<div style="font-size:20px;font-weight:800;color:var(--blue)">${score.currentNeetScore} / 720</div><div style="font-size:12px;color:var(--mute);margin:4px 0 10px">Confidence range: ${score.confidenceRange[0]}–${score.confidenceRange[1]}</div>${(score.highestImprovementPotential||[]).map(t=>`<div class="lbrow"><div style="flex:1"><div style="font-size:13px;font-weight:600">${t.chapter}</div><div style="font-size:11px;color:var(--mute)">${t.subject} · ${t.mastery}% mastery</div></div><span style="font-weight:800;color:var(--green)">+${t.upliftPotential}</span></div>`).join('')}`:'<div style="font-size:12px;color:var(--mute)">Current score estimate and highest improvement topics will appear here.</div>'; }
+}
 
 // ===== SEARCH =====
 function doSearch(val, resId){
@@ -1086,16 +1231,18 @@ function startTopicQuiz(name, subject){
   if(!canAccess() && !S.user){ /* anonymous free tier, limited to easy */ }
   const t=TOPICS.find(x=>x.name===name)||TOPICS.find(x=>x.sub===subject)||TOPICS[0];
   activeTopic=t;
-  quizList=QUESTIONS.filter(q=>q.tid===t.id); if(!quizList.length) quizList=QUESTIONS.filter(q=>q.sub===t.sub); if(!quizList.length) quizList=[...QUESTIONS];
+  quizList=QUESTIONS.filter(q=>q.tid===t.id).map(normalizeQuestionMeta); if(!quizList.length) quizList=QUESTIONS.filter(q=>q.sub===t.sub).map(normalizeQuestionMeta); if(!quizList.length) quizList=[...QUESTIONS].map(normalizeQuestionMeta);
+  sessionResults=[]; sessionStartedAt=Date.now();
   curQ=0; switchTab('quiz'); renderQuiz();
 }
-function startFullPractice(){ if(!canAccess()){ openPaywall(); return; } activeTopic=null; quizList=[...QUESTIONS]; curQ=0; switchTab('quiz'); renderQuiz(); }
+function startFullPractice(){ if(!canAccess()){ openPaywall(); return; } activeTopic=null; quizList=[...QUESTIONS].map(normalizeQuestionMeta); sessionResults=[]; sessionStartedAt=Date.now(); curQ=0; switchTab('quiz'); renderQuiz(); }
 
 function renderQuiz(){
   document.getElementById('quizView').style.display='block';
   document.getElementById('resultView').style.display='none';
   answered=false;
-  const q=quizList[curQ];
+  const q=normalizeQuestionMeta(quizList[curQ]);
+  questionStartedAt=Date.now();
   const hdr=activeTopic?`<div class="tqhdr"><div style="font-size:10px;opacity:.75;text-transform:uppercase;letter-spacing:.8px">Smart Topic Test</div><div style="font-size:16px;font-weight:800;margin-top:2px">${activeTopic.name}</div><div style="font-size:11px;opacity:.7;margin-top:3px">${activeTopic.sub} · NCERT Class ${activeTopic.cl}, Ch.${activeTopic.ch} · Pages ${activeTopic.pg}</div></div>`:'';
   document.getElementById('quizView').innerHTML=`${hdr}
   <div class="qmeta"><span class="qcnt">Q <span id="qN">${curQ+1}</span> of ${quizList.length}</span><div class="timer"><i class="ti ti-clock"></i><span id="tVal">25:00</span></div></div>
@@ -1127,12 +1274,17 @@ function renderQuiz(){
 function handleAns(el, idx){
   if(answered) return; answered=true;
   document.querySelectorAll('.opt').forEach(o=>o.classList.add('locked'));
-  const q=quizList[curQ];
+  const q=normalizeQuestionMeta(quizList[curQ]);
+  const timeTaken=Math.max(1, Math.round((Date.now()-questionStartedAt)/1000));
+  const confidence=q.difficulty==='easy'?'easy':q.difficulty==='hard'||q.difficulty==='exam'?'hard':'medium';
+  const result={ questionId:q.id, question:q, selectedIndex:idx, correct:idx===q.correct, timeTaken, difficulty:q.difficulty, type:q.unitType==='converted_units'?'unit_variant':'standard', confidence, levelIndex:safeNum(document.getElementById('diffSlider')?.value,0) };
+  sessionResults.push(result);
+  updateLocalSignals(result);
   if(idx===q.correct){ el.classList.add('correct'); el.querySelector('.oltr').style.cssText='background:var(--green);color:#fff'; toast('✅ Correct! +4 marks'); }
   else {
     el.classList.add('wrong'); el.querySelector('.oltr').style.cssText='background:var(--red);color:#fff';
     const cEl=document.querySelectorAll('.opt')[q.correct]; if(cEl){ cEl.classList.add('correct'); cEl.querySelector('.oltr').style.cssText='background:var(--green);color:#fff'; }
-    addMistake(q,idx); toast('❌ Wrong. Study the explanation below.');
+    addMistake(q,idx,result); toast('❌ Wrong. Study the explanation below.');
   }
   document.getElementById('explTxt').textContent=q.explanation;
   document.getElementById('sylBox').innerHTML=`<b>NCERT Reference:</b> Class ${q.ncertCl}, Chapter ${q.ncertCh}, Page ${q.ncertPg}<br><b>Syllabus Unit:</b> ${q.unit}${q.pyq?`<br><b style="color:var(--red)">⭐ PYQ ${q.pyqYr} — High priority!</b>`:''}`;
@@ -1146,12 +1298,17 @@ function bookmarkQ(){ toast('🔖 Question bookmarked!'); }
 function logConf(l){ toast(`Logged as ${l}`); document.getElementById('confRow').style.display='none'; }
 
 function nextQ(){
+  if(!answered){
+    const q=normalizeQuestionMeta(quizList[curQ]);
+    const result={ questionId:q.id, question:q, selectedIndex:null, correct:null, timeTaken:Math.max(1, Math.round((Date.now()-questionStartedAt)/1000)), difficulty:q.difficulty, type:q.unitType==='converted_units'?'unit_variant':'standard', confidence:'medium', levelIndex:safeNum(document.getElementById('diffSlider')?.value,0) };
+    sessionResults.push(result);
+  }
   if(curQ<quizList.length-1){ curQ++; renderQuiz(); }
   else { clearInterval(timerInt); timerInt=null; showResult(); }
 }
 
-function showResult(){
-  const total=quizList.length, pct=68;
+async function showResult(){
+  const attempted=sessionResults.filter(r=>r.correct!==null).length, total=sessionResults.length||quizList.length, correct=sessionResults.filter(r=>r.correct===true).length, wrong=sessionResults.filter(r=>r.correct===false).length, pct=attempted?Math.round(correct/attempted*100):0;
   document.getElementById('quizView').style.display='none';
   document.getElementById('resultView').style.display='block';
   document.getElementById('resultView').innerHTML=`
@@ -1161,13 +1318,23 @@ function showResult(){
     ${activeTopic?`<div style="font-size:12px;opacity:.75;margin-top:4px">${activeTopic.name} · NCERT Cl.${activeTopic.cl} Ch.${activeTopic.ch}</div>`:''}
   </div>
   <div class="rgrid">
-    <div class="rstat"><div class="rn" style="color:var(--green)">${Math.round(total*.68)}</div><div style="font-size:11px;color:var(--mute)">Correct</div></div>
-    <div class="rstat"><div class="rn" style="color:var(--red)">${Math.round(total*.32)}</div><div style="font-size:11px;color:var(--mute)">Wrong</div></div>
+    <div class="rstat"><div class="rn" style="color:var(--green)">${correct}</div><div style="font-size:11px;color:var(--mute)">Correct</div></div>
+    <div class="rstat"><div class="rn" style="color:var(--red)">${wrong}</div><div style="font-size:11px;color:var(--mute)">Wrong</div></div>
     <div class="rstat"><div class="rn" style="color:var(--blue)">${pct}%</div><div style="font-size:11px;color:var(--mute)">Accuracy</div></div>
   </div>
   ${mistakes.length?`<div class="card" style="border-color:var(--red)"><div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:4px">${mistakes.length} mistake(s) logged → Galti Copy</div></div>`:''}
   <button class="btn btn-blue btn-full" style="margin-bottom:9px" onclick="${activeTopic?`startTopicQuiz('${activeTopic.name}','${activeTopic.sub}')`:'startFullPractice()'}"><i class="ti ti-refresh"></i> Retry</button>
   <button class="btn btn-ghost btn-full" onclick="switchTab('mistakes')"><i class="ti ti-notebook"></i> Review Galti Copy</button>`;
+  if(S.user&&S.sessionToken&&sessionResults.length){
+    try{
+      const scoring=await api('scoring',{uid:S.user.uid,sessionToken:S.sessionToken,results:sessionResults,subject:(activeTopic?.sub||'global').toLowerCase(),sessionTimeSec:Math.max(0, Math.round((Date.now()-sessionStartedAt)/1000))});
+      if(scoring.ok&&scoring.learning) mergeLearningState(scoring.learning);
+      if(scoring.rank) document.getElementById('hRank').textContent='#'+scoring.rank;
+      if(scoring.updated?.global?.attempted!==undefined) document.getElementById('hSolved').textContent=scoring.updated.global.attempted;
+    }catch(e){}
+  } else {
+    persistLocalLearning(); renderLearningUI();
+  }
   activeTopic=null;
 }
 
@@ -1182,18 +1349,45 @@ function startTimer(){
 }
 
 // ===== MISTAKES =====
-function addMistake(q,sel){
-  if(!mistakes.some(m=>m.id===q.id)){
-    mistakes.push({...q,userIdx:sel,errTag:'Conceptual Error',loggedOn:new Date().toLocaleDateString('en-IN')});
+async function addMistake(q,sel,attempt){
+  const diagnosis=buildLocalDiagnosis(q, attempt.timeTaken, attempt.confidence);
+  const existing=mistakes.find(m=>m.id===q.id);
+  const base={...normalizeQuestionMeta(q),id:q.id,userIdx:sel,question:normalizeQuestionMeta(q),errTag:diagnosis.label,diagnosis,loggedOn:new Date().toLocaleDateString('en-IN'),repeatCount:(existing?.repeatCount||0)+1,revisionPlan:existing?.revisionPlan||[{dayOffset:1,dueAt:new Date(Date.now()+86400000).toISOString()}],recoveryProgress:existing?.recoveryProgress||{completed:0,total:4}};
+  const insertAt=curQ+1;
+  if(!existing){
+    mistakes.unshift(base);
     const dot=document.getElementById('mistakeDot'); dot.textContent=mistakes.length; dot.style.display='inline-block';
+  } else Object.assign(existing, base);
+  try{
+    if(!S.user||!S.sessionToken) throw new Error('auth-required');
+    const related=QUESTIONS.map(normalizeQuestionMeta).filter(x=>x.id!==q.id&&(x.variantGroup===base.variantGroup||(x.subject===base.subject&&x.chapter===base.chapter))).slice(0,24);
+    const recovery=await api('learning',{action:'recover',uid:S.user.uid,sessionToken:S.sessionToken,question:base.question,questionBank:related,attempt});
+    const target=mistakes.find(m=>m.id===q.id);
+    if(target&&recovery.ok){
+      target.diagnosis=recovery.diagnosis;
+      target.errTag=recovery.diagnosis.label;
+      target.recoveryPath=recovery.recoveryPath;
+      target.recoveryProgress={completed:0,total:(recovery.recoveryPath||[]).length||4};
+      target.revisionPlan=(recovery.recoveryPath||[]).map((_,i)=>({dayOffset:[1,3,7,15,30][i]||30,dueAt:new Date(Date.now()+([1,3,7,15,30][i]||30)*86400000).toISOString(),completedAt:null}));
+      const insert=(recovery.recoveryPath||[]).map(step=>normalizeQuestionMeta(step.question)).filter(step=>step&& !quizList.some(existingQ=>String(existingQ.id)===String(step.id)));
+      if(insert.length) quizList.splice(insertAt, 0, ...insert);
+    } else throw new Error(recovery.error||'recover-failed');
+  }catch(e){
+    const target=mistakes.find(m=>m.id===q.id);
+    if(target&&!target.recoveryPath){
+      target.recoveryPath=buildLocalRecoveryPath(base.question, diagnosis);
+      target.recoveryProgress={completed:0,total:target.recoveryPath.length};
+    }
   }
+  persistLocalLearning(); renderLearningUI();
 }
 function renderMistakes(){
   const box=document.getElementById('mistakeArea'); if(!box) return;
   if(!mistakes.length){ box.innerHTML='<div style="text-align:center;padding:40px 20px;color:var(--mute)"><i class="ti ti-mood-happy" style="font-size:36px;display:block;margin-bottom:9px"></i><div style="font-size:13px;font-weight:600">Galti Copy is empty!</div><div style="font-size:11px;margin-top:4px">Wrong answers appear here automatically.</div></div>'; return; }
-  box.innerHTML=mistakes.map((m,i)=>`<div class="mc"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px"><span style="font-size:10px;font-weight:700;color:var(--red);text-transform:uppercase">${m.sub} · ${m.ch}</span><div style="display:flex;align-items:center;gap:7px"><span style="font-size:10px;background:var(--purple-l);color:var(--purple);padding:2px 7px;border-radius:6px;font-weight:700">${m.loggedOn}</span><select style="padding:3px 6px;border-radius:6px;border:1px solid var(--bdr);font-size:11px;background:var(--surf);color:var(--txt)" onchange="mistakes[${i}].errTag=this.value"><option>Conceptual Error</option><option>Calculation Error</option><option>Silly Mistake</option><option>Time Crunch</option></select></div></div><div style="font-size:13px;font-weight:600;margin-bottom:7px">${m.text}</div><div style="font-size:12px;color:var(--mute);margin-bottom:7px">Your answer: <b style="color:var(--red)">${m.opts[m.userIdx]}</b> | Correct: <b style="color:var(--green)">${m.opts[m.correct]}</b></div><div style="font-size:12px;background:var(--surf2);padding:10px;border-radius:8px;margin-bottom:7px;line-height:1.6">${m.explanation}</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:7px"><span class="ncert-tag"><i class="ti ti-book"></i> NCERT Cl.${m.ncertCl} Ch.${m.ncertCh} Pg.${m.ncertPg}</span><span class="syl-tag"><i class="ti ti-list"></i> ${m.unit}</span>${m.pyq?`<span class="badge bh">PYQ ${m.pyqYr}</span>`:''}</div><div style="text-align:right"><button onclick="mistakes.splice(${i},1);if(!mistakes.length)document.getElementById('mistakeDot').style.display='none';else document.getElementById('mistakeDot').textContent=mistakes.length;renderMistakes();toast('✅ Marked mastered!')" style="background:none;border:none;color:var(--mute);font-size:11px;cursor:pointer;font-weight:700;padding:4px 8px;border-radius:6px"><i class="ti ti-check"></i> Mark Mastered</button></div></div>`).join('');
+  box.innerHTML=mistakes.map((m,i)=>`<div class="mc"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px"><span style="font-size:10px;font-weight:700;color:var(--red);text-transform:uppercase">${m.sub} · ${m.ch}</span><div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap"><span style="font-size:10px;background:var(--purple-l);color:var(--purple);padding:2px 7px;border-radius:6px;font-weight:700">${m.loggedOn}</span><span class="badge ${m.repeatCount>1?'bh':'bm'}">${m.repeatCount>1?m.repeatCount+' repeats':'1st catch'}</span></div></div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px"><span class="ncert-tag"><i class="ti ti-brain"></i> ${m.diagnosis?.label||m.errTag}</span><span class="syl-tag"><i class="ti ti-book"></i> ${m.concept||m.unit}</span>${m.formula?`<span class="badge be">${m.formula}</span>`:''}${m.variantGroup?`<span class="badge bm">Variant ${m.variantGroup}</span>`:''}</div><div style="font-size:13px;font-weight:600;margin-bottom:7px">${m.text}</div><div style="font-size:12px;color:var(--mute);margin-bottom:7px">Your answer: <b style="color:var(--red)">${m.opts[m.userIdx]}</b> | Correct: <b style="color:var(--green)">${m.opts[m.correct]}</b></div><div style="font-size:12px;background:var(--surf2);padding:10px;border-radius:8px;margin-bottom:7px;line-height:1.6">${m.explanation}</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:7px"><span class="ncert-tag"><i class="ti ti-book"></i> NCERT Cl.${m.ncertCl} Ch.${m.ncertCh} Pg.${m.ncertPg}</span><span class="syl-tag"><i class="ti ti-list"></i> ${m.unit}</span>${m.pyq?`<span class="badge bh">PYQ ${m.pyqYr}</span>`:''}${m.revisionPlan?.length?`<span class="badge be">Due ${new Date(m.revisionPlan[0].dueAt).toLocaleDateString('en-IN')}</span>`:''}</div>${m.recoveryPath?.length?`<div style="background:var(--blue-l);border-radius:8px;padding:9px 10px;margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:var(--blue);margin-bottom:4px">Recovery Path</div>${m.recoveryPath.map((step,stepIdx)=>`<div style="font-size:11px;margin:3px 0">${stepIdx+1}. <b>${step.title||step.stage}</b> · ${step.targetDifficulty||step.question?.difficulty||'medium'} · ${step.strategy||step.question?.text||''}</div>`).join('')}</div>`:''}<div style="display:flex;justify-content:space-between;align-items:center"><button class="btn btn-ghost" style="padding:7px 10px;font-size:11px" onclick="quizList=[...(mistakes[${i}].recoveryPath||[]).map(x=>normalizeQuestionMeta(x.question)), normalizeQuestionMeta(mistakes[${i}].question)]; activeTopic=null; sessionResults=[]; curQ=0; switchTab('quiz'); renderQuiz()"><i class="ti ti-activity-heartbeat"></i> Recover</button><button onclick="mistakes.splice(${i},1);if(!mistakes.length)document.getElementById('mistakeDot').style.display='none';else document.getElementById('mistakeDot').textContent=mistakes.length;persistLocalLearning();renderLearningUI();renderMistakes();toast('✅ Marked mastered!')" style="background:none;border:none;color:var(--mute);font-size:11px;cursor:pointer;font-weight:700;padding:4px 8px;border-radius:6px"><i class="ti ti-check"></i> Mark Mastered</button></div></div>`).join('');
+  renderLearningUI();
 }
-function practiceMistakes(){ if(!mistakes.length){ toast('No mistakes yet!'); return; } quizList=[...mistakes]; activeTopic=null; curQ=0; switchTab('quiz'); renderQuiz(); }
+function practiceMistakes(){ if(!mistakes.length){ toast('No mistakes yet!'); return; } quizList=mistakes.flatMap(m=>(m.recoveryPath||[]).map(x=>normalizeQuestionMeta(x.question))).concat(mistakes.map(m=>normalizeQuestionMeta(m.question||m))); activeTopic=null; sessionResults=[]; sessionStartedAt=Date.now(); curQ=0; switchTab('quiz'); renderQuiz(); }
 
 // ===== NOTES =====
 function saveNote(){
@@ -1298,7 +1492,7 @@ function handleCSV(){
     rows.forEach(row=>{
       if(row.question&&row.opt_a){
         const ci={'A':0,'B':1,'C':2,'D':3}[(row.correct||'A').toUpperCase()]??0;
-        QUESTIONS.push({id:QUESTIONS.length+1,sub:(row.subject||'BIOLOGY').toUpperCase(),ch:row.chapter||'NCERT',tid:'t7',text:row.question,opts:[row.opt_a,row.opt_b||'',row.opt_c||'',row.opt_d||''],correct:ci,explanation:row.explanation||'Refer NCERT.',ncertCl:parseInt(row.ncert_class)||11,ncertCh:parseInt(row.ncert_chapter)||1,ncertPg:row.ncert_page||'1',unit:row.syllabus_unit||'NCERT',pyq:false,diff:'medium'});
+        QUESTIONS.push(normalizeQuestionMeta({id:QUESTIONS.length+1,sub:(row.subject||'BIOLOGY').toUpperCase(),ch:row.chapter||'NCERT',tid:'t7',text:row.question,opts:[row.opt_a,row.opt_b||'',row.opt_c||'',row.opt_d||''],correct:ci,explanation:row.explanation||'Refer NCERT.',ncertCl:parseInt(row.ncert_class)||11,ncertCh:parseInt(row.ncert_chapter)||1,ncertPg:row.ncert_page||'1',unit:row.syllabus_unit||'NCERT',pyq:false,diff:row.difficulty||'medium',concept:row.concept||row.syllabus_unit||row.chapter||'NCERT',subconcept:row.subconcept||'',formula:row.formula||'',unitType:row.unit_type||'',questionType:row.question_type||'',commonMistake:row.common_mistake||row.trick||'',variantGroup:row.variant_group||'',estimatedTimeSec:row.estimated_time_sec||'',neetWeightage:row.neet_weightage||''}));
         cnt++;
       }
     });
@@ -1613,7 +1807,7 @@ async function loadContentPacks(){
     if(d.questions && d.questions.length){
       // Merge pack questions into the live QUESTIONS pool, avoiding id collisions
       const existingIds = new Set(QUESTIONS.map(q=>q.id));
-      d.questions.forEach(q=>{ if(!existingIds.has(q.id)) QUESTIONS.push(q); });
+      d.questions.forEach(q=>{ const nq=normalizeQuestionMeta(q); if(!existingIds.has(nq.id)) QUESTIONS.push(nq); });
       console.log('Loaded', d.questions.length, 'questions from', d.activePacks.length, 'active content packs');
     }
   }catch(e){ console.log('Content packs not available yet'); }
@@ -1747,19 +1941,20 @@ async function uploadPack(){
 
 // ===== INIT =====
 window.addEventListener('load', async ()=>{
+  restoreLocalLearning();
   loadPricing(); loadFestival(); loadLevels(); loadContentPacks();
   
   // Apply referral code from URL if present
   const urlRef = new URLSearchParams(window.location.search).get('ref');
   if(urlRef){ sessionStorage.setItem('na_ref', urlRef); }
 
-calcDays(); buildStreak(); renderPracticeTopics('ALL'); renderAllTopics('ALL'); renderFlash();
+calcDays(); buildStreak(); renderPracticeTopics('ALL'); renderAllTopics('ALL'); renderFlash(); renderLearningUI();
   // Restore session if available
   if(loadSession()){
     // Verify the restored session is still valid
     try{
       const r=await api('auth-verify',{uid:S.user.uid,sessionToken:S.sessionToken});
-      if(r.valid){ S.user={...S.user,...r.user}; saveSession(S.user,S.sessionToken); startVerify(); updateUI(); toast('Welcome back, '+S.user.name+'! 👋'); }
+      if(r.valid){ S.user={...S.user,...r.user}; saveSession(S.user,S.sessionToken); startVerify(); updateUI(); loadLearningDashboard(); toast('Welcome back, '+S.user.name+'! 👋'); }
       else { clearSession(); updateUI(); }
     }catch(e){ clearSession(); updateUI(); }
   } else { updateUI(); }

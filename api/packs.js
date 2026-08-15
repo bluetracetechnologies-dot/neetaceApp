@@ -12,6 +12,7 @@
 // Full question data for any past version lives only in the versions subcollection — fetched on demand.
 
 const { db } = require('./_firebase');
+const { normalizeQuestion, normalizeQuestionList } = require('./_learning');
 const fs = require('fs');
 const path = require('path');
 
@@ -37,7 +38,7 @@ function parseCSV(text) {
 
 function csvRowToQuestion(row, packId, idx) {
   const correctMap = { A: 0, B: 1, C: 2, D: 3 };
-  return {
+  return normalizeQuestion({
     id: `${packId}_${idx}`,
     sub: (row.subject || row.sub || 'BIOLOGY').toUpperCase(),
     ch: row.chapter || row.ch || 'General',
@@ -54,7 +55,16 @@ function csvRowToQuestion(row, packId, idx) {
     pyq: !!(row.pyq_year),
     pyqYr: row.pyq_year ? parseInt(row.pyq_year) : undefined,
     trick: row.trick || '',
-  };
+    concept: row.concept || row.unit || row.syllabus_unit || row.chapter || row.ch || 'General',
+    subconcept: row.subconcept || '',
+    formula: row.formula || '',
+    unitType: row.unit_type || row.unittype || '',
+    questionType: row.question_type || row.questiontype || '',
+    commonMistake: row.common_mistake || row.commonmistake || row.trick || '',
+    variantGroup: row.variant_group || row.variantgroup || '',
+    estimatedTimeSec: row.estimated_time_sec || row.estimated_time || '',
+    neetWeightage: row.neet_weightage || '',
+  });
 }
 
 function bumpVersion(current) {
@@ -116,7 +126,7 @@ module.exports = async function handler(req, res) {
       const packMeta = [];
       snap.forEach(doc => {
         const pack = doc.data();
-        if (pack.questions) questions = questions.concat(pack.questions);
+        if (pack.questions) questions = questions.concat(normalizeQuestionList(pack.questions));
         packMeta.push({ id: doc.id, name: pack.name, count: pack.questionCount, version: pack.version });
       });
       return res.status(200).json({ questions, activePacks: packMeta, totalQuestions: questions.length });
@@ -287,6 +297,49 @@ module.exports = async function handler(req, res) {
     if (!packId) return res.status(400).json({ error: 'packId required' });
     await db.collection('content_packs').doc(packId).update({ enabled, updatedAt: new Date().toISOString() });
     return res.status(200).json({ ok: true, message: `Pack ${enabled ? 'enabled' : 'disabled'}` });
+  }
+
+  // ADMIN: backfill live pack docs with NEETAce V2 metadata while preserving legacy fields
+  if (action === 'admin_migrate_question_metadata') {
+    const admin = await verifyAdmin(uid, sessionToken);
+    if (!admin) return res.status(403).json({ error: 'Admin only' });
+
+    const snap = await db.collection('content_packs').get();
+    let updatedPacks = 0;
+    let updatedQuestions = 0;
+    const now = new Date().toISOString();
+    let batch = db.batch();
+    let opsInBatch = 0;
+
+    async function flushBatch() {
+      if (!opsInBatch) return;
+      await batch.commit();
+      batch = db.batch();
+      opsInBatch = 0;
+    }
+
+    for (const doc of snap.docs) {
+      const pack = doc.data();
+      const normalizedQuestions = normalizeQuestionList(pack.questions || []);
+      batch.update(doc.ref, {
+        questions: normalizedQuestions,
+        metadataVersion: 'v2',
+        updatedAt: now,
+        updatedBy: uid,
+      });
+      opsInBatch += 1;
+      updatedPacks += 1;
+      updatedQuestions += normalizedQuestions.length;
+      if (opsInBatch === 500) await flushBatch();
+    }
+
+    await flushBatch();
+    return res.status(200).json({
+      ok: true,
+      updatedPacks,
+      updatedQuestions,
+      message: `Normalized ${updatedQuestions} live questions across ${updatedPacks} content packs with backward-compatible V2 metadata.`,
+    });
   }
 
   // ADMIN: delete pack + all its version history permanently
