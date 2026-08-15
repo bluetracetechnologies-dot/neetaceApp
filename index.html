@@ -1601,7 +1601,7 @@ const SLOGANS = {
 
 // ===== INIT =====
 window.addEventListener('load', async ()=>{
-  loadPricing();
+  loadPricing(); loadFestival(); loadLevels();
   
   // Apply referral code from URL if present
   const urlRef = new URLSearchParams(window.location.search).get('ref');
