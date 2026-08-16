@@ -57,7 +57,12 @@ module.exports = async function handler(req, res) {
   if (!keyId||!keySecret) return res.status(500).json({error:'Payment not configured.'});
 
   try {
-    const { price:basePrice, label:planLabel } = await getPlanPrice(planKey);
+    let { price:basePrice, label:planLabel } = await getPlanPrice(planKey);
+    // Per-student override — admin-set personal price wins over everything
+    if (profile.customPricePaise && profile.customPricePaise > 0) {
+      basePrice = profile.customPricePaise;
+      planLabel = (planLabel||'Plan') + ' (Personal Offer)';
+    }
     const { finalPrice, discount, valid:promoValid, label:promoLabel, err:promoError } =
       await applyPromo(promoCode, basePrice, uid);
 
