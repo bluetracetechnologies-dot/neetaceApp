@@ -437,13 +437,63 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     <div class="qbox"><div class="qn" style="color:var(--red)">12</div><div class="ql">Streak</div></div>
     <div class="qbox"><div class="qn" style="color:var(--purple)">47h</div><div class="ql">Time</div></div>
   </div>
-  <div class="sec-hd"><i class="ti ti-id-badge"></i> Subscription</div>
-  <div class="card" id="subCard" style="background:linear-gradient(135deg,var(--blue-l),var(--purple-l));border-color:#c4b5fd">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <div><div style="font-size:14px;font-weight:800" id="subTitle">Loading...</div><div style="font-size:11px;color:var(--mute);margin-top:2px" id="subDesc"></div></div>
-      <span id="subPill" class="sp"></span>
+  <div class="sec-hd"><i class="ti ti-id-badge"></i> My Plan</div>
+  <div class="card" id="subCard" style="padding:0;overflow:hidden;border-color:#c4b5fd">
+
+    <!-- Plan header band -->
+    <div id="planBand" style="padding:14px 16px;background:linear-gradient(135deg,var(--blue),var(--purple));color:#fff">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-size:10px;opacity:.7;text-transform:uppercase;letter-spacing:.8px">Current Plan</div>
+          <div style="font-size:18px;font-weight:800;margin-top:2px" id="planName">Loading...</div>
+          <div style="font-size:11px;opacity:.75;margin-top:2px" id="planTagline"></div>
+        </div>
+        <span id="subPill" class="sp" style="margin-top:2px"></span>
+      </div>
     </div>
-    <button class="btn btn-blue btn-full" style="margin-top:12px;display:none" id="payBtn" onclick="openPaywall()"><i class="ti ti-lock-open"></i> Upgrade — Pay ₹799</button>
+
+    <!-- Plan body -->
+    <div style="padding:14px 16px">
+
+      <!-- Days remaining + progress bar -->
+      <div id="planProgress" style="margin-bottom:13px;display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+          <span style="font-size:12px;font-weight:700" id="planDaysLabel"></span>
+          <span style="font-size:11px;color:var(--mute)" id="planExpiry"></span>
+        </div>
+        <div style="height:7px;background:var(--bdr);border-radius:4px;overflow:hidden">
+          <div id="planProgressBar" style="height:100%;border-radius:4px;transition:width .5s"></div>
+        </div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px" id="planProgressHint"></div>
+      </div>
+
+      <!-- Plan features -->
+      <div id="planFeatures" style="margin-bottom:13px"></div>
+
+      <!-- Trial info -->
+      <div id="trialInfo" style="display:none;background:var(--amber-l);border-radius:8px;padding:10px 12px;font-size:11px;color:#7a4800;margin-bottom:11px">
+        <b>Free Trial</b> — All features unlocked for 7 days. No payment needed to start.
+        Trial ends: <span id="trialEndDate"></span>
+      </div>
+
+      <!-- Monthly renewal info -->
+      <div id="monthlyInfo" style="display:none;background:var(--purple-l);border-radius:8px;padding:10px 12px;font-size:11px;color:var(--purple);margin-bottom:11px">
+        <i class="ti ti-refresh" style="font-size:13px"></i>
+        <b>Monthly Plan</b> — Renews automatically. Cancel anytime from Settings.<br>
+        Next renewal: <span id="nextRenewal"></span>
+      </div>
+
+      <!-- Academic year notice -->
+      <div id="academicInfo" style="display:none;background:var(--blue-l);border-radius:8px;padding:10px 12px;font-size:11px;color:#0a3580;margin-bottom:11px">
+        <i class="ti ti-calendar" style="font-size:13px"></i>
+        Valid for the full academic year. All plans expire <b>31 May</b> —
+        the standard NEET preparation cycle.
+      </div>
+
+      <!-- Action buttons -->
+      <div id="planActions"></div>
+
+    </div>
   </div>
   <div class="sec-hd"><i class="ti ti-settings"></i> Settings</div>
   <div class="card">
@@ -799,12 +849,103 @@ function showAccessBanner(){
 
 function updateSubCard(){
   if(!S.user) return;
-  const u=S.user, s=u.accessStatus, r=u.role;
-  const t=document.getElementById('subTitle'), d=document.getElementById('subDesc'), p=document.getElementById('subPill'), pb=document.getElementById('payBtn');
-  if(r==='admin'){ t.textContent='NEETAce Pro — Admin'; d.textContent='Unlimited access · All features'; p.className='sp sp-admin'; p.textContent='ADMIN'; pb.style.display='none'; }
-  else if(s==='paid'){ t.textContent='NEETAce Pro'; d.textContent='Active · Valid till 31 May '+new Date(u.paidUntil).getFullYear(); p.className='sp sp-active'; p.textContent='ACTIVE'; pb.style.display='none'; }
-  else if(s==='trial'){ t.textContent='Free Trial'; d.textContent=`${u.trialDaysLeft} day(s) remaining · Ends ${new Date(u.trialEnd).toLocaleDateString('en-IN')}`; p.className='sp sp-trial'; p.textContent='TRIAL'; pb.style.display='flex'; }
-  else { t.textContent='Trial Ended'; d.textContent='Upgrade to continue'; p.className='sp sp-expired'; p.textContent='EXPIRED'; pb.style.display='flex'; }
+  const u = S.user, s = u.accessStatus, role = u.role;
+
+  // ── Band color based on status ──
+  const bandEl   = document.getElementById('planBand');
+  const nameEl   = document.getElementById('planName');
+  const tagEl    = document.getElementById('planTagline');
+  const pillEl   = document.getElementById('subPill');
+  const progWrap = document.getElementById('planProgress');
+  const daysLbl  = document.getElementById('planDaysLabel');
+  const expiryEl = document.getElementById('planExpiry');
+  const progBar  = document.getElementById('planProgressBar');
+  const progHint = document.getElementById('planProgressHint');
+  const featEl   = document.getElementById('planFeatures');
+  const actEl    = document.getElementById('planActions');
+  const trialEl  = document.getElementById('trialInfo');
+  const monthEl  = document.getElementById('monthlyInfo');
+  const acadEl   = document.getElementById('academicInfo');
+  if(!bandEl) return;
+
+  // Reset
+  [trialEl,monthEl,acadEl].forEach(el=>{ if(el) el.style.display='none'; });
+
+  const PLANS = {
+    admin:   { name:'NEETAce Admin',   tagline:'Unlimited · All features',            color:'#4a3aa7', pill:'ADMIN',   pillCls:'sp-admin'   },
+    paid:    { name:'NEETAce Pro',      tagline:'Full access · All 5 difficulty levels',color:'#1a56db', pill:'ACTIVE',  pillCls:'sp-active'  },
+    starter: { name:'Starter Plan',    tagline:'Easy level questions only',            color:'#16a34a', pill:'STARTER', pillCls:'sp-active'  },
+    medium:  { name:'Medium Plan',     tagline:'Up to Hard difficulty',               color:'#d97706', pill:'MEDIUM',  pillCls:'sp-trial'   },
+    monthly: { name:'Monthly Plan',    tagline:'Renews every month · All features',   color:'#7c3aed', pill:'MONTHLY', pillCls:'sp-active'  },
+    trial:   { name:'Free Trial',      tagline:'All features · 7 days',               color:'#d97706', pill:'TRIAL',   pillCls:'sp-trial'   },
+    expired: { name:'Trial Ended',     tagline:'Upgrade to continue',                 color:'#e34948', pill:'EXPIRED', pillCls:'sp-expired' },
+  };
+
+  const planKey = role==='admin' ? 'admin' : s==='paid' ? (u.planKey||'paid') : s==='trial' ? 'trial' : 'expired';
+  const plan    = PLANS[planKey] || PLANS.expired;
+
+  bandEl.style.background = `linear-gradient(135deg, ${plan.color}, ${plan.color}cc)`;
+  nameEl.textContent       = plan.name;
+  tagEl.textContent        = plan.tagline;
+  pillEl.className         = 'sp ' + plan.pillCls;
+  pillEl.textContent       = plan.pill;
+
+  // ── Days remaining progress bar ──
+  function showProgress(daysLeft, totalDays, color, hint){
+    progWrap.style.display = 'block';
+    const pct = Math.max(2, Math.min(100, Math.round(daysLeft/totalDays*100)));
+    progBar.style.width = pct+'%';
+    progBar.style.background = color;
+    daysLbl.textContent = daysLeft > 0 ? daysLeft+' day'+(daysLeft!==1?'s':'')+' remaining' : 'Expires today';
+    daysLbl.style.color = daysLeft <= 7 ? '#e34948' : 'var(--txt)';
+    if(progHint) progHint.textContent = hint||'';
+  }
+
+  const now = new Date();
+
+  if(role === 'admin'){
+    progWrap.style.display='none';
+    featEl.innerHTML=featureList(['All levels + Admin console','Kill switch + User management','CSV bulk upload','All analytics + leaderboard']);
+    actEl.innerHTML='';
+
+  } else if(s === 'paid'){
+    const expiry = u.paidUntil ? new Date(u.paidUntil) : new Date(now.getFullYear(),4,31);
+    const daysLeft = Math.max(0, Math.ceil((expiry-now)/86400000));
+    const totalDays = Math.ceil((expiry-new Date(expiry.getFullYear()-1,5,1))/86400000); // ~11 months
+    expiryEl.textContent = 'Expires '+expiry.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+    showProgress(daysLeft, Math.max(totalDays,1), '#1a56db',
+      daysLeft<=30 ? 'Renews next academic year (June). Your progress is saved.' : 'Valid through the full NEET 2026 preparation cycle.');
+    if(acadEl) acadEl.style.display='block';
+    featEl.innerHTML = featureList(['All 5 difficulty levels','Adaptive learning engine','Parameterized + unit variant questions','Full AI Tutor','Global leaderboard + batch board','Galti Copy + flashcards + analytics']);
+    actEl.innerHTML = '<button class="btn btn-ghost btn-full" style="font-size:12px" onclick="switchTab('about')"><i class="ti ti-receipt"></i> View receipt / contact support</button>';
+
+  } else if(s === 'trial'){
+    const trialEnd = u.trialEnd ? new Date(u.trialEnd) : new Date();
+    const daysLeft = u.trialDaysLeft || Math.max(0, Math.ceil((trialEnd-now)/86400000));
+    expiryEl.textContent = 'Trial ends '+trialEnd.toLocaleDateString('en-IN',{day:'2-digit',month:'short'});
+    showProgress(daysLeft, 7, daysLeft<=2?'#e34948':'#d97706',
+      daysLeft<=2 ? 'Trial ending soon — upgrade to keep your progress and rank.' : 'Enjoying the trial? Upgrade before it ends.');
+    if(trialEl){ trialEl.style.display='block'; document.getElementById('trialEndDate').textContent=trialEnd.toLocaleDateString('en-IN'); }
+    featEl.innerHTML = featureList(['All 5 difficulty levels for 7 days','Full AI Tutor','Leaderboard rank','After trial: access based on chosen plan']);
+    actEl.innerHTML = `
+      <button class="btn btn-blue btn-full" style="margin-bottom:8px" onclick="openPricingModal()"><i class="ti ti-lock-open"></i> Upgrade Now — from ₹299</button>
+      <div style="text-align:center;font-size:10px;color:var(--mute)">
+        <b>${daysLeft} day${daysLeft!==1?'s':''}</b> left · Trial started ${u.trialStart?new Date(u.trialStart).toLocaleDateString('en-IN'):'recently'}
+      </div>`;
+
+  } else {
+    progWrap.style.display='none';
+    featEl.innerHTML='<div style="font-size:12px;color:var(--mute);line-height:1.7">Your 7-day free trial has ended.<br>Upgrade to continue your NEET preparation.</div>';
+    actEl.innerHTML=`
+      <button class="btn btn-blue btn-full" style="margin-bottom:8px" onclick="openPricingModal()"><i class="ti ti-lock-open"></i> Choose a Plan — from ₹299</button>
+      <div style="font-size:10px;color:var(--mute);text-align:center;margin-top:6px">Monthly ₹99 · Annual ₹799 · Starter ₹299</div>`;
+  }
+}
+
+function featureList(items){
+  return '<div style="display:flex;flex-direction:column;gap:5px;margin-bottom:2px">'+
+    items.map(f=>'<div style="font-size:12px;color:var(--txt);display:flex;align-items:center;gap:7px"><i class="ti ti-check" style="color:var(--green);font-size:14px;flex-shrink:0"></i>'+f+'</div>').join('')+
+  '</div>';
 }
 
 // ===== SESSION VERIFICATION (runs every 2 min) =====
