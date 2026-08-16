@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NEETAce — Smart NEET Preparation</title>
+<title>NEETAce - Smart NEET Preparation</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
 <style>
 :root {
@@ -263,7 +263,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 <div class="screen active" id="screen-home">
   <div class="hero">
     <div style="font-size:12px;opacity:.75;margin-bottom:3px">Good morning, <span id="welcomeName">Student</span> 👋</div>
-    <div style="font-size:18px;font-weight:800">NEET 2026 — <span id="daysLeft">0</span> days left</div>
+    <div style="font-size:18px;font-weight:800">NEET 2026 - <span id="daysLeft">0</span> days left</div>
     <div style="font-size:11px;opacity:.7;margin-top:3px">Top 18% of aspirants today</div>
     <div style="height:4px;background:rgba(255,255,255,.15);border-radius:3px;margin-top:11px;overflow:hidden"><div style="height:100%;width:60%;background:linear-gradient(90deg,#fbbf24,#f59e0b);border-radius:3px"></div></div>
     <div class="hero-stats">
@@ -276,14 +276,14 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     <div class="ai-av"><i class="ti ti-robot"></i></div>
     <div>
       <div style="font-size:11px;font-weight:700;color:var(--purple);margin-bottom:3px">AI INSIGHT</div>
-      <div style="font-size:12px;line-height:1.5">Your <b>Electrostatics</b> accuracy is 44% — weakest area. Recommended: 20 min on Coulomb's Law today (NCERT Class 12, Ch.1, Pg 6–18).</div>
+      <div style="font-size:12px;line-height:1.5">Your <b>Electrostatics</b> accuracy is 44% - weakest area. Recommended: 20 min on Coulomb's Law today (NCERT Class 12, Ch.1, Pg 6-18).</div>
       <button class="btn btn-blue" style="font-size:11px;padding:5px 11px;margin-top:8px" onclick="startTopicQuiz('Electrostatics','PHYSICS')"><i class="ti ti-player-play"></i> Practice Now</button>
     </div>
   </div>
   <div class="sec-hd"><i class="ti ti-search"></i> Quick Topic Search</div>
   <div class="swrap">
     <i class="ti ti-search sico"></i>
-    <input class="sin" id="homeSearch" placeholder="Search any topic — Mitosis, Ohm's Law, Organic..." oninput="doSearch(this.value,'homeRes')" onfocus="doSearch(this.value,'homeRes')">
+    <input class="sin" id="homeSearch" placeholder="Search any topic - Mitosis, Ohm's Law, Organic..." oninput="doSearch(this.value,'homeRes')" onfocus="doSearch(this.value,'homeRes')">
     <div class="sres" id="homeRes"></div>
   </div>
   <div class="sec-hd"><i class="ti ti-atom"></i> Subjects</div>
@@ -295,7 +295,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
   <div style="margin-top:13px"><div class="sec-hd" style="margin-bottom:8px"><i class="ti ti-layout-grid"></i> Study Modes</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
     <div class="card" style="cursor:pointer;padding:13px;text-align:center" onclick="switchTab('practice')"><div style="font-size:22px">📚</div><b style="font-size:12px">Learn</b><div style="font-size:10px;color:var(--mute)">Topic-wise with explanations</div></div>
-    <div class="card" style="cursor:pointer;padding:13px;text-align:center" onclick="startAdaptiveQuiz('')"><div style="font-size:22px">🎯</div><b style="font-size:12px">Practice</b><div style="font-size:10px;color:var(--mute)">Adaptive — tuned to you</div></div>
+    <div class="card" style="cursor:pointer;padding:13px;text-align:center" onclick="startAdaptiveQuiz('')"><div style="font-size:22px">🎯</div><b style="font-size:12px">Practice</b><div style="font-size:10px;color:var(--mute)">Adaptive - tuned to you</div></div>
     <div class="card" style="cursor:pointer;padding:13px;text-align:center;border-color:var(--red)" onclick="startExamMode()"><div style="font-size:22px">⏱️</div><b style="font-size:12px">Exam Mode</b><div style="font-size:10px;color:var(--mute)">NEET pattern &middot; +4/-1 &middot; timed</div></div>
     <div class="card" style="cursor:pointer;padding:13px;text-align:center;border-color:var(--amber)" onclick="startRevisionMode()"><div style="font-size:22px">🔁</div><b style="font-size:12px">Revision</b><div style="font-size:10px;color:var(--mute)">Due mistakes rapid-fire</div></div>
   </div></div><i class="ti ti-chevron-right" style="color:var(--mute)"></i></div></div><div style="font-size:10px;color:var(--mute)">5,600 Qs</div><div class="pbg"><div class="pfill" style="width:75%;background:var(--amber)"></div></div><div style="font-size:10px;color:var(--mute);margin-top:4px">75% done</div></div>
@@ -318,7 +318,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 <!-- SMART TEST -->
 <div class="screen" id="screen-search">
   <div class="sec-hd"><i class="ti ti-search"></i> Smart Topic Test</div>
-  <div style="font-size:13px;color:var(--mute);margin-bottom:13px">Search any topic — get a targeted quiz with NCERT references and step-by-step explanations.</div>
+  <div style="font-size:13px;color:var(--mute);margin-bottom:13px">Search any topic - get a targeted quiz with NCERT references and step-by-step explanations.</div>
   <div class="swrap">
     <i class="ti ti-search sico"></i>
     <input class="sin" id="smartSearch" placeholder="e.g. Mitosis, Ohm's Law, Le Chatelier..." oninput="doSearch(this.value,'smartRes')" onfocus="doSearch(this.value,'smartRes')">
@@ -362,7 +362,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 
 <!-- FLASHCARDS -->
 <div class="screen" id="screen-flash">
-  <div class="sec-hd"><i class="ti ti-cards"></i> Flash Cards — Spaced Repetition</div>
+  <div class="sec-hd"><i class="ti ti-cards"></i> Flash Cards - Spaced Repetition</div>
   <div style="font-size:12px;color:var(--mute);margin-bottom:13px">Tap card to reveal. Rate to schedule next review.</div>
   <div class="fcwrap" onclick="flipCard()">
     <div class="fc" id="flashcard">
@@ -424,12 +424,12 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     <button class="galtitab" onclick="setGaltiFilter('time',this)">⏰ Time</button>
     <button class="galtitab" onclick="setGaltiFilter('due',this)" style="background:var(--amber-l);color:#7a4800;border-color:#f5d283">📅 Due</button>
   </div>
-  <div id="mistakeArea"><div style="text-align:center;padding:40px 20px;color:var(--mute)"><i class="ti ti-mood-happy" style="font-size:36px;display:block;margin-bottom:9px"></i><div style="font-size:13px;font-weight:600">Notebook is empty — keep solving!</div></div></div>
+  <div id="mistakeArea"><div style="text-align:center;padding:40px 20px;color:var(--mute)"><i class="ti ti-mood-happy" style="font-size:36px;display:block;margin-bottom:9px"></i><div style="font-size:13px;font-weight:600">Notebook is empty - keep solving!</div></div></div>
 </div>
 
 <!-- AI TUTOR -->
 <div class="screen" id="screen-ai">
-  <div class="sec-hd"><i class="ti ti-robot"></i> AI Tutor — Ask Anything</div>
+  <div class="sec-hd"><i class="ti ti-robot"></i> AI Tutor - Ask Anything</div>
   <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
     <div class="qq" onclick="askAI(\"Explain Newton's Third Law with example\")">Newton's 3rd Law</div>
     <div class="qq" onclick="askAI('What is DNA replication?')">DNA Replication</div>
@@ -439,7 +439,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     <div class="qq" onclick="askAI(\"Explain Faraday's law of electromagnetic induction\")">Faraday's Law</div>
   </div>
   <div class="card">
-    <div class="aiwrap" id="aiWrap"><div class="aimsg bot"><b>Hi! I'm your NEET AI Tutor.</b> Ask me anything from Physics, Chemistry, or Biology — I explain with NCERT references and exam tips!</div></div>
+    <div class="aiwrap" id="aiWrap"><div class="aimsg bot"><b>Hi! I'm your NEET AI Tutor.</b> Ask me anything from Physics, Chemistry, or Biology - I explain with NCERT references and exam tips!</div></div>
     <div class="aiinrow"><input class="aiin" id="aiIn" placeholder="Ask a concept, formula, doubt..." onkeydown="if(event.key==='Enter')sendAI()"><button class="aisend" onclick="sendAI()"><i class="ti ti-send"></i></button></div>
   </div>
 </div>
@@ -513,21 +513,21 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 
       <!-- Trial info -->
       <div id="trialInfo" style="display:none;background:var(--amber-l);border-radius:8px;padding:10px 12px;font-size:11px;color:#7a4800;margin-bottom:11px">
-        <b>Free Trial</b> — All features unlocked for 7 days. No payment needed to start.
+        <b>Free Trial</b> - All features unlocked for 7 days. No payment needed to start.
         Trial ends: <span id="trialEndDate"></span>
       </div>
 
       <!-- Monthly renewal info -->
       <div id="monthlyInfo" style="display:none;background:var(--purple-l);border-radius:8px;padding:10px 12px;font-size:11px;color:var(--purple);margin-bottom:11px">
         <i class="ti ti-refresh" style="font-size:13px"></i>
-        <b>Monthly Plan</b> — Renews automatically. Cancel anytime from Settings.<br>
+        <b>Monthly Plan</b> - Renews automatically. Cancel anytime from Settings.<br>
         Next renewal: <span id="nextRenewal"></span>
       </div>
 
       <!-- Academic year notice -->
       <div id="academicInfo" style="display:none;background:var(--blue-l);border-radius:8px;padding:10px 12px;font-size:11px;color:#0a3580;margin-bottom:11px">
         <i class="ti ti-calendar" style="font-size:13px"></i>
-        Valid for the full academic year. All plans expire <b>31 May</b> —
+        Valid for the full academic year. All plans expire <b>31 May</b> -
         the standard NEET preparation cycle.
       </div>
 
@@ -546,7 +546,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
   </div>
   <div class="sec-hd" style="margin-top:14px"><i class="ti ti-share"></i> Refer and Earn</div>
   <div class="card" style="background:var(--teal-l);border-color:#6dd4a8">
-    <div style="font-size:13px;font-weight:700;margin-bottom:4px">Share NEETAce — earn free days</div>
+    <div style="font-size:13px;font-weight:700;margin-bottom:4px">Share NEETAce - earn free days</div>
     <div style="font-size:11px;color:var(--mute);margin-bottom:9px">You get 14 days free · Your friend gets 7 days free · Both win</div>
     <div style="font-size:12px;margin-bottom:9px">Your code: <b id="myRefCode" style="font-family:monospace;color:var(--teal);letter-spacing:1px">Loading...</b></div>
     <div style="display:flex;gap:8px">
@@ -610,7 +610,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px">
         <div style="background:var(--surf2);border-radius:7px;padding:8px;text-align:center">
-          <div style="font-weight:700" id="academyBatchLabel">—</div>
+          <div style="font-weight:700" id="academyBatchLabel"> - </div>
           <div style="color:var(--mute)">Your batch</div>
         </div>
         <div style="background:var(--surf2);border-radius:7px;padding:8px;text-align:center">
@@ -712,7 +712,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
   </div>
   
 <div class="sec-hd" style="margin-top:14px"><i class="ti ti-building"></i> Academy Partners <span style="font-size:10px;font-weight:400;color:var(--mute)">coaching · school · college · tuition</span></div>
-<div style="font-size:11px;color:var(--mute);margin-bottom:9px">Create and manage B2B partnerships. Admin sets pricing — discounts auto-apply by student count.</div>
+<div style="font-size:11px;color:var(--mute);margin-bottom:9px">Create and manage B2B partnerships. Admin sets pricing - discounts auto-apply by student count.</div>
 
 <!-- Pricing config strip -->
 <div class="card" style="padding:11px 14px;margin-bottom:11px;background:var(--blue-l);border-color:var(--border-accent)">
@@ -749,7 +749,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
         <input class="fin" id="acyStudents" type="number" placeholder="30" min="10" style="margin-top:4px" oninput="updateAcademyQuote()">
       </div>
       <div style="flex:1">
-        <label style="font-size:11px;color:var(--mute)">Custom price/student (₹) — optional</label>
+        <label style="font-size:11px;color:var(--mute)">Custom price/student (₹) - optional</label>
         <input class="fin" id="acyCustomPrice" type="number" placeholder="Leave blank for auto" style="margin-top:4px">
       </div>
     </div>
@@ -780,10 +780,10 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 
   <!-- Stats strip -->
   <div class="quad" style="margin-bottom:13px">
-    <div class="qbox"><div class="qn" id="statTotal">—</div><div class="ql">Total</div></div>
-    <div class="qbox"><div class="qn" style="color:var(--green)" id="statPaid">—</div><div class="ql">Paid</div></div>
-    <div class="qbox"><div class="qn" style="color:var(--amber)" id="statTrial">—</div><div class="ql">Trial</div></div>
-    <div class="qbox"><div class="qn" style="color:var(--red)" id="statExp">—</div><div class="ql">Expired</div></div>
+    <div class="qbox"><div class="qn" id="statTotal"> - </div><div class="ql">Total</div></div>
+    <div class="qbox"><div class="qn" style="color:var(--green)" id="statPaid"> - </div><div class="ql">Paid</div></div>
+    <div class="qbox"><div class="qn" style="color:var(--amber)" id="statTrial"> - </div><div class="ql">Trial</div></div>
+    <div class="qbox"><div class="qn" style="color:var(--red)" id="statExp"> - </div><div class="ql">Expired</div></div>
   </div>
 
   <!-- Search + Filter bar -->
@@ -942,15 +942,15 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     <div style="display:flex;flex-direction:column;gap:0">
       <div style="display:flex;gap:11px;padding:10px 0;border-bottom:1px solid var(--bdr)">
         <div style="flex-shrink:0;text-align:center"><div style="font-size:10px;font-weight:700;background:var(--blue);color:#fff;padding:2px 8px;border-radius:20px">NEW</div><div style="font-size:9px;color:var(--mute);margin-top:2px">Aug 2026</div></div>
-        <div><div style="font-size:12px;font-weight:700">v2.1 — Full Launch</div><div style="font-size:11px;color:var(--mute);line-height:1.5">Firebase auth, Google sign-in, parameterized questions, unit variant engine, difficulty slider, institute leaderboard, flexible pricing</div></div>
+        <div><div style="font-size:12px;font-weight:700">v2.1 - Full Launch</div><div style="font-size:11px;color:var(--mute);line-height:1.5">Firebase auth, Google sign-in, parameterized questions, unit variant engine, difficulty slider, institute leaderboard, flexible pricing</div></div>
       </div>
       <div style="display:flex;gap:11px;padding:10px 0;border-bottom:1px solid var(--bdr)">
         <div style="flex-shrink:0;text-align:center"><div style="font-size:10px;font-weight:700;background:var(--bdr);color:var(--mute);padding:2px 8px;border-radius:20px">v2.0</div><div style="font-size:9px;color:var(--mute);margin-top:2px">Jul 2026</div></div>
-        <div><div style="font-size:12px;font-weight:700">v2.0 — Beta</div><div style="font-size:11px;color:var(--mute);line-height:1.5">Razorpay payments, admin console, Galti Copy, AI Tutor, spaced repetition flashcards</div></div>
+        <div><div style="font-size:12px;font-weight:700">v2.0 - Beta</div><div style="font-size:11px;color:var(--mute);line-height:1.5">Razorpay payments, admin console, Galti Copy, AI Tutor, spaced repetition flashcards</div></div>
       </div>
       <div style="display:flex;gap:11px;padding:10px 0">
         <div style="flex-shrink:0;text-align:center"><div style="font-size:10px;font-weight:700;background:var(--bdr);color:var(--mute);padding:2px 8px;border-radius:20px">v1.0</div><div style="font-size:9px;color:var(--mute);margin-top:2px">Jun 2026</div></div>
-        <div><div style="font-size:12px;font-weight:700">v1.0 — Initial Release</div><div style="font-size:11px;color:var(--mute);line-height:1.5">Question bank, basic quiz, NCERT references, 7-day trial</div></div>
+        <div><div style="font-size:12px;font-weight:700">v1.0 - Initial Release</div><div style="font-size:11px;color:var(--mute);line-height:1.5">Question bank, basic quiz, NCERT references, 7-day trial</div></div>
       </div>
     </div>
   </div>
@@ -959,11 +959,11 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
   <div class="card" style="border-color:#fcd34d;background:var(--amber-l)">
     <div class="sec-hd" style="margin-bottom:6px;color:#7a4800"><i class="ti ti-calendar-event"></i> Annual Update Schedule</div>
     <div style="font-size:12px;color:#7a4800;line-height:1.7">
-      <b>January</b> — NTA releases updated syllabus → we update question bank<br>
-      <b>February</b> — New question set uploaded (CSV v<span id="csvVerAbout">2026.1</span>)<br>
-      <b>March–April</b> — PYQ analysis from previous NEET added<br>
-      <b>May 31</b> — Academic year ends, all subscriptions expire<br>
-      <b>June</b> — v+1 released with new pricing, new syllabus
+      <b>January</b> - NTA releases updated syllabus → we update question bank<br>
+      <b>February</b> - New question set uploaded (CSV v<span id="csvVerAbout">2026.1</span>)<br>
+      <b>March-April</b> - PYQ analysis from previous NEET added<br>
+      <b>May 31</b> - Academic year ends, all subscriptions expire<br>
+      <b>June</b> - v+1 released with new pricing, new syllabus
     </div>
   </div>
 
@@ -995,7 +995,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
   <div class="mcard">
     <div style="font-size:17px;font-weight:800;margin-bottom:16px;text-align:center">Welcome to NEETAce</div>
 
-    <!-- GOOGLE SIGN IN — PRIMARY -->
+    <!-- GOOGLE SIGN IN - PRIMARY -->
     <button id="googleBtn" onclick="doGoogleSignIn()" style="width:100%;padding:11px 14px;border-radius:9px;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer;border:1.5px solid var(--bdr);background:var(--surf);color:var(--txt);margin-bottom:14px;transition:all 0.2s">
       <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
       Continue with Google
@@ -1036,7 +1036,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
       <div style="font-size:13px;font-weight:700;margin-bottom:8px">NEETAce Pro includes:</div>
       <div style="font-size:12px;line-height:1.8;color:var(--mute)">✅ Unlimited quizzes & practice<br>✅ AI Tutor with NCERT references<br>✅ Flashcards & spaced repetition<br>✅ Galti Copy mistake notebook<br>✅ Full analytics & leaderboard<br>✅ Admin CSV upload<br>✅ Valid till 31 May (NEET academic term)</div>
     </div>
-    <button class="btn btn-blue btn-full" id="pwPayBtn" onclick="openPricingModal()"><i class="ti ti-lock-open"></i> Pay ₹799 — Unlock Full Access</button>
+    <button class="btn btn-blue btn-full" id="pwPayBtn" onclick="openPricingModal()"><i class="ti ti-lock-open"></i> Pay ₹799 - Unlock Full Access</button>
     <button style="width:100%;background:none;border:none;color:var(--mute);font-size:12px;margin-top:11px;cursor:pointer" onclick="closeModal('paywallModal')">Maybe later</button>
   </div>
 </div>
@@ -1217,11 +1217,11 @@ function updateSubCard(){
     const daysLeft = u.trialDaysLeft || Math.max(0, Math.ceil((trialEnd-now)/86400000));
     expiryEl.textContent = 'Trial ends '+trialEnd.toLocaleDateString('en-IN',{day:'2-digit',month:'short'});
     showProgress(daysLeft, 7, daysLeft<=2?'#e34948':'#d97706',
-      daysLeft<=2 ? 'Trial ending soon — upgrade to keep your progress and rank.' : 'Enjoying the trial? Upgrade before it ends.');
+      daysLeft<=2 ? 'Trial ending soon - upgrade to keep your progress and rank.' : 'Enjoying the trial? Upgrade before it ends.');
     if(trialEl){ trialEl.style.display='block'; document.getElementById('trialEndDate').textContent=trialEnd.toLocaleDateString('en-IN'); }
     featEl.innerHTML = featureList(['All 5 difficulty levels for 7 days','Full AI Tutor','Leaderboard rank','After trial: access based on chosen plan']);
     actEl.innerHTML = `
-      <button class="btn btn-blue btn-full" style="margin-bottom:8px" onclick="openPricingModal()"><i class="ti ti-lock-open"></i> Upgrade Now — from ₹299</button>
+      <button class="btn btn-blue btn-full" style="margin-bottom:8px" onclick="openPricingModal()"><i class="ti ti-lock-open"></i> Upgrade Now - from ₹299</button>
       <div style="text-align:center;margin-top:8px"><a href="#" onclick="showManualPayment();return false;" style="font-size:11px;color:var(--mute)">Trouble paying? Use UPI / bank transfer instead</a></div>
       <div style="text-align:center;font-size:10px;color:var(--mute)">
         <b>${daysLeft} day${daysLeft!==1?'s':''}</b> left · Trial started ${u.trialStart?new Date(u.trialStart).toLocaleDateString('en-IN'):'recently'}
@@ -1231,7 +1231,7 @@ function updateSubCard(){
     progWrap.style.display='none';
     featEl.innerHTML='<div style="font-size:12px;color:var(--mute);line-height:1.7">Your 7-day free trial has ended.<br>Upgrade to continue your NEET preparation.</div>';
     actEl.innerHTML=`
-      <button class="btn btn-blue btn-full" style="margin-bottom:8px" onclick="openPricingModal()"><i class="ti ti-lock-open"></i> Choose a Plan — from ₹299</button>
+      <button class="btn btn-blue btn-full" style="margin-bottom:8px" onclick="openPricingModal()"><i class="ti ti-lock-open"></i> Choose a Plan - from ₹299</button>
       <div style="text-align:center;margin-top:8px"><a href="#" onclick="showManualPayment();return false;" style="font-size:11px;color:var(--mute)">Trouble paying? Use UPI / bank transfer instead</a></div>
       <div style="font-size:10px;color:var(--mute);text-align:center;margin-top:6px">Monthly ₹99 · Annual ₹799 · Starter ₹299</div>`;
   }
@@ -1432,11 +1432,11 @@ async function startPayment(){
   const btn=document.getElementById('pwPayBtn'); btn.disabled=true; btn.textContent='Creating order...';
   try{
     const r = await api('payments', {action:'create_order', uid:S.user.uid, sessionToken:S.sessionToken });
-    if(r.error){ toast('⚠️ '+r.error); btn.disabled=false; btn.innerHTML='<i class="ti ti-lock-open"></i> Pay ₹799 — Unlock Full Access'; return; }
+    if(r.error){ toast('⚠️ '+r.error); btn.disabled=false; btn.innerHTML='<i class="ti ti-lock-open"></i> Pay ₹799 - Unlock Full Access'; return; }
     const rzp = new window.Razorpay({
       key: r.keyId, amount: r.amount, currency: r.currency,
       order_id: r.orderId, name:'NEETAce',
-      description:'NEETAce Pro — valid till 31 May',
+      description:'NEETAce Pro - valid till 31 May',
       image:'https://bluetrace.tech/logo.png',
       handler: async function(resp){
         toast('Verifying payment...');
@@ -1462,7 +1462,7 @@ async function startPayment(){
     rzp.on('payment.failed', r=>toast('❌ Payment failed: '+(r.error.description||'Unknown error')));
     rzp.open();
   }catch(e){ toast('Payment could not be started. Try again.'); }
-  finally{ btn.disabled=false; btn.innerHTML='<i class="ti ti-lock-open"></i> Pay ₹799 — Unlock Full Access'; }
+  finally{ btn.disabled=false; btn.innerHTML='<i class="ti ti-lock-open"></i> Pay ₹799 - Unlock Full Access'; }
 }
 
 // ===== THEME =====
@@ -1485,24 +1485,24 @@ function calcDays(){ const d=Math.max(0,Math.ceil((new Date('2026-05-05')-new Da
 
 // ===== TOPICS DATA =====
 const TOPICS = [
-  {id:'t1',name:'Laws of Motion',sub:'PHYSICS',qs:120,acc:82,diff:'easy',cl:11,ch:5,pg:'88–104',unit:'Mechanics',col:'var(--blue)'},
-  {id:'t2',name:'Electrostatics',sub:'PHYSICS',qs:95,acc:44,diff:'hard',cl:12,ch:1,pg:'6–18',unit:'Electricity',col:'#4a3aa7'},
-  {id:'t3',name:'Wave Optics',sub:'PHYSICS',qs:75,acc:60,diff:'medium',cl:12,ch:10,pg:'351–370',unit:'Optics',col:'#1baf7a'},
-  {id:'t4',name:'Thermodynamics',sub:'CHEMISTRY',qs:88,acc:38,diff:'hard',cl:11,ch:6,pg:'162–188',unit:'Physical Chemistry',col:'#eb6834'},
-  {id:'t5',name:'Organic Chemistry',sub:'CHEMISTRY',qs:210,acc:55,diff:'medium',cl:11,ch:12,pg:'314–345',unit:'Organic',col:'#1baf7a'},
-  {id:'t6',name:'Chemical Bonding',sub:'CHEMISTRY',qs:130,acc:70,diff:'medium',cl:11,ch:4,pg:'99–132',unit:'Physical Chemistry',col:'#f59e0b'},
-  {id:'t7',name:'Cell Biology',sub:'BIOLOGY',qs:180,acc:90,diff:'easy',cl:11,ch:8,pg:'131–147',unit:'Cell Structure',col:'#f59e0b'},
-  {id:'t8',name:'Genetics & Evolution',sub:'BIOLOGY',qs:145,acc:70,diff:'medium',cl:12,ch:5,pg:'83–115',unit:'Genetics',col:'#e34948'},
-  {id:'t9',name:'Human Physiology',sub:'BIOLOGY',qs:230,acc:65,diff:'medium',cl:11,ch:21,pg:'310–385',unit:'Physiology',col:'#1baf7a'},
+  {id:'t1',name:'Laws of Motion',sub:'PHYSICS',qs:120,acc:82,diff:'easy',cl:11,ch:5,pg:'88-104',unit:'Mechanics',col:'var(--blue)'},
+  {id:'t2',name:'Electrostatics',sub:'PHYSICS',qs:95,acc:44,diff:'hard',cl:12,ch:1,pg:'6-18',unit:'Electricity',col:'#4a3aa7'},
+  {id:'t3',name:'Wave Optics',sub:'PHYSICS',qs:75,acc:60,diff:'medium',cl:12,ch:10,pg:'351-370',unit:'Optics',col:'#1baf7a'},
+  {id:'t4',name:'Thermodynamics',sub:'CHEMISTRY',qs:88,acc:38,diff:'hard',cl:11,ch:6,pg:'162-188',unit:'Physical Chemistry',col:'#eb6834'},
+  {id:'t5',name:'Organic Chemistry',sub:'CHEMISTRY',qs:210,acc:55,diff:'medium',cl:11,ch:12,pg:'314-345',unit:'Organic',col:'#1baf7a'},
+  {id:'t6',name:'Chemical Bonding',sub:'CHEMISTRY',qs:130,acc:70,diff:'medium',cl:11,ch:4,pg:'99-132',unit:'Physical Chemistry',col:'#f59e0b'},
+  {id:'t7',name:'Cell Biology',sub:'BIOLOGY',qs:180,acc:90,diff:'easy',cl:11,ch:8,pg:'131-147',unit:'Cell Structure',col:'#f59e0b'},
+  {id:'t8',name:'Genetics & Evolution',sub:'BIOLOGY',qs:145,acc:70,diff:'medium',cl:12,ch:5,pg:'83-115',unit:'Genetics',col:'#e34948'},
+  {id:'t9',name:'Human Physiology',sub:'BIOLOGY',qs:230,acc:65,diff:'medium',cl:11,ch:21,pg:'310-385',unit:'Physiology',col:'#1baf7a'},
 ];
 
 const QUESTIONS = [
-  {id:1,sub:'PHYSICS',ch:'Laws of Motion',tid:'t1',text:'A block of mass 5 kg is on a frictionless surface. A 20 N force is applied. What is the acceleration?',opts:['2 m/s²','4 m/s²','10 m/s²','25 m/s²'],correct:1,explanation:'F = ma → a = F/m = 20/5 = 4 m/s². Newton\'s Second Law on a frictionless surface.',ncertCl:11,ncertCh:5,ncertPg:'94',unit:'Mechanics — Newton\'s Laws',pyq:true,pyqYr:2023,diff:'easy'},
-  {id:2,sub:'CHEMISTRY',ch:'Organic Chemistry',tid:'t5',text:'What is the correct IUPAC name for CH₃–CH₂–OH?',opts:['Methanol','Ethanol','Propanol','Butanol'],correct:1,explanation:'2 carbons with –OH at C-1. Parent chain = eth- (2C). Suffix = -anol. IUPAC: Ethan-1-ol.',ncertCl:11,ncertCh:12,ncertPg:'339',unit:'Organic Chemistry — Alcohols',pyq:false,diff:'easy'},
-  {id:3,sub:'BIOLOGY',ch:'Cell Biology',tid:'t7',text:'Which organelle is called the "powerhouse of the cell" and has a double membrane?',opts:['Ribosome','Mitochondria','Lysosome','Golgi Apparatus'],correct:1,explanation:'Mitochondria produce ATP via oxidative phosphorylation. They have inner and outer membranes (cristae inside).',ncertCl:11,ncertCh:8,ncertPg:'135',unit:'Cell Structure — Organelles',pyq:true,pyqYr:2022,diff:'easy'},
-  {id:4,sub:'PHYSICS',ch:'Waves',tid:'t11',text:'Speed of sound in air at 0°C is approximately:',opts:['232 m/s','332 m/s','432 m/s','532 m/s'],correct:1,explanation:'Speed of sound in air at 0°C ≈ 332 m/s. Increases with temperature: v ∝ √T.',ncertCl:11,ncertCh:15,ncertPg:'368',unit:'Waves — Mechanical Waves',pyq:false,diff:'medium'},
-  {id:5,sub:'BIOLOGY',ch:'Genetics',tid:'t8',text:'DNA replication is semi-conservative because:',opts:['Both strands newly made','One old + one new strand per copy','Two replication forks','DNA polymerase conserves energy'],correct:1,explanation:'Meselson & Stahl (1958): each daughter DNA has one parental strand + one new strand.',ncertCl:12,ncertCh:6,ncertPg:'108',unit:'Genetics — Molecular Basis of Inheritance',pyq:true,pyqYr:2024,diff:'medium'},
-  {id:6,sub:'PHYSICS',ch:'Atoms & Nuclei',tid:'t2',text:'The number of neutrons in ₂₀Ca⁴⁰ is:',opts:['20','40','18','22'],correct:0,explanation:'Neutrons = Mass number − Atomic number = 40 − 20 = 20.',ncertCl:12,ncertCh:12,ncertPg:'408',unit:'Modern Physics — Nuclei',pyq:false,diff:'easy'},
+  {id:1,sub:'PHYSICS',ch:'Laws of Motion',tid:'t1',text:'A block of mass 5 kg is on a frictionless surface. A 20 N force is applied. What is the acceleration?',opts:['2 m/s²','4 m/s²','10 m/s²','25 m/s²'],correct:1,explanation:'F = ma → a = F/m = 20/5 = 4 m/s². Newton\'s Second Law on a frictionless surface.',ncertCl:11,ncertCh:5,ncertPg:'94',unit:'Mechanics - Newton\'s Laws',pyq:true,pyqYr:2023,diff:'easy'},
+  {id:2,sub:'CHEMISTRY',ch:'Organic Chemistry',tid:'t5',text:'What is the correct IUPAC name for CH₃-CH₂-OH?',opts:['Methanol','Ethanol','Propanol','Butanol'],correct:1,explanation:'2 carbons with -OH at C-1. Parent chain = eth- (2C). Suffix = -anol. IUPAC: Ethan-1-ol.',ncertCl:11,ncertCh:12,ncertPg:'339',unit:'Organic Chemistry - Alcohols',pyq:false,diff:'easy'},
+  {id:3,sub:'BIOLOGY',ch:'Cell Biology',tid:'t7',text:'Which organelle is called the "powerhouse of the cell" and has a double membrane?',opts:['Ribosome','Mitochondria','Lysosome','Golgi Apparatus'],correct:1,explanation:'Mitochondria produce ATP via oxidative phosphorylation. They have inner and outer membranes (cristae inside).',ncertCl:11,ncertCh:8,ncertPg:'135',unit:'Cell Structure - Organelles',pyq:true,pyqYr:2022,diff:'easy'},
+  {id:4,sub:'PHYSICS',ch:'Waves',tid:'t11',text:'Speed of sound in air at 0°C is approximately:',opts:['232 m/s','332 m/s','432 m/s','532 m/s'],correct:1,explanation:'Speed of sound in air at 0°C ≈ 332 m/s. Increases with temperature: v ∝ √T.',ncertCl:11,ncertCh:15,ncertPg:'368',unit:'Waves - Mechanical Waves',pyq:false,diff:'medium'},
+  {id:5,sub:'BIOLOGY',ch:'Genetics',tid:'t8',text:'DNA replication is semi-conservative because:',opts:['Both strands newly made','One old + one new strand per copy','Two replication forks','DNA polymerase conserves energy'],correct:1,explanation:'Meselson & Stahl (1958): each daughter DNA has one parental strand + one new strand.',ncertCl:12,ncertCh:6,ncertPg:'108',unit:'Genetics - Molecular Basis of Inheritance',pyq:true,pyqYr:2024,diff:'medium'},
+  {id:6,sub:'PHYSICS',ch:'Atoms & Nuclei',tid:'t2',text:'The number of neutrons in ₂₀Ca⁴⁰ is:',opts:['20','40','18','22'],correct:0,explanation:'Neutrons = Mass number − Atomic number = 40 − 20 = 20.',ncertCl:12,ncertCh:12,ncertPg:'408',unit:'Modern Physics - Nuclei',pyq:false,diff:'easy'},
 ];
 
 // ===== QUIZ STATE =====
@@ -1585,13 +1585,13 @@ function handleAns(el, idx){
     addMistake(q,idx); toast('❌ Wrong. Study the explanation below.');
   }
   document.getElementById('explTxt').textContent=q.explanation;
-  document.getElementById('sylBox').innerHTML=`<b>NCERT Reference:</b> Class ${q.ncertCl}, Chapter ${q.ncertCh}, Page ${q.ncertPg}<br><b>Syllabus Unit:</b> ${q.unit}${q.pyq?`<br><b style="color:var(--red)">⭐ PYQ ${q.pyqYr} — High priority!</b>`:''}`;
+  document.getElementById('sylBox').innerHTML=`<b>NCERT Reference:</b> Class ${q.ncertCl}, Chapter ${q.ncertCh}, Page ${q.ncertPg}<br><b>Syllabus Unit:</b> ${q.unit}${q.pyq?`<br><b style="color:var(--red)">⭐ PYQ ${q.pyqYr} - High priority!</b>`:''}`;
   document.getElementById('refTags').innerHTML=`<span class="ncert-tag"><i class="ti ti-book"></i> NCERT Cl.${q.ncertCl} Ch.${q.ncertCh} Pg.${q.ncertPg}</span><span class="syl-tag"><i class="ti ti-list"></i> ${q.unit}</span>${q.pyq?`<span class="badge bh">PYQ ${q.pyqYr}</span>`:''}`;
   document.getElementById('explBox').classList.add('show');
   document.getElementById('confRow').style.display='flex';
 }
 
-function showHint(){ const q=quizList[curQ]; toast(`Hint: NCERT Class ${q.ncertCl}, Ch.${q.ncertCh}, Page ${q.ncertPg} — ${q.unit}`); }
+function showHint(){ const q=quizList[curQ]; toast(`Hint: NCERT Class ${q.ncertCl}, Ch.${q.ncertCh}, Page ${q.ncertPg} - ${q.unit}`); }
 function bookmarkQ(){ toast('🔖 Question bookmarked!'); }
 function logConf(l){ toast(`Logged as ${l}`); document.getElementById('confRow').style.display='none'; }
 
@@ -1662,7 +1662,7 @@ function renderNotes(){
 
 // ===== FLASHCARDS =====
 const FC=[
-  {s:'Biology • Cell Biology',q:'What is the Golgi Apparatus function?',a:'Modifies, packages, and transports proteins and lipids — the "post office" of the cell.',ref:'NCERT Class 11, Ch.8, Pg 136'},
+  {s:'Biology • Cell Biology',q:'What is the Golgi Apparatus function?',a:'Modifies, packages, and transports proteins and lipids - the "post office" of the cell.',ref:'NCERT Class 11, Ch.8, Pg 136'},
   {s:'Physics • Laws of Motion',q:"State Newton's First Law.",a:'A body stays at rest or in uniform motion unless acted on by an external unbalanced force (Law of Inertia).',ref:'NCERT Class 11, Ch.5, Pg 90'},
   {s:'Chemistry • Chemical Bonding',q:'What is a covalent bond?',a:'Formed by mutual sharing of electron pairs between two atoms to achieve stable configuration.',ref:'NCERT Class 11, Ch.4, Pg 99'},
   {s:'Biology • Genetics',q:'State the Central Dogma.',a:'DNA → (Transcription) → RNA → (Translation) → Protein. Information flows from DNA to protein.',ref:'NCERT Class 12, Ch.6, Pg 110'},
@@ -1678,18 +1678,18 @@ function renderFlash(){
 function flipCard(){ document.getElementById('flashcard').classList.toggle('flipped'); }
 function nextFlash(){ fcIdx=(fcIdx+1)%FC.length; renderFlash(); }
 function prevFlash(){ fcIdx=(fcIdx-1+FC.length)%FC.length; renderFlash(); }
-function rateFlash(l){ toast(l==='easy'?'✅ Easy — 1 week':l==='medium'?'📅 Medium — 3 days':'❗ Hard — Tomorrow'); setTimeout(nextFlash,400); }
+function rateFlash(l){ toast(l==='easy'?'✅ Easy - 1 week':l==='medium'?'📅 Medium - 3 days':'❗ Hard - Tomorrow'); setTimeout(nextFlash,400); }
 
 // ===== AI TUTOR =====
 const AI_RESP={
-  'newton':"Newton's Third Law: Every action has an equal and opposite reaction.\n\nExample: Feet push ground (action) → ground pushes you up (reaction). Same magnitude, opposite directions, different bodies.\n\nNCERT: Class 11, Ch.5, Page 97.\n\n💡 NEET Tip: Paired forces act on DIFFERENT bodies — don't confuse with equilibrium.",
-  'dna':"DNA Replication (Semi-Conservative):\n\n1️⃣ Helicase unwinds the helix\n2️⃣ Primase adds RNA primer\n3️⃣ DNA Pol III adds nucleotides (5'→3')\n4️⃣ Leading strand: continuous; Lagging strand: Okazaki fragments\n5️⃣ DNA Ligase seals fragments\n\nNCERT: Class 12, Ch.6, Pages 106–112.",
-  'mitosis':"Mitosis (PMAT):\nProphase → Metaphase → Anaphase → Telophase\n\n2n → 2n + 2n (2 identical diploid cells)\n\nImportant: Karyokinesis = nuclear division; Cytokinesis = cytoplasmic division\n\nNCERT: Class 11, Ch.10, Pages 171–177.",
-  'meiosis':"Meiosis — 2 divisions:\n\nMeiosis I (Reductional): 2n → n\nProphase I has 5 sub-stages: Leptotene, Zygotene, Pachytene, Diplotene, Diakinesis\nCrossing over at Pachytene → genetic recombination\n\nMeiosis II (Equational): n → n + n\nResult: 4 haploid cells\n\nNCERT: Class 11, Ch.10, Pages 177–182.",
-  'le chatelier':"Le Chatelier's Principle: System at equilibrium shifts to OPPOSE any disturbance.\n\nEffects:\n• ↑ Pressure → shift toward fewer moles of gas\n• ↑ Temperature → shift toward endothermic side\n• Add reactant → shift toward products\n\nNCERT: Class 11, Ch.7, Pages 199–207.\n\n💡 Haber process: N₂+3H₂→2NH₃ uses high pressure, moderate temperature.",
-  'faraday':"Faraday's Laws of Electromagnetic Induction:\n\n1st Law: EMF is induced when magnetic flux changes\n2nd Law: EMF = −dΦ/dt (Lenz's law gives the negative sign)\n\nNCERT: Class 12, Ch.6, Pages 202–215.\n\n💡 Remember: the negative sign means the induced EMF opposes the change (Lenz's law).",
-  'important':"NEET 2026 Most Important Chapters:\n\nPhysics (25 Qs): Electrostatics, Current Electricity, Optics, Modern Physics, Mechanics\nChemistry (25 Qs): Organic (IUPAC, GOC, Biomolecules), Equilibrium, Electrochemistry, Coordination\nBiology (50 Qs): Genetics, Human Physiology, Plant Physiology, Cell Biology, Ecology\n\n💡 Biology has 50 questions — give it the most time!\nTarget 70%+ in Biology for a good rank.",
-  'default':"Great question! Based on the NEET 2026 syllabus:\n\nThis is a high-yield topic. I recommend:\n1️⃣ Read the NCERT chapter carefully first\n2️⃣ Note key formulas and definitions\n3️⃣ Solve 15–20 past NEET questions on this topic\n4️⃣ Use Smart Test feature to check your understanding\n\nWhich specific concept would you like me to explain in detail?",
+  'newton':"Newton's Third Law: Every action has an equal and opposite reaction.\n\nExample: Feet push ground (action) → ground pushes you up (reaction). Same magnitude, opposite directions, different bodies.\n\nNCERT: Class 11, Ch.5, Page 97.\n\n💡 NEET Tip: Paired forces act on DIFFERENT bodies - don't confuse with equilibrium.",
+  'dna':"DNA Replication (Semi-Conservative):\n\n1️⃣ Helicase unwinds the helix\n2️⃣ Primase adds RNA primer\n3️⃣ DNA Pol III adds nucleotides (5'→3')\n4️⃣ Leading strand: continuous; Lagging strand: Okazaki fragments\n5️⃣ DNA Ligase seals fragments\n\nNCERT: Class 12, Ch.6, Pages 106-112.",
+  'mitosis':"Mitosis (PMAT):\nProphase → Metaphase → Anaphase → Telophase\n\n2n → 2n + 2n (2 identical diploid cells)\n\nImportant: Karyokinesis = nuclear division; Cytokinesis = cytoplasmic division\n\nNCERT: Class 11, Ch.10, Pages 171-177.",
+  'meiosis':"Meiosis - 2 divisions:\n\nMeiosis I (Reductional): 2n → n\nProphase I has 5 sub-stages: Leptotene, Zygotene, Pachytene, Diplotene, Diakinesis\nCrossing over at Pachytene → genetic recombination\n\nMeiosis II (Equational): n → n + n\nResult: 4 haploid cells\n\nNCERT: Class 11, Ch.10, Pages 177-182.",
+  'le chatelier':"Le Chatelier's Principle: System at equilibrium shifts to OPPOSE any disturbance.\n\nEffects:\n• ↑ Pressure → shift toward fewer moles of gas\n• ↑ Temperature → shift toward endothermic side\n• Add reactant → shift toward products\n\nNCERT: Class 11, Ch.7, Pages 199-207.\n\n💡 Haber process: N₂+3H₂→2NH₃ uses high pressure, moderate temperature.",
+  'faraday':"Faraday's Laws of Electromagnetic Induction:\n\n1st Law: EMF is induced when magnetic flux changes\n2nd Law: EMF = −dΦ/dt (Lenz's law gives the negative sign)\n\nNCERT: Class 12, Ch.6, Pages 202-215.\n\n💡 Remember: the negative sign means the induced EMF opposes the change (Lenz's law).",
+  'important':"NEET 2026 Most Important Chapters:\n\nPhysics (25 Qs): Electrostatics, Current Electricity, Optics, Modern Physics, Mechanics\nChemistry (25 Qs): Organic (IUPAC, GOC, Biomolecules), Equilibrium, Electrochemistry, Coordination\nBiology (50 Qs): Genetics, Human Physiology, Plant Physiology, Cell Biology, Ecology\n\n💡 Biology has 50 questions - give it the most time!\nTarget 70%+ in Biology for a good rank.",
+  'default':"Great question! Based on the NEET 2026 syllabus:\n\nThis is a high-yield topic. I recommend:\n1️⃣ Read the NCERT chapter carefully first\n2️⃣ Note key formulas and definitions\n3️⃣ Solve 15-20 past NEET questions on this topic\n4️⃣ Use Smart Test feature to check your understanding\n\nWhich specific concept would you like me to explain in detail?",
 };
 function askAI(q){ document.getElementById('aiIn').value=q; sendAI(); }
 function sendAI(){
@@ -1712,7 +1712,7 @@ function buildStreak(){
 }
 
 // ===== ADMIN =====
-// ── ADMIN USER MANAGEMENT — paginated + searchable ──
+// ── ADMIN USER MANAGEMENT - paginated + searchable ──
 let adminPage = 1;
 let adminNextToken = null;
 let adminPrevTokens = [null]; // stack for back navigation
@@ -1776,8 +1776,8 @@ function renderUserTable(users){
       ? new Date(u.paidUntil).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'2-digit'})
       : u.trialEnd
         ? 'Trial '+new Date(u.trialEnd).toLocaleDateString('en-IN',{day:'2-digit',month:'short'})
-        : '—';
-    const score = u.scores?.globalWeighted ? Math.round(u.scores.globalWeighted) : '—';
+        : ' - ';
+    const score = u.scores?.globalWeighted ? Math.round(u.scores.globalWeighted) : ' - ';
     const actions = u.role !== 'admin'
       ? `<div style="display:flex;gap:4px;flex-wrap:wrap">
           <button class="ab ${u.disabled?'ab-t':'ab-k'}" onclick="adminUserAction('${u.disabled?'enable':'disable'}','${u.uid}')">${u.disabled?'Enable':'Kill'}</button>
@@ -1787,7 +1787,7 @@ function renderUserTable(users){
       : '<span style="font-size:10px;color:var(--mute)">Protected</span>';
     return `<tr data-uid="${u.uid}" onclick="handleRowClick(event,'${u.uid}')" style="cursor:pointer">
       <td onclick="event.stopPropagation()"><input type="checkbox" class="user-cb" data-uid="${u.uid}" onchange="updateBulkBar()" style="cursor:pointer"></td>
-      <td><div style="font-size:12px;font-weight:600">${u.name||'—'}</div><div style="font-size:10px;color:var(--mute)">${u.email}</div></td>
+      <td><div style="font-size:12px;font-weight:600">${u.name||' - '}</div><div style="font-size:10px;color:var(--mute)">${u.email}</div></td>
       <td><span class="sp ${statusCls}" style="font-size:10px">${u.status.toUpperCase()}</span></td>
       <td style="font-size:11px;color:var(--mute)">${expiry}</td>
       <td style="font-size:12px;font-weight:600">${score}</td>
@@ -1857,7 +1857,7 @@ async function showUserDetail(targetUid){
       </div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:11px">
         <div class="qbox"><div class="qn" style="font-size:15px">${u.totalQuestionsAttempted||0}</div><div class="ql">Qs done</div></div>
-        <div class="qbox"><div class="qn" style="font-size:15px;color:var(--blue)">${u.scores?.globalWeighted?Math.round(u.scores.globalWeighted):'—'}</div><div class="ql">Score</div></div>
+        <div class="qbox"><div class="qn" style="font-size:15px;color:var(--blue)">${u.scores?.globalWeighted?Math.round(u.scores.globalWeighted):' - '}</div><div class="ql">Score</div></div>
         <div class="qbox"><div class="qn" style="font-size:15px;color:var(--purple)">${u.referralCount||0}</div><div class="ql">Referrals</div></div>
       </div>
       ${topics.length?`<div style="font-size:11px;font-weight:700;color:var(--mute);margin-bottom:6px">WEAKEST TOPICS (θ lowest first)</div>`:''}
@@ -1996,7 +1996,7 @@ async function sendFeedback(){
     statusEl.textContent='✅ Feedback sent! We will respond to '+S.user.email+' within 24 hours.';
     document.getElementById('fbText').value='';
   }catch(e){
-    // Fallback — open email client
+    // Fallback - open email client
     const subject = encodeURIComponent('[NEETAce '+APP_VERSION+'] Feedback: '+type);
     const body = encodeURIComponent(text + ' --- User: ' + S.user.email + ' App: v' + APP_VERSION);
     window.open('mailto:support@bluetrace.tech?subject='+subject+'&body='+body);
@@ -2041,7 +2041,7 @@ async function openPricingModal(){
     var monthly = p.isMonthly ? '<span style="font-size:11px;font-weight:400;color:var(--mute)">/mo</span>' : '';
     var desc = p.description || '';
     var feats = (p.features||[]).slice(0,4).map(function(f){ return '<div style="font-size:11px;color:var(--txt);padding:2px 0">✓ '+f+'</div>'; }).join('');
-    var btnLabel = p.isMonthly ? 'Pay ₹'+price+' / month' : 'Pay ₹'+price+' — Unlock till 31 May';
+    var btnLabel = p.isMonthly ? 'Pay ₹'+price+' / month' : 'Pay ₹'+price+' - Unlock till 31 May';
     return '<div style="border:1.5px solid '+border+';border-radius:12px;padding:13px;margin-bottom:9px;background:'+bg+'">'+
       popular+
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">'+
@@ -2092,7 +2092,7 @@ async function startPaymentWithPlan(planKey, pricePaise){
     rzp.on('payment.failed',r=>toast('❌ Payment failed: '+(r.error.description||'Error')));
     rzp.open();
   }catch(e){ toast('Payment could not start. Try again.'); }
-  finally{ if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-lock-open"></i> Pay ₹799 — Unlock Full Access'; } }
+  finally{ if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-lock-open"></i> Pay ₹799 - Unlock Full Access'; } }
 }
 
 
@@ -2224,7 +2224,7 @@ const SLOGANS = {
 };
 
 
-// ===== CONTENT PACKS — pulls questions from admin-enabled packs =====
+// ===== CONTENT PACKS - pulls questions from admin-enabled packs =====
 async function loadContentPacks(){
   try{
     const r = await fetch('/api/packs?active=true'+(S.user?('&uid='+encodeURIComponent(S.user.uid)):''));
@@ -2310,7 +2310,7 @@ async function rollbackPack(packId, version){
 function populatePackDropdown(){
   const sel=document.getElementById('packUpdateTarget');
   if(!sel) return;
-  sel.innerHTML='<option value="">— New pack —</option>' +
+  sel.innerHTML='<option value="">- New pack -</option>' +
     PACKS_CACHE.map(p=>`<option value="${p.id}">${p.name} (v${p.version||'1.0'})</option>`).join('');
 }
 
@@ -2365,7 +2365,7 @@ async function uploadPack(){
 }
 
 
-// ===== ADAPTIVE ENGINE — client-side integration =====
+// ===== ADAPTIVE ENGINE - client-side integration =====
 let ADAPTIVE_MODE = false;
 let questionStartTime = null;
 let seenQuestionIds = [];
@@ -2418,7 +2418,7 @@ function renderSingleQuestion(q, expectedProb){
   document.getElementById('quizView').innerHTML=`
   <div style="background:linear-gradient(135deg,var(--purple),var(--blue));color:#fff;border-radius:13px;padding:12px 14px;margin-bottom:13px">
     <div style="font-size:10px;opacity:.75;text-transform:uppercase;letter-spacing:.8px">Adaptive Practice</div>
-    <div style="font-size:15px;font-weight:800;margin-top:2px">${q.sub} — ${q.ch}${adaptiveBadge}</div>
+    <div style="font-size:15px;font-weight:800;margin-top:2px">${q.sub} - ${q.ch}${adaptiveBadge}</div>
   </div>
   <div class="qmeta"><span class="qcnt">${q.sub} · ${q.diff}</span><div class="timer"><i class="ti ti-clock"></i><span id="tVal">3:00</span></div></div>
   <div class="qpbg"><div class="qpfill" id="qProg" style="width:50%"></div></div>
@@ -2463,7 +2463,7 @@ async function handleAdaptiveAns(el, idx, q){
     if(cEl){ cEl.classList.add('correct'); cEl.querySelector('.oltr').style.cssText='background:var(--green);color:#fff'; }
     addMistake(q, idx);
     celebrate(false, el);
-    toast('❌ Wrong — see explanation');
+    toast('❌ Wrong - see explanation');
     if(!DOCTOR && ADAPTIVE_MODE) startConceptDoctor(q);
   }
 
@@ -2529,7 +2529,7 @@ async function runSmartTrial(){
     return;
   }
 
-  // Days 2, 5: quiet — just show the banner normally, no popup
+  // Days 2, 5: quiet - just show the banner normally, no popup
   updateAccessBanner();
 }
 
@@ -2546,11 +2546,11 @@ function showTrialWelcome(daysLeft){
       <div style="background:var(--blue-l);border-radius:10px;padding:13px;margin-bottom:13px">
         <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:7px">What makes NEETAce different:</div>
         <div style="font-size:12px;color:var(--txt);line-height:1.9">
-          ⚛️ <b>Unique questions</b> — your numbers differ from your friend's<br>
-          📏 <b>Unit variants</b> — same concept, different units each time<br>
-          🤖 <b>AI Tutor</b> — explains any NCERT concept instantly<br>
-          📓 <b>Galti Copy</b> — auto-logs every wrong answer with explanation<br>
-          🏆 <b>Real rank</b> — your All India Rank estimate, updated live
+          ⚛️ <b>Unique questions</b> - your numbers differ from your friend's<br>
+          📏 <b>Unit variants</b> - same concept, different units each time<br>
+          🤖 <b>AI Tutor</b> - explains any NCERT concept instantly<br>
+          📓 <b>Galti Copy</b> - auto-logs every wrong answer with explanation<br>
+          🏆 <b>Real rank</b> - your All India Rank estimate, updated live
         </div>
       </div>
       <div style="font-size:12px;color:var(--mute);text-align:center">
@@ -2594,10 +2594,10 @@ function showTrialInvestment(daysLeft, u){
         </div>
       </div>
       <div style="background:var(--red-l);border-radius:9px;padding:11px;font-size:12px;color:#7a0c0c;text-align:center">
-        ⚠️ If you don't upgrade in <b>${daysLeft} days</b>, all of this gets <b>locked</b> —
+        ⚠️ If you don't upgrade in <b>${daysLeft} days</b>, all of this gets <b>locked</b> -
         your Galti Copy, your rank, your streak. Your progress stays saved, but you can't practice.
       </div>`,
-    primaryBtn: { text: '🔓 Keep my progress — Upgrade', action: "closeTrialModal(); openPricingModal();" },
+    primaryBtn: { text: '🔓 Keep my progress - Upgrade', action: "closeTrialModal(); openPricingModal();" },
     secondaryBtn: { text: "Continue trial", action: "closeTrialModal()" },
     color: '#d97706',
   });
@@ -2620,8 +2620,8 @@ function showTrialUrgency(daysLeft, u){
         <div style="font-size:12px;color:var(--txt);line-height:1.9">
           ❌ All 5 difficulty levels<br>
           ❌ Your Galti Copy (${mistakes.length} mistakes logged)<br>
-          ❌ AI Tutor — ask any NCERT concept<br>
-          ❌ Adaptive practice — questions tuned to YOUR level<br>
+          ❌ AI Tutor - ask any NCERT concept<br>
+          ❌ Adaptive practice - questions tuned to YOUR level<br>
           ❌ Leaderboard rank and streak
         </div>
       </div>
@@ -2640,7 +2640,7 @@ function showTrialUrgency(daysLeft, u){
           <div style="color:var(--blue);font-weight:700;margin-top:2px">Start small</div>
         </div>
       </div>`,
-    primaryBtn: { text: '✅ Upgrade Now — Keep Everything', action: "closeTrialModal(); openPricingModal();" },
+    primaryBtn: { text: '✅ Upgrade Now - Keep Everything', action: "closeTrialModal(); openPricingModal();" },
     secondaryBtn: daysLeft > 0 ? { text: 'Remind me tomorrow', action: 'closeTrialModal()' } : null,
     color: '#e34948',
     urgent: true,
@@ -2708,7 +2708,7 @@ async function loadFeatureFlags(){
     const r = await api('features',{action:'admin_list',uid:S.user.uid,sessionToken:S.sessionToken});
     FEATURES_CACHE = r.features || {};
     renderFeatureList();
-  }catch(e){ document.getElementById('featureFlagsList').innerHTML='<div style="color:var(--red);font-size:12px;padding:12px">Could not load features — click Seed Defaults first</div>'; }
+  }catch(e){ document.getElementById('featureFlagsList').innerHTML='<div style="color:var(--red);font-size:12px;padding:12px">Could not load features - click Seed Defaults first</div>'; }
 }
 
 function renderFeatureList(){
@@ -2765,7 +2765,7 @@ async function showCostEstimate(){
   box.innerHTML='<div style="text-align:center;padding:12px;color:var(--mute)">Calculating...</div>';
   try{
     const r = await api('features',{action:'cost_estimate',uid:S.user.uid,sessionToken:S.sessionToken,monthlyUsers:users});
-    let html='<div style="font-size:12px;font-weight:700;margin-bottom:9px">Monthly Cost Estimate — '+users+' users</div>';
+    let html='<div style="font-size:12px;font-weight:700;margin-bottom:9px">Monthly Cost Estimate - '+users+' users</div>';
     if(r.costs.length){
       html+=r.costs.map(c=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:11px">
         <span>${c.feature}</span>
@@ -2989,7 +2989,7 @@ function renderMistakesEnhanced(){
       </div>
       <div style="font-size:12px;margin-bottom:7px;line-height:1.5">${m.text?.slice(0,120)||''}${m.text?.length>120?'...':''}</div>
       <div style="font-size:11px;color:var(--mute);margin-bottom:8px">
-        ${m.sub} · ${m.ch} · Class ${m.ncertCl||11}, Ch ${m.ncertCh||'—'}, Pg ${m.ncertPg||'—'}
+        ${m.sub} · ${m.ch} · Class ${m.ncertCl||11}, Ch ${m.ncertCh||' - '}, Pg ${m.ncertPg||' - '}
       </div>
       <!-- Recovery progress bar -->
       <div style="display:flex;gap:4px;margin-bottom:8px">
@@ -3084,7 +3084,7 @@ async function updateAcademyQuote(){
     const total = customPrice ? customPrice*students : p.totalRupees;
     el.style.display='block';
     el.innerHTML=`<b>${students} students</b> × ₹${price}/student = <b style="font-size:14px">₹${total} total</b>` +
-      (p.discountPct&&!customPrice?` <span style="color:var(--green)">(${p.discountPct}% discount applied — saving ₹${p.savingsRupees})</span>`:'') +
+      (p.discountPct&&!customPrice?` <span style="color:var(--green)">(${p.discountPct}% discount applied - saving ₹${p.savingsRupees})</span>`:'') +
       (customPrice?'<span style="color:var(--amber)"> (custom price)</span>':'');
   }catch(e){}
 }
@@ -3201,11 +3201,11 @@ function renderQuestionExtras(q){
   return out;
 }
 
-// ===== BRAIN BOOST — IQ mini-set =====
+// ===== BRAIN BOOST - IQ mini-set =====
 const BRAIN_QUESTIONS = [
-  {id:'iq1',text:'2, 6, 12, 20, 30, ... What comes next?',opts:['40','42','44','36'],correct:1,explanation:'Differences: 4,6,8,10 so next is +12 = 42. Pattern recognition is the same skill as spotting formula patterns in Physics.',realLife:'NEET numericals often hide arithmetic patterns — sequence sense makes you faster.'},
-  {id:'iq2',text:'All enzymes are proteins. Ribozyme is not a protein. Therefore:',opts:['Ribozyme is an enzyme','Ribozyme is not an enzyme by that rule','Proteins are enzymes','Cannot conclude'],correct:1,explanation:'Pure syllogism — if ALL enzymes are proteins, a non-protein cannot be an enzyme (by the stated rule). Real biology later broke this rule when ribozymes were discovered!',realLife:'Assertion-Reason questions in NEET are exactly this logic structure.'},
-  {id:'iq3',text:'A doctor gives you 3 pills, one every 30 minutes. How long until all are taken?',opts:['90 min','60 min','30 min','120 min'],correct:1,explanation:'Pill 1 at 0 min, pill 2 at 30, pill 3 at 60. Total = 60 minutes. Careless reading costs marks!',realLife:'This is the #1 error type in NEET — answering the question you assumed, not the one asked.'},
+  {id:'iq1',text:'2, 6, 12, 20, 30, ... What comes next?',opts:['40','42','44','36'],correct:1,explanation:'Differences: 4,6,8,10 so next is +12 = 42. Pattern recognition is the same skill as spotting formula patterns in Physics.',realLife:'NEET numericals often hide arithmetic patterns - sequence sense makes you faster.'},
+  {id:'iq2',text:'All enzymes are proteins. Ribozyme is not a protein. Therefore:',opts:['Ribozyme is an enzyme','Ribozyme is not an enzyme by that rule','Proteins are enzymes','Cannot conclude'],correct:1,explanation:'Pure syllogism - if ALL enzymes are proteins, a non-protein cannot be an enzyme (by the stated rule). Real biology later broke this rule when ribozymes were discovered!',realLife:'Assertion-Reason questions in NEET are exactly this logic structure.'},
+  {id:'iq3',text:'A doctor gives you 3 pills, one every 30 minutes. How long until all are taken?',opts:['90 min','60 min','30 min','120 min'],correct:1,explanation:'Pill 1 at 0 min, pill 2 at 30, pill 3 at 60. Total = 60 minutes. Careless reading costs marks!',realLife:'This is the #1 error type in NEET - answering the question you assumed, not the one asked.'},
   {id:'iq4',text:'Mirror shows 2:30. What is the actual time?',opts:['9:30','10:30','8:30','3:30'],correct:0,explanation:'Mirror time: subtract from 12:00. 12:00 minus 2:30 = 9:30. Spatial reasoning = ray diagrams in Optics.',realLife:'Lateral inversion is literally the Physics of plane mirrors (Class 12 Optics).'},
   {id:'iq5',text:'If CELL is coded as DFMM, how is GENE coded?',opts:['HFOF','HGOF','FDMD','HFPF'],correct:0,explanation:'Each letter +1: G to H, E to F, N to O, E to F = HFOF. Coding speed helps mnemonic speed for biology terms.',realLife:'Fast symbol manipulation helps in organic chemistry mechanisms.'},
 ];
@@ -3231,7 +3231,7 @@ function nextBrainQuestion(){
 
 // ===== OPTION SHUFFLING =====
 // Every time a question is served, options appear in a new random order.
-// The correct answer letter changes every attempt — no position memorization.
+// The correct answer letter changes every attempt - no position memorization.
 function shuffleQuestion(q){
   if(!q || !q.opts || q.opts.length < 2) return q;
   const order = q.opts.map((_,i)=>i);
@@ -3288,7 +3288,7 @@ const NEET_SYLLABUS = {
     {id:'CH05',name:'Thermodynamics (Chem)',cls:11,ncertCh:'5',tids:['c5']},
     {id:'CH06',name:'Equilibrium',cls:11,ncertCh:'6',tids:['c6']},
     {id:'CH07',name:'Redox Reactions',cls:11,ncertCh:'7',tids:['c7']},
-    {id:'CH08',name:'Organic — Basic Principles',cls:11,ncertCh:'8',tids:['c8']},
+    {id:'CH08',name:'Organic - Basic Principles',cls:11,ncertCh:'8',tids:['c8']},
     {id:'CH09',name:'Hydrocarbons',cls:11,ncertCh:'9',tids:['c9']},
     {id:'CH10',name:'Solutions',cls:12,ncertCh:'1',tids:['c10']},
     {id:'CH11',name:'Electrochemistry',cls:12,ncertCh:'2',tids:['c11']},
@@ -3343,7 +3343,7 @@ function renderSyllabus(){
   document.getElementById('syllabusCoverage').innerHTML =
     '<div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="font-size:12px;font-weight:700">Question coverage</span><span style="font-size:12px;font-weight:700;color:var(--blue)">'+coveredUnits+'/'+totalUnits+' units ('+pct+'%)</span></div>' +
     '<div style="height:7px;background:var(--bdr);border-radius:4px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:linear-gradient(90deg,var(--blue),var(--purple));border-radius:4px"></div></div>' +
-    '<div style="font-size:10px;color:var(--mute);margin-top:5px">Official NEET 2026 syllabus (NMC). Tap any unit to practice — questions and options are randomized every time.</div>';
+    '<div style="font-size:10px;color:var(--mute);margin-top:5px">Official NEET 2026 syllabus (NMC). Tap any unit to practice - questions and options are randomized every time.</div>';
   el.innerHTML=out;
 }
 
@@ -3361,7 +3361,7 @@ function startSyllabusUnitQuiz(sub, unitId){
   qIdx=0; qCorrect=0; qWrong=0;
   switchTab('quiz');
   if(typeof renderQuestion==='function') renderQuestion();
-  toast('Starting '+unit.name+' — '+quizList.length+' randomized questions');
+  toast('Starting '+unit.name+' - '+quizList.length+' randomized questions');
 }
 
 
@@ -3375,7 +3375,7 @@ function startExamMode(){
   if(!S.user){ openAuth(); return; }
   if(!canAccess()){ openPaywall(); return; }
   const pool = shuffleArray(QUESTIONS);
-  if(pool.length < 10){ toast('Need more questions — load content packs first.'); return; }
+  if(pool.length < 10){ toast('Need more questions - load content packs first.'); return; }
   const target = Math.min(180, pool.length);
   // Subject balance like NEET: ~25% Phy, ~25% Chem, ~50% Bio
   const phy = shuffleArray(pool.filter(q=>q.sub==='PHYSICS')).slice(0, Math.round(target*.25));
@@ -3475,7 +3475,7 @@ function submitExam(){
     '<div class="qbox"><div class="qn" style="color:var(--mute)">'+skipped+'</div><div class="ql">Skipped</div></div>'+
     '<div class="qbox"><div class="qn" style="color:var(--blue)">'+timeTaken+'m</div><div class="ql">Time</div></div></div>'+
   '<div class="card" style="margin-bottom:12px;font-size:12px;line-height:1.7">'+
-    (wrong>0?'<b>'+wrong+' mistakes auto-logged to Galti Copy</b> — recover them before the next mock.<br>':'')+
+    (wrong>0?'<b>'+wrong+' mistakes auto-logged to Galti Copy</b> - recover them before the next mock.<br>':'')+
     'Accuracy: <b>'+pct+'%</b> &middot; NEET marking (+4/-1) applied.<br>'+
     '<span style="color:var(--mute)">Real NEET 2026 (Re-NEET): 21 June 2026 &middot; 180 Qs &middot; 180 min</span></div>'+
   '<button class="btn btn-blue btn-full" onclick="startExamMode()"><i class="ti ti-refresh"></i> New Mock Test</button>'+
@@ -3492,9 +3492,9 @@ function startRevisionMode(){
   const now = new Date();
   const due = mistakes.filter(function(m){ return !m.recovered && (!m.nextReview || new Date(m.nextReview)<=now); });
   let pool = due.length ? due : mistakes.filter(function(m){return !m.recovered});
-  if(!pool.length){ toast('Nothing to revise — Galti Copy is clear! \uD83C\uDF89'); return; }
+  if(!pool.length){ toast('Nothing to revise - Galti Copy is clear! \uD83C\uDF89'); return; }
   quizList = shuffleArray(pool).map(shuffleQuestion);
-  activeTopic = {name:'Revision — Galti Recovery', sub:'ALL', id:'revision'};
+  activeTopic = {name:'Revision - Galti Recovery', sub:'ALL', id:'revision'};
   qIdx=0; qCorrect=0; qWrong=0;
   switchTab('quiz');
   if(typeof renderQuestion==='function') renderQuestion();
@@ -3518,7 +3518,7 @@ function buildProgressText(){
   const acc  = g.accuracy || 0;
   const rank = g.rank ? "#"+g.rank : "building up";
   const ref  = (S.user && S.user.referralCode) ? "\n\nJoin me with code "+S.user.referralCode+" for 7 extra free days!" : "";
-  return "\uD83C\uDF93 *NEETAce Progress — "+name+"*\n\n\u2705 Questions solved: "+done+"\n\uD83C\uDFAF Accuracy: "+acc+"%\n\uD83C\uDFC6 Rank: "+rank+"\n\uD83D\uDCC5 "+new Date().toLocaleDateString("en-IN",{day:"2-digit",month:"short"})+"\n\nPreparing for NEET 2026 on https://neet.bluetrace.tech"+ref;
+  return "\uD83C\uDF93 *NEETAce Progress - "+name+"*\n\n\u2705 Questions solved: "+done+"\n\uD83C\uDFAF Accuracy: "+acc+"%\n\uD83C\uDFC6 Rank: "+rank+"\n\uD83D\uDCC5 "+new Date().toLocaleDateString("en-IN",{day:"2-digit",month:"short"})+"\n\nPreparing for NEET 2026 on https://neet.bluetrace.tech"+ref;
 }
 function shareMyProgress(){
   if(!S.user){ openAuth(); return; }
@@ -3577,7 +3577,7 @@ function renderScorePredictor(r){
   el.innerHTML='<div style="text-align:center;margin-bottom:9px"><div style="font-size:11px;color:var(--mute)">PREDICTED NEET SCORE</div>'+
     '<div style="font-size:34px;font-weight:900;color:var(--blue)">'+mid+'<span style="font-size:15px;color:var(--mute)">/720</span></div>'+
     '<div style="font-size:11px;color:var(--mute)">Confidence range: '+lo+' \u2013 '+hi+' &middot; based on '+g.attempted+' answers \u00b7 estimate only, not a guarantee</div></div>'+
-    '<div style="background:var(--amber-l);border-radius:9px;padding:10px;font-size:11.5px;color:#7a4800;line-height:1.6"><b>\uD83C\uDFAF Highest-gain move:</b> Fix <b>'+wu.name+'</b> (your weakest) — worth roughly +'+gain+' marks. Tap it in Chapter Mastery above to practice now.</div>';
+    '<div style="background:var(--amber-l);border-radius:9px;padding:10px;font-size:11.5px;color:#7a4800;line-height:1.6"><b>\uD83C\uDFAF Highest-gain move:</b> Fix <b>'+wu.name+'</b> (your weakest) - worth roughly +'+gain+' marks. Tap it in Chapter Mastery above to practice now.</div>';
 }
 
 
@@ -3594,7 +3594,7 @@ async function loadTeacherPacks(){
     const r = await api("packs",{action:"teacher_list",uid:S.user.uid,sessionToken:S.sessionToken});
     const packs = r.packs || [];
     const sel = document.getElementById("tpTarget");
-    if(sel) sel.innerHTML = '<option value="">— New pack —</option>' +
+    if(sel) sel.innerHTML = '<option value="">- New pack -</option>' +
       packs.map(function(p){ return '<option value="'+p.id+'">'+p.name+' (v'+(p.version||'1.0')+')</option>'; }).join("");
     if(!packs.length){ el.innerHTML='<div style="font-size:11px;color:var(--mute);padding:8px 0">No packs yet. Upload your first DPP below.</div>'; return; }
     el.innerHTML = packs.map(function(p){
@@ -3632,7 +3632,7 @@ function isAcademyStudent(){
   return !!(S.user && S.user.academyId && S.user.academyRole !== "teacher" && S.user.role !== "admin");
 }
 
-// ===== CONCEPT DOCTOR — staged recovery path =====
+// ===== CONCEPT DOCTOR - staged recovery path =====
 // Wrong (medium/hard) -> Easy DIAGNOSTIC -> Medium CONFIRM -> RETRY original -> Recovered
 let DOCTOR = null;
 const DIFF_RANK = {starter:0, easy:1, medium:2, hard:3, exam:4};
@@ -3653,7 +3653,7 @@ function startConceptDoctor(origQ){
   DOCTOR = { orig: origQ, stage: 1, used: [origQ.id, diag.id] };
   setTimeout(function(){
     toast("\uD83E\uDE7A Concept Doctor: let us rebuild this step by step");
-    renderDoctorQuestion(diag, "DIAGNOSTIC — basics first", "var(--teal)");
+    renderDoctorQuestion(diag, "DIAGNOSTIC - basics first", "var(--teal)");
   }, 1400);
   return true;
 }
@@ -3678,8 +3678,8 @@ function doctorOnAnswer(correct){
       if(correct){
         d.stage=2;
         const conf = doctorPick(d.orig.tid, d.orig.sub, 2, d.used);
-        if(conf){ d.used.push(conf.id); renderDoctorQuestion(conf, "CONFIRM — one level up", "var(--blue)"); }
-        else { d.stage=3; renderDoctorQuestion(shuffleQuestion(d.orig), "RETRY — the one you missed", "var(--purple)"); }
+        if(conf){ d.used.push(conf.id); renderDoctorQuestion(conf, "CONFIRM - one level up", "var(--blue)"); }
+        else { d.stage=3; renderDoctorQuestion(shuffleQuestion(d.orig), "RETRY - the one you missed", "var(--purple)"); }
       } else {
         toast("\uD83D\uDCA1 Concept gap confirmed. Read the explanation and NCERT ref, then revisit in Galti.");
         const m = mistakes.find(function(x){return x.id===d.orig.id});
@@ -3689,7 +3689,7 @@ function doctorOnAnswer(correct){
     } else if(d.stage===2){
       if(correct){
         d.stage=3;
-        renderDoctorQuestion(shuffleQuestion(d.orig), "RETRY — the one you missed", "var(--purple)");
+        renderDoctorQuestion(shuffleQuestion(d.orig), "RETRY - the one you missed", "var(--purple)");
       } else {
         toast("Almost. Practice this topic in Revision mode and come back.");
         DOCTOR=null;
@@ -3701,7 +3701,7 @@ function doctorOnAnswer(correct){
         const m = mistakes.find(function(x){return x.id===d.orig.id});
         if(m){ m.recovered=true; m.recoveryStep=3; m.recoveredAt=new Date().toISOString(); saveMistakes(); }
       } else {
-        toast("Original still tricky — it stays in Galti for spaced review.");
+        toast("Original still tricky - it stays in Galti for spaced review.");
         const m = mistakes.find(function(x){return x.id===d.orig.id});
         if(m){ m.recoveryStep=2; saveMistakes(); }
       }
@@ -3718,7 +3718,7 @@ const LEGAL_DOCS = {
 <b>Not affiliated with NTA.</b> NEETAce is an independent preparation tool by Bluetrace Technologies Pvt. Ltd. We are not associated with, endorsed by, or connected to the National Testing Agency (NTA), NMC, or any government body conducting NEET.<br><br>
 <b>No score or rank guarantee.</b> Predicted scores, AIR estimates, mastery levels and analytics are statistical estimates based on your practice data. They are for guidance only and do not guarantee any actual NEET result, rank, or admission.<br><br>
 <b>Educational references.</b> NCERT class/chapter references are provided for study guidance. Syllabus details may change; always verify with the official NTA information bulletin for the current year.<br><br>
-<b>Content accuracy.</b> Questions and explanations are prepared with care but may contain errors. Some content may be AI-assisted. If you spot a mistake, report it via Feedback — we correct and version content promptly. NEETAce is a practice supplement, not a replacement for NCERT textbooks or classroom teaching.` },
+<b>Content accuracy.</b> Questions and explanations are prepared with care but may contain errors. Some content may be AI-assisted. If you spot a mistake, report it via Feedback - we correct and version content promptly. NEETAce is a practice supplement, not a replacement for NCERT textbooks or classroom teaching.` },
 
   terms: { title: "Terms & Conditions", body: `
 <b>1. Service.</b> NEETAce (neet.bluetrace.tech) is an online NEET practice platform operated by Bluetrace Technologies Pvt. Ltd., Parbhani, Maharashtra, India (CIN U62099MH2026PTC474717).<br><br>
@@ -3735,8 +3735,8 @@ Contact: support@bluetrace.tech · +91 94622 25303` },
 
   privacy: { title: "Privacy Policy", body: `
 <b>What we collect.</b> Name, email (via Google Sign-In or registration), optional phone, optional parent name/phone/email, and learning data (questions attempted, accuracy, mastery scores, mistakes, streaks, device session token).<br><br>
-<b>Why.</b> To provide the service (auth, progress, adaptive difficulty), send service notifications (trial, payment, progress — controllable in Profile), process payments, and prevent account sharing.<br><br>
-<b>Processors.</b> Google Firebase (authentication and database), Razorpay (payments — we never store your card/UPI details), Vercel (hosting), Gmail SMTP (emails). Data is stored on these providers\u2019 servers which may be located outside India.<br><br>
+<b>Why.</b> To provide the service (auth, progress, adaptive difficulty), send service notifications (trial, payment, progress - controllable in Profile), process payments, and prevent account sharing.<br><br>
+<b>Processors.</b> Google Firebase (authentication and database), Razorpay (payments - we never store your card/UPI details), Vercel (hosting), Gmail SMTP (emails). Data is stored on these providers\u2019 servers which may be located outside India.<br><br>
 <b>Parents and minors.</b> For users under 18, parent/guardian consent is required. Parent contact details are used only for the notifications you enable and are never sold.<br><br>
 <b>Your rights (DPDP Act 2023).</b> You may access, correct, or request deletion of your data by emailing support@bluetrace.tech from your registered email. Deletion removes your account and learning data within 30 days, except records we must retain for tax/legal compliance (e.g., payment invoices).<br><br>
 <b>No selling of data.</b> We do not sell or rent personal data. Aggregated, anonymised statistics (e.g., \u201caverage accuracy in Optics\u201d) may be used to improve the product.<br><br>
@@ -3744,9 +3744,9 @@ Contact: support@bluetrace.tech · +91 94622 25303` },
 Grievance Officer: A.R. Ansari, Bluetrace Technologies Pvt. Ltd., Parbhani, Maharashtra · support@bluetrace.tech` },
 
   refund: { title: "Refund & Cancellation", body: `
-<b>7-day free trial first.</b> Every new account gets a full-featured 7-day trial before paying — please evaluate during this period.<br><br>
+<b>7-day free trial first.</b> Every new account gets a full-featured 7-day trial before paying - please evaluate during this period.<br><br>
 <b>Digital-goods policy.</b> Because plans unlock digital content immediately, fees are generally <b>non-refundable</b> once access is granted, except as below.<br><br>
-<b>Eligible refunds.</b> (a) Duplicate/double payment — full refund of the duplicate. (b) Payment charged but access not activated within 48 hours despite contacting support — full refund. (c) Within 48 hours of first annual-plan purchase with fewer than 20 questions attempted — full refund on request.<br><br>
+<b>Eligible refunds.</b> (a) Duplicate/double payment - full refund of the duplicate. (b) Payment charged but access not activated within 48 hours despite contacting support - full refund. (c) Within 48 hours of first annual-plan purchase with fewer than 20 questions attempted - full refund on request.<br><br>
 <b>Monthly plans</b> can be cancelled anytime; access continues until the end of the paid month; no pro-rata refunds.<br><br>
 <b>Academy plans</b> are governed by the academy invoice; seat additions are non-refundable once activated.<br><br>
 <b>How to claim.</b> Email support@bluetrace.tech from your registered email with the Razorpay payment ID within the eligible window. Approved refunds are processed to the original payment method within 7\u201310 working days via Razorpay.<br><br>
@@ -3788,7 +3788,7 @@ async function handleDeviceConflict(idToken, name, email, uid2){
       '<div style="background:var(--amber-l);border-radius:10px;padding:12px;font-size:12px;color:#7a4800;margin-bottom:14px;line-height:1.6">' +
       '<b>Sign in here?</b> The other device will be signed out immediately. Only one device can be active at a time.</div>' +
       '<button id="confirmDeviceBtn" style="width:100%;padding:13px;border-radius:10px;font-size:14px;font-weight:800;background:var(--blue);color:#fff;border:none;cursor:pointer;margin-bottom:8px">Yes, sign in on this device</button>' +
-      '<button id="cancelDeviceBtn" style="width:100%;padding:11px;border-radius:10px;font-size:13px;background:none;border:1.5px solid var(--bdr);color:var(--mute);cursor:pointer">Cancel — keep other device active</button></div>';
+      '<button id="cancelDeviceBtn" style="width:100%;padding:11px;border-radius:10px;font-size:13px;background:none;border:1.5px solid var(--bdr);color:var(--mute);cursor:pointer">Cancel - keep other device active</button></div>';
     document.body.appendChild(el);
     document.getElementById("confirmDeviceBtn").onclick = function(){
       el.remove(); resolve(true);
@@ -3888,7 +3888,7 @@ function showSessionConflict(existingInfo, onConfirm){
     '<button id="confirmTakeoverBtn" style="width:100%;padding:12px;border-radius:10px;font-size:14px;font-weight:700;background:var(--blue);color:#fff;border:none;cursor:pointer;margin-bottom:8px">'+
       'Sign in here (log out other device)</button>'+
     '<button id="cancelTakeoverBtn" style="width:100%;padding:10px;border-radius:10px;font-size:13px;background:none;border:1.5px solid var(--bdr);color:var(--mute);cursor:pointer">'+
-      'Cancel — keep other device active</button></div>';
+      'Cancel - keep other device active</button></div>';
   document.body.appendChild(el);
   document.getElementById("confirmTakeoverBtn").onclick = function(){
     el.remove(); onConfirm();
@@ -3905,7 +3905,7 @@ function checkDailyQuestionCap(){
   if(!S.user) return true; // anonymous = handled by free practice cap
   if(S.user.role === "admin") return true;
   if(S.user.accessStatus === "paid") return true;
-  // Trial or expired users — check daily cap
+  // Trial or expired users - check daily cap
   const today = new Date().toISOString().slice(0,10);
   if(dailyQDate !== today){ dailyQUsed = 0; dailyQDate = today; }
   const cap = S.user.trialQuestionCap || window._TRIAL_CONFIG?.dailyCapAmount || null;
