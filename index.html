@@ -1222,6 +1222,7 @@ function updateSubCard(){
     featEl.innerHTML = featureList(['All 5 difficulty levels for 7 days','Full AI Tutor','Leaderboard rank','After trial: access based on chosen plan']);
     actEl.innerHTML = `
       <button class="btn btn-blue btn-full" style="margin-bottom:8px" onclick="openPricingModal()"><i class="ti ti-lock-open"></i> Upgrade Now — from ₹299</button>
+      <div style="text-align:center;margin-top:8px"><a href="#" onclick="showManualPayment();return false;" style="font-size:11px;color:var(--mute)">Trouble paying? Use UPI / bank transfer instead</a></div>
       <div style="text-align:center;font-size:10px;color:var(--mute)">
         <b>${daysLeft} day${daysLeft!==1?'s':''}</b> left · Trial started ${u.trialStart?new Date(u.trialStart).toLocaleDateString('en-IN'):'recently'}
       </div>`;
@@ -1231,6 +1232,7 @@ function updateSubCard(){
     featEl.innerHTML='<div style="font-size:12px;color:var(--mute);line-height:1.7">Your 7-day free trial has ended.<br>Upgrade to continue your NEET preparation.</div>';
     actEl.innerHTML=`
       <button class="btn btn-blue btn-full" style="margin-bottom:8px" onclick="openPricingModal()"><i class="ti ti-lock-open"></i> Choose a Plan — from ₹299</button>
+      <div style="text-align:center;margin-top:8px"><a href="#" onclick="showManualPayment();return false;" style="font-size:11px;color:var(--mute)">Trouble paying? Use UPI / bank transfer instead</a></div>
       <div style="font-size:10px;color:var(--mute);text-align:center;margin-top:6px">Monthly ₹99 · Annual ₹799 · Starter ₹299</div>`;
   }
 }
@@ -4079,6 +4081,41 @@ function renderAcademyStatus(){
     badgeEl.className = "sp " + (S.user.accessStatus === "paid" ? "sp-active" : "sp-trial");
   }
 }
+
+
+// ===== MANUAL PAYMENT FALLBACK =====
+function showManualPayment(planLabel, amount){
+  var email = S.user ? S.user.email : '';
+  var waText = encodeURIComponent('Hi, I paid for NEETAce ' + (planLabel||'Pro') + '. My email: ' + email + '. Amount: Rs.' + (amount||799));
+  var el = document.createElement('div');
+  el.id = 'manualPayModal';
+  el.style.cssText = 'position:fixed;inset:0;background:rgba(10,35,66,.85);z-index:700;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)';
+  var h = '<div style="background:var(--surf);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:24px 20px;max-height:90vh;overflow-y:auto">';
+  h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><b style="font-size:16px">Pay Directly</b>';
+  h += '<button onclick="document.getElementById(this.closest(\"[id]\").id).remove()" style="background:none;border:none;font-size:18px;color:var(--mute);cursor:pointer">x</button></div>';
+  h += '<div style="background:var(--blue-l);border-radius:10px;padding:14px;margin-bottom:14px;text-align:center">';
+  h += '<div style="font-size:11px;color:var(--mute)">Amount to pay</div>';
+  h += '<div style="font-size:28px;font-weight:900;color:var(--blue)">\u20B9' + (amount||799) + '</div>';
+  h += '<div style="font-size:12px;color:var(--mute)">' + (planLabel||'NEETAce Pro') + '</div></div>';
+  h += '<div style="font-size:13px;font-weight:700;margin-bottom:8px">UPI (Google Pay / PhonePe / Paytm)</div>';
+  h += '<div style="background:var(--surf2);border-radius:9px;padding:12px;margin-bottom:14px;font-size:12px;line-height:1.7">';
+  h += 'UPI ID: <b style="color:var(--blue);font-family:monospace">bluetrace@ybl</b> ';
+  h += '<button onclick="navigator.clipboard.writeText(\'bluetrace@ybl\');toast(\'UPI ID copied!\')" style="margin-left:4px;background:none;border:1px solid var(--bdr);border-radius:6px;padding:2px 8px;font-size:10px;cursor:pointer">Copy</button>';
+  h += '<br>Name: Bluetrace Technologies Pvt. Ltd.</div>';
+  h += '<div style="font-size:13px;font-weight:700;margin-bottom:8px">Bank Transfer (NEFT / IMPS)</div>';
+  h += '<div style="background:var(--surf2);border-radius:9px;padding:12px;margin-bottom:14px;font-size:12px;line-height:1.8">';
+  h += 'WhatsApp us for bank account details<br><span style="color:var(--mute)">We will share account number + IFSC</span></div>';
+  h += '<div style="background:var(--amber-l);border-radius:9px;padding:12px;margin-bottom:14px;font-size:12px;line-height:1.6;color:#7a4800">';
+  h += '<b>After payment:</b><br>1. Screenshot the payment confirmation<br>2. Send on WhatsApp with your email<br>3. Account activated within 2 hours (usually 15 min)</div>';
+  h += '<a href="https://wa.me/919462225303?text=' + waText + '" target="_blank" style="display:block;width:100%;padding:13px;border-radius:10px;font-size:14px;font-weight:700;background:#25d366;color:#fff;border:none;cursor:pointer;text-align:center;text-decoration:none;margin-bottom:8px">';
+  h += 'Send Payment Proof on WhatsApp</a>';
+  h += '<a href="tel:+919462225303" style="display:block;width:100%;padding:11px;border-radius:10px;font-size:13px;background:none;border:1.5px solid var(--bdr);color:var(--txt);text-align:center;text-decoration:none">';
+  h += 'Call: +91 94622 25303</a></div>';
+  el.innerHTML = h;
+  el.addEventListener('click', function(e){ if(e.target===el) el.remove(); });
+  document.body.appendChild(el);
+}
+function closeManualPay(){ var m=document.getElementById('manualPayModal'); if(m) m.remove(); }
 
 // ===== INIT =====
 window.addEventListener('load', async ()=>{
