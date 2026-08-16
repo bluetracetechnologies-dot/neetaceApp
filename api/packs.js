@@ -97,6 +97,7 @@ async function saveNewVersion(packId, meta, questions, uid, changeNote, existing
   await db.collection('content_packs').doc(packId).set({
     id: packId, name: meta.name, subject: meta.subject, description: meta.description,
     source: meta.source, enabled: meta.enabled,
+    scope: meta.scope || { type: 'global' },
     questionCount: questions.length, questions,
     version, versionHistory,
     updatedAt: now, updatedBy: uid,
@@ -111,13 +112,27 @@ module.exports = async function handler(req, res) {
   // GET — public, merged questions from enabled packs (always serves current live version)
   if (req.method === 'GET') {
     try {
+      // Scope-aware: global packs for everyone; academy/batch packs only for members.
+      let myAcademy = null, myBatch = null;
+      const qUid = req.query && req.query.uid;
+      if (qUid) {
+        try {
+          const uSnap = await db.collection('users').doc(qUid).get();
+          if (uSnap.exists) { myAcademy = uSnap.data().academyId || null; myBatch = uSnap.data().batchId || null; }
+        } catch(e) {}
+      }
       const snap = await db.collection('content_packs').where('enabled', '==', true).get();
       let questions = [];
       const packMeta = [];
       snap.forEach(doc => {
         const pack = doc.data();
+        const sc = pack.scope || { type: 'global' };
+        const visible = sc.type === 'global'
+          || (sc.type === 'academy' && sc.academyId && sc.academyId === myAcademy)
+          || (sc.type === 'batch'   && sc.batchId   && sc.batchId   === myBatch);
+        if (!visible) return;
         if (pack.questions) questions = questions.concat(pack.questions);
-        packMeta.push({ id: doc.id, name: pack.name, count: pack.questionCount, version: pack.version });
+        packMeta.push({ id: doc.id, name: pack.name, count: pack.questionCount, version: pack.version, scope: sc.type });
       });
       return res.status(200).json({ questions, activePacks: packMeta, totalQuestions: questions.length });
     } catch (err) {
@@ -277,6 +292,66 @@ module.exports = async function handler(req, res) {
     });
 
     return res.status(200).json({ ok: true, message: `Rolled back to v${version} (${snapshot.questionCount} questions)` });
+  }
+
+  // TEACHER (Academy HOD): upload a pack scoped to their academy or batch.
+  // Versioning reuses the same engine — re-upload with same targetPackId creates v1.1, v1.2...
+  if (action === 'teacher_upload') {
+    const u = uSnap.data();
+    const isTeacher = u.academyRole === 'teacher' || u.role === 'admin';
+    if (!isTeacher || !u.academyId) return res.status(403).json({ error: 'Academy teacher only. Register with your academy code first.' });
+
+    const { name, csvText, scopeType, targetPackId, changeNote } = req.body;
+    if (!csvText) return res.status(400).json({ error: 'csvText required' });
+
+    const scope = scopeType === 'batch' && u.batchId
+      ? { type: 'batch', batchId: u.batchId, academyId: u.academyId }
+      : { type: 'academy', academyId: u.academyId };
+
+    // New version of an existing teacher pack
+    if (targetPackId) {
+      const ex = await db.collection('content_packs').doc(targetPackId).get();
+      if (!ex.exists) return res.status(404).json({ error: 'Pack not found' });
+      const meta = ex.data();
+      if (u.role !== 'admin' && (!meta.scope || meta.scope.academyId !== u.academyId))
+        return res.status(403).json({ error: 'Not your academy pack' });
+      const rows = parseCSV(csvText);
+      if (!rows.length) return res.status(400).json({ error: 'CSV has no valid rows' });
+      const questions = rows.map((row, i) => csvRowToQuestion(row, targetPackId, i));
+      const version = await saveNewVersion(targetPackId,
+        { name: meta.name, subject: meta.subject, description: meta.description, source: meta.source,
+          enabled: meta.enabled, currentVersion: meta.version, createdAt: meta.createdAt, scope: meta.scope },
+        questions, uid, changeNote || 'Teacher update', meta.versionHistory || []);
+      return res.status(200).json({ ok: true, packId: targetPackId, version,
+        message: 'Updated to v' + version + ' (' + questions.length + ' questions). Previous version preserved.' });
+    }
+
+    // Brand new teacher pack — live immediately for their own students
+    if (!name) return res.status(400).json({ error: 'name required' });
+    const packId = 'pack_t_' + name.toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 36) + '_' + Date.now().toString(36);
+    const rows = parseCSV(csvText);
+    if (!rows.length) return res.status(400).json({ error: 'CSV has no valid rows' });
+    const questions = rows.map((row, i) => csvRowToQuestion(row, packId, i));
+    const version = await saveNewVersion(packId,
+      { name, subject: 'MIXED', description: 'Uploaded by ' + (u.name || 'teacher'), source: 'teacher_upload',
+        enabled: true, currentVersion: null, scope },
+      questions, uid, 'Initial teacher upload', []);
+    return res.status(200).json({ ok: true, packId, version, questionCount: questions.length,
+      message: 'Pack live as v' + version + ' for your ' + scope.type + ' (' + questions.length + ' questions).' });
+  }
+
+  if (action === 'teacher_list') {
+    const u = uSnap.data();
+    if (!u.academyId && u.role !== 'admin') return res.status(403).json({ error: 'Academy member only' });
+    const snap2 = await db.collection('content_packs').get();
+    const mine = [];
+    snap2.forEach(d => {
+      const p = d.data(); const sc = p.scope || {};
+      if (sc.academyId === u.academyId || (u.role === 'admin' && sc.type && sc.type !== 'global'))
+        mine.push({ id: d.id, name: p.name, enabled: p.enabled, questionCount: p.questionCount,
+                    version: p.version, scope: sc, versionHistory: p.versionHistory || [] });
+    });
+    return res.status(200).json({ packs: mine });
   }
 
   // ADMIN: toggle pack on/off
