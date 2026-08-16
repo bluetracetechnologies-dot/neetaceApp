@@ -604,6 +604,10 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     <div class="qbox"><div class="qn" style="color:var(--teal)" id="admA">0</div><div class="ql">Active</div></div>
     <div class="qbox"><div class="qn" style="color:var(--purple)">₹0</div><div class="ql">Revenue</div></div>
   </div>
+  <div class="sec-hd"><i class="ti ti-clock-play"></i> Trial Configuration</div>
+  <div class="card" style="margin-bottom:14px" id="trialConfigPanel">
+    <div style="text-align:center;padding:10px;color:var(--mute);font-size:12px">Loading trial config...</div>
+  </div>
   <div class="sec-hd"><i class="ti ti-packages"></i> Content Packs</div>
   <div style="font-size:11px;color:var(--mute);margin-bottom:9px">Toggle question packs on/off instantly. New uploads default OFF until you review and enable them.</div>
   <div class="ub" style="margin-bottom:11px">
@@ -3698,6 +3702,104 @@ function openLegal(key){
   const h = (location.hash||"").replace("#","");
   if(["terms","privacy","refund","disclaimer"].indexOf(h)>=0) setTimeout(function(){ openLegal(h); }, 600);
 })();
+
+
+// ===== DEVICE CONFLICT CONFIRMATION =====
+async function handleDeviceConflict(idToken, name, email, uid2){
+  // Show confirmation bottom sheet
+  return new Promise(function(resolve){
+    const el = document.createElement("div");
+    el.id = "deviceModal";
+    el.style.cssText = "position:fixed;inset:0;background:rgba(10,35,66,.85);z-index:700;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(3px)";
+    el.innerHTML = '<div style="background:var(--surf);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:24px 20px">' +
+      '<div style="text-align:center;margin-bottom:14px"><div style="font-size:36px;margin-bottom:6px">\uD83D\uDCF1</div>' +
+      '<div style="font-size:16px;font-weight:800">Active session detected</div>' +
+      '<div style="font-size:12px;color:var(--mute);margin-top:4px">Your account is signed in on another device.</div></div>' +
+      '<div style="background:var(--amber-l);border-radius:10px;padding:12px;font-size:12px;color:#7a4800;margin-bottom:14px;line-height:1.6">' +
+      '<b>Sign in here?</b> The other device will be signed out immediately. Only one device can be active at a time.</div>' +
+      '<button id="confirmDeviceBtn" style="width:100%;padding:13px;border-radius:10px;font-size:14px;font-weight:800;background:var(--blue);color:#fff;border:none;cursor:pointer;margin-bottom:8px">Yes, sign in on this device</button>' +
+      '<button id="cancelDeviceBtn" style="width:100%;padding:11px;border-radius:10px;font-size:13px;background:none;border:1.5px solid var(--bdr);color:var(--mute);cursor:pointer">Cancel — keep other device active</button></div>';
+    document.body.appendChild(el);
+    document.getElementById("confirmDeviceBtn").onclick = function(){
+      el.remove(); resolve(true);
+    };
+    document.getElementById("cancelDeviceBtn").onclick = function(){
+      el.remove(); resolve(false);
+    };
+  });
+}
+
+// ===== DAILY QUESTION CAP (trial users) =====
+let TRIAL_CONFIG = { days: 7, dailyQuestionCap: 10, allFeatures: true };
+
+async function loadTrialConfig(){
+  try{
+    const r = await fetch("/api/features");
+    const d = await r.json();
+    if(d.levels) LEVELS_CONFIG = d.levels;
+    window._FEATURES = d.features || {};
+  }catch(e){}
+  try{
+    const r2 = await api("admin", {action:"get_trial_config", uid:"anon", sessionToken:"anon"});
+    if(r2.days) TRIAL_CONFIG = r2;
+  }catch(e){}
+}
+
+function checkDailyQuestionCap(subject){
+  if(!S.user) return true;
+  if(S.user.role === "admin") return true;
+  if(S.user.accessStatus === "paid") return true;
+  if(S.user.accessStatus !== "trial") return false;
+  // Trial users: check daily cap
+  const cap = TRIAL_CONFIG.dailyQuestionCap || 10;
+  const today = new Date().toISOString().slice(0,10);
+  const key = "na_cap_" + today + "_" + (subject || "ALL");
+  const used = parseInt(localStorage.getItem(key) || "0");
+  if(used >= cap){
+    toast("Daily limit reached (" + cap + " questions per subject). Upgrade for unlimited practice.");
+    openPricingModal();
+    return false;
+  }
+  localStorage.setItem(key, String(used + 1));
+  return true;
+}
+
+// ===== ADMIN: TRIAL CONFIG UI =====
+async function loadTrialConfigAdmin(){
+  if(!S.user || S.user.role !== "admin") return;
+  try{
+    const r = await api("admin", {action:"get_trial_config", uid:S.user.uid, sessionToken:S.sessionToken});
+    TRIAL_CONFIG = r;
+    const el = document.getElementById("trialConfigPanel");
+    if(el){
+      el.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:9px">' +
+        '<div class="qbox"><div class="qn" style="font-size:18px">' + (r.days||7) + '</div><div class="ql">Trial days</div></div>' +
+        '<div class="qbox"><div class="qn" style="font-size:18px">' + (r.dailyQuestionCap||10) + '</div><div class="ql">Qs/sub/day</div></div>' +
+        '<div class="qbox"><div class="qn" style="font-size:18px">' + (r.allFeatures?"All":"Limited") + '</div><div class="ql">Features</div></div></div>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+        '<button class="btn btn-ghost" style="font-size:11px" onclick="setTrialDays()">Change Days</button>' +
+        '<button class="btn btn-ghost" style="font-size:11px" onclick="setTrialCap()">Change Cap</button>' +
+        '<button class="btn btn-ghost" style="font-size:11px" onclick="toggleTrialFeatures()">Toggle Features</button></div>';
+    }
+  }catch(e){}
+}
+async function setTrialDays(){
+  var d = parseInt(prompt("Trial duration (days):", String(TRIAL_CONFIG.days||7)));
+  if(!d || isNaN(d)) return;
+  await api("admin", {action:"set_trial_config", uid:S.user.uid, sessionToken:S.sessionToken, days:d});
+  toast("Trial set to " + d + " days for new users"); loadTrialConfigAdmin();
+}
+async function setTrialCap(){
+  var c = parseInt(prompt("Daily question cap per subject (0 = unlimited):", String(TRIAL_CONFIG.dailyQuestionCap||10)));
+  if(isNaN(c)) return;
+  await api("admin", {action:"set_trial_config", uid:S.user.uid, sessionToken:S.sessionToken, dailyQuestionCap:c||0});
+  toast("Daily cap set to " + (c||"unlimited")); loadTrialConfigAdmin();
+}
+async function toggleTrialFeatures(){
+  var all = !TRIAL_CONFIG.allFeatures;
+  await api("admin", {action:"set_trial_config", uid:S.user.uid, sessionToken:S.sessionToken, allFeatures:all});
+  toast(all ? "Trial: all features enabled" : "Trial: limited features"); loadTrialConfigAdmin();
+}
 
 // ===== INIT =====
 window.addEventListener('load', async ()=>{
