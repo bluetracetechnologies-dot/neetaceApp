@@ -2057,7 +2057,7 @@ function showTrialWelcome(daysLeft){
         <b>${daysLeft} days</b> of full access · No payment needed to start
       </div>`,
     primaryBtn: { text: '🚀 Start My First Quiz', action: "closeTrialModal(); startTopicQuiz('Laws of Motion','PHYSICS');" },
-    secondaryBtn: { text: 'Explore the app', action: 'closeTrialModal()' },
+    secondaryBtn: { text: "Explore the app", action: "closeTrialModal()" },
     color: 'var(--blue)',
   });
 }
@@ -2098,7 +2098,7 @@ function showTrialInvestment(daysLeft, u){
         your Galti Copy, your rank, your streak. Your progress stays saved, but you can't practice.
       </div>`,
     primaryBtn: { text: '🔓 Keep my progress — Upgrade', action: "closeTrialModal(); openPricingModal();" },
-    secondaryBtn: { text: 'Continue trial', action: 'closeTrialModal()' },
+    secondaryBtn: { text: "Continue trial", action: "closeTrialModal()" },
     color: '#d97706',
   });
 }
@@ -2113,7 +2113,7 @@ function showTrialUrgency(daysLeft, u){
   showTrialModal({
     emoji: daysLeft === 0 ? '⛔' : '⏰',
     title: 'Trial ending ' + ending,
-    subtitle: daysLeft === 0 ? 'Last chance to upgrade' : 'Don't lose your progress',
+    subtitle: daysLeft === 0 ? 'Last chance to upgrade' : 'Do not lose your progress',
     body: `
       <div style="background:var(--red-l);border:1px solid #fca5a5;border-radius:10px;padding:13px;margin-bottom:13px">
         <div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:8px">After ${ending} you lose access to:</div>
