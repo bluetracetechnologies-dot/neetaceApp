@@ -1,19 +1,19 @@
 // api/features.js
-// Feature Flag System — admin controls every feature from dashboard.
+// Feature Flag System - admin controls every feature from dashboard.
 // No code deployment needed to enable, disable, or move a feature between plans.
 //
 // Every feature has:
-//   enabled       — master switch (off = no one gets it regardless of plan)
-//   free          — available to free/trial users
-//   plans         — which paid plans include it ['starter','medium','pro','monthly','institute']
-//   adminOnly     — only admin can use (e.g. kill switch)
-//   hasCost       — does this feature cost us money to serve?
-//   costPerUse    — optional: rupees per use (for metered features)
-//   chargeable    — can we sell this as an add-on?
-//   addOnPrice    — if chargeable, price in paise for standalone purchase
-//   usageCap      — optional: max uses per day/month for non-pro users
-//   description   — shown in admin panel
-//   category      — quiz | ai | analytics | notifications | social | admin
+//   enabled       - master switch (off = no one gets it regardless of plan)
+//   free          - available to free/trial users
+//   plans         - which paid plans include it ['starter','medium','pro','monthly','institute']
+//   adminOnly     - only admin can use (e.g. kill switch)
+//   hasCost       - does this feature cost us money to serve?
+//   costPerUse    - optional: rupees per use (for metered features)
+//   chargeable    - can we sell this as an add-on?
+//   addOnPrice    - if chargeable, price in paise for standalone purchase
+//   usageCap      - optional: max uses per day/month for non-pro users
+//   description   - shown in admin panel
+//   category      - quiz | ai | analytics | notifications | social | admin
 
 const { db } = require('./_firebase');
 
@@ -55,14 +55,14 @@ const DEFAULT_FEATURES = {
   parameterized_questions: {
     key: 'parameterized_questions',
     label: 'Parameterized Questions (Unique Numbers)',
-    description: 'Each student gets different numerical values — zero cheating possible. Premium differentiator.',
+    description: 'Each student gets different numerical values - zero cheating possible. Premium differentiator.',
     category: 'quiz',
     enabled: true, free: false,
     plans: ['medium','pro','monthly','institute'],
     hasCost: false, chargeable: true,
     addOnPrice: 4900, // ₹49 standalone if not on qualifying plan
     adminOnly: false,
-    note: 'Do NOT include in Starter plan — this is a key upsell reason to go Medium+.',
+    note: 'Do NOT include in Starter plan - this is a key upsell reason to go Medium+.',
   },
 
   unit_variant_questions: {
@@ -84,7 +84,7 @@ const DEFAULT_FEATURES = {
     category: 'quiz',
     enabled: true, free: false,
     plans: ['pro','monthly','institute'],
-    hasCost: true, costPerUse: 0.001, // fractions of a paisa per question — negligible solo, matters at scale
+    hasCost: true, costPerUse: 0.001, // fractions of a paisa per question - negligible solo, matters at scale
     chargeable: true,
     addOnPrice: 9900, // ₹99 standalone
     adminOnly: false,
@@ -181,7 +181,7 @@ const DEFAULT_FEATURES = {
   leaderboard_global: {
     key: 'leaderboard_global',
     label: 'Global Leaderboard (AIR Estimate)',
-    description: 'All India Rank estimate. Strong social proof — keep accessible.',
+    description: 'All India Rank estimate. Strong social proof - keep accessible.',
     category: 'social',
     enabled: true, free: false,
     plans: ['starter','medium','pro','monthly','institute'],
@@ -192,7 +192,7 @@ const DEFAULT_FEATURES = {
   leaderboard_batch: {
     key: 'leaderboard_batch',
     label: 'Batch/Institute Leaderboard',
-    description: 'Private leaderboard for coaching classes. B2B value — institutes pay for this.',
+    description: 'Private leaderboard for coaching classes. B2B value - institutes pay for this.',
     category: 'social',
     enabled: true, free: false,
     plans: ['institute'],
@@ -205,7 +205,7 @@ const DEFAULT_FEATURES = {
   referral: {
     key: 'referral',
     label: 'Refer & Earn',
-    description: 'Share code → both get free days. Our best growth engine — keep free.',
+    description: 'Share code → both get free days. Our best growth engine - keep free.',
     category: 'social',
     enabled: true, free: true,
     plans: ['starter','medium','pro','monthly','institute'],
@@ -222,7 +222,7 @@ const DEFAULT_FEATURES = {
     enabled: true, free: true,
     plans: ['starter','medium','pro','monthly','institute'],
     hasCost: true, costPerUse: 0.01, // negligible
-    chargeable: false, // marketing for us — never charge
+    chargeable: false, // marketing for us - never charge
     adminOnly: false,
   },
 
@@ -242,7 +242,7 @@ const DEFAULT_FEATURES = {
     label: 'WhatsApp API (Auto-send via AiSensy/Twilio)',
     description: 'Automated WhatsApp messages sent programmatically. ~₹1.5/message.',
     category: 'notifications',
-    enabled: false, // OFF by default — enable when you subscribe to AiSensy/Twilio
+    enabled: false, // OFF by default - enable when you subscribe to AiSensy/Twilio
     free: false,
     plans: ['pro','institute'],
     hasCost: true, costPerUse: 1.50,
@@ -257,25 +257,25 @@ const DEFAULT_FEATURES = {
     label: 'Parent Notifications',
     description: 'Separate email/WhatsApp to parent when trial starts, expires, progress report. Peace-of-mind feature.',
     category: 'notifications',
-    enabled: true, free: true, // free now — can charge ₹99 as "parent connect" feature later
+    enabled: true, free: true, // free now - can charge ₹99 as "parent connect" feature later
     plans: ['starter','medium','pro','monthly','institute'],
     hasCost: true, costPerUse: 0.02,
     chargeable: true, // future: charge ₹99/year for "Parent Dashboard"
     addOnPrice: 9900,
     adminOnly: false,
-    note: 'Currently free — strong retention signal (parents become advocates). Consider paid parent dashboard later.',
+    note: 'Currently free - strong retention signal (parents become advocates). Consider paid parent dashboard later.',
   },
 
   sms_notifications: {
     key: 'sms_notifications',
     label: 'SMS Notifications (MSG91)',
-    description: 'SMS for critical alerts — trial expiry, OTP, payment. ~₹0.15/SMS.',
+    description: 'SMS for critical alerts - trial expiry, OTP, payment. ~₹0.15/SMS.',
     category: 'notifications',
-    enabled: false, // OFF — enable after MSG91 signup
+    enabled: false, // OFF - enable after MSG91 signup
     free: false,
     plans: ['pro','institute'],
     hasCost: true, costPerUse: 0.15,
-    chargeable: false, // absorb cost — drives conversions
+    chargeable: false, // absorb cost - drives conversions
     adminOnly: false,
     note: 'Enable after signing up at msg91.com. Add MSG91_KEY to Vercel env vars.',
   },
@@ -283,12 +283,12 @@ const DEFAULT_FEATURES = {
   weekly_progress_report: {
     key: 'weekly_progress_report',
     label: 'Weekly Progress Report (Email)',
-    description: 'Every Monday — questions done, accuracy, rank, weakest topic. Drives habit.',
+    description: 'Every Monday - questions done, accuracy, rank, weakest topic. Drives habit.',
     category: 'notifications',
     enabled: true, free: false,
     plans: ['pro','monthly','institute'],
     hasCost: true, costPerUse: 0.01,
-    chargeable: false, // premium feel, included in Pro — drives upgrade from Medium
+    chargeable: false, // premium feel, included in Pro - drives upgrade from Medium
     adminOnly: false,
   },
 
@@ -325,7 +325,7 @@ const DEFAULT_FEATURES = {
 // ── API Handler ──────────────────────────────────────────
 module.exports = async function handler(req, res) {
 
-  // GET — public, returns which features are enabled (without cost/internal notes)
+  // GET - public, returns which features are enabled (without cost/internal notes)
   if (req.method === 'GET') {
     try {
       const snap = await db.collection('config').doc('features').get();
@@ -403,7 +403,7 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ ok: true, message: `${Object.keys(DEFAULT_FEATURES).length} features seeded` });
   }
 
-  // Admin: get cost summary — estimate monthly costs
+  // Admin: get cost summary - estimate monthly costs
   if (action === 'cost_estimate') {
     const { monthlyUsers = 100, avgQuestionsPerDay = 20, avgAiQueriesPerDay = 3 } = req.body;
     const snap = await db.collection('config').doc('features').get();
