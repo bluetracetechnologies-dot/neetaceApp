@@ -104,6 +104,17 @@ module.exports = async function handler(req, res) {
       academyCode, name, type, city, state,
       contactName, contactEmail, contactPhone,
       studentCount, notes: notes||'',
+      // Branding (co-branding for B2B marketing)
+      branding: {
+        logoUrl: req.body.logoUrl || '',       // academy logo URL (optional)
+        bannerText: req.body.bannerText || '',  // e.g. "Powered by Parbhani Medical Academy"
+        bannerColor: req.body.bannerColor || '#0d9488',
+        showLogo: !!(req.body.logoUrl),
+      },
+      // Per-academy feature overrides (null = use global defaults)
+      featureOverrides: req.body.featureOverrides || null,
+      // Per-academy trial override
+      trialOverride: req.body.trialOverride || null,
       pricing,
       customPrice: !!customPricePerStudent,
       status: 'pending', // pending | active | expired
