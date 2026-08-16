@@ -291,7 +291,14 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     <div class="sc phy" onclick="goSubject('PHYSICS')" ondblclick="startAdaptiveQuiz('PHYSICS')" title="Double-tap for Adaptive Mode"><div class="si">⚛️</div><div class="sn">Physics</div><div style="font-size:10px;color:var(--mute)">4,200 Qs</div><div class="pbg"><div class="pfill" style="width:62%;background:var(--blue)"></div></div><div style="font-size:10px;color:var(--mute);margin-top:4px">62% done</div></div>
     <div class="sc chem" onclick="goSubject('CHEMISTRY')" ondblclick="startAdaptiveQuiz('CHEMISTRY')" title="Double-tap for Adaptive Mode"><div class="si">🧪</div><div class="sn">Chemistry</div><div style="font-size:10px;color:var(--mute)">3,800 Qs</div><div class="pbg"><div class="pfill" style="width:48%;background:var(--teal)"></div></div><div style="font-size:10px;color:var(--mute);margin-top:4px">48% done</div></div>
     <div class="sc bio" onclick="goSubject('BIOLOGY')" ondblclick="startAdaptiveQuiz('BIOLOGY')" title="Double-tap for Adaptive Mode"><div class="si">🧬</div><div class="sn">Biology</div>
-  <div class="card" style="margin-top:11px;background:linear-gradient(135deg,var(--purple-l),var(--blue-l));border-color:#c4b5fd;cursor:pointer" onclick="startBrainBoost()"><div style="display:flex;align-items:center;gap:11px"><div style="font-size:28px">🧠</div><div style="flex:1"><b>Brain Boost</b><div style="font-size:11px;color:var(--mute)">5-minute IQ warm-up. Patterns, logic, speed. Sharpens your NEET brain.</div></div><i class="ti ti-chevron-right" style="color:var(--mute)"></i></div></div><div style="font-size:10px;color:var(--mute)">5,600 Qs</div><div class="pbg"><div class="pfill" style="width:75%;background:var(--amber)"></div></div><div style="font-size:10px;color:var(--mute);margin-top:4px">75% done</div></div>
+  <div class="card" style="margin-top:11px;background:linear-gradient(135deg,var(--purple-l),var(--blue-l));border-color:#c4b5fd;cursor:pointer" onclick="startBrainBoost()"><div style="display:flex;align-items:center;gap:11px"><div style="font-size:28px">🧠</div><div style="flex:1"><b>Brain Boost</b><div style="font-size:11px;color:var(--mute)">5-minute IQ warm-up. Patterns, logic, speed. Sharpens your NEET brain.</div></div>
+  <div style="margin-top:13px"><div class="sec-hd" style="margin-bottom:8px"><i class="ti ti-layout-grid"></i> Study Modes</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+    <div class="card" style="cursor:pointer;padding:13px;text-align:center" onclick="switchTab('practice')"><div style="font-size:22px">📚</div><b style="font-size:12px">Learn</b><div style="font-size:10px;color:var(--mute)">Topic-wise with explanations</div></div>
+    <div class="card" style="cursor:pointer;padding:13px;text-align:center" onclick="startAdaptiveQuiz('')"><div style="font-size:22px">🎯</div><b style="font-size:12px">Practice</b><div style="font-size:10px;color:var(--mute)">Adaptive — tuned to you</div></div>
+    <div class="card" style="cursor:pointer;padding:13px;text-align:center;border-color:var(--red)" onclick="startExamMode()"><div style="font-size:22px">⏱️</div><b style="font-size:12px">Exam Mode</b><div style="font-size:10px;color:var(--mute)">NEET pattern &middot; +4/-1 &middot; timed</div></div>
+    <div class="card" style="cursor:pointer;padding:13px;text-align:center;border-color:var(--amber)" onclick="startRevisionMode()"><div style="font-size:22px">🔁</div><b style="font-size:12px">Revision</b><div style="font-size:10px;color:var(--mute)">Due mistakes rapid-fire</div></div>
+  </div></div><i class="ti ti-chevron-right" style="color:var(--mute)"></i></div></div><div style="font-size:10px;color:var(--mute)">5,600 Qs</div><div class="pbg"><div class="pfill" style="width:75%;background:var(--amber)"></div></div><div style="font-size:10px;color:var(--mute);margin-top:4px">75% done</div></div>
   </div>
   <div class="sec-hd"><i class="ti ti-target"></i> Today's Targets</div>
   <div id="targetsArea">
@@ -3231,6 +3238,143 @@ function startSyllabusUnitQuiz(sub, unitId){
   switchTab('quiz');
   if(typeof renderQuestion==='function') renderQuestion();
   toast('Starting '+unit.name+' — '+quizList.length+' randomized questions');
+}
+
+
+// ===== STUDY MODES: Learn / Practice / Exam / Revision =====
+
+// ---- EXAM MODE: NEET pattern simulator ----
+// Real NEET: 180 Qs / 180 min / +4 correct, -1 wrong / 720 marks.
+// We scale to available pool but keep timing ratio (1 min/Q) and marking.
+let EXAM = null;
+function startExamMode(){
+  if(!S.user){ openAuth(); return; }
+  if(!canAccess()){ openPaywall(); return; }
+  const pool = shuffleArray(QUESTIONS);
+  if(pool.length < 10){ toast('Need more questions — load content packs first.'); return; }
+  const target = Math.min(180, pool.length);
+  // Subject balance like NEET: ~25% Phy, ~25% Chem, ~50% Bio
+  const phy = shuffleArray(pool.filter(q=>q.sub==='PHYSICS')).slice(0, Math.round(target*.25));
+  const chem = shuffleArray(pool.filter(q=>q.sub==='CHEMISTRY')).slice(0, Math.round(target*.25));
+  const bio = shuffleArray(pool.filter(q=>q.sub==='BIOLOGY')).slice(0, target-phy.length-chem.length);
+  const qs = [...phy, ...chem, ...bio].map(shuffleQuestion);
+  EXAM = {
+    qs, answers: new Array(qs.length).fill(null), marked: new Set(),
+    cur: 0, startAt: Date.now(),
+    totalSec: qs.length * 60, // 1 min per question, NEET ratio
+    done: false,
+  };
+  switchTab('quiz');
+  renderExamQuestion();
+  if(EXAM.timerInt) clearInterval(EXAM.timerInt);
+  EXAM.timerInt = setInterval(examTick, 1000);
+  toast('Exam started: '+qs.length+' Qs, '+Math.round(EXAM.totalSec/60)+' min, +4/-1 marking. All the best!');
+}
+function examTick(){
+  if(!EXAM || EXAM.done) return;
+  const left = EXAM.totalSec - Math.floor((Date.now()-EXAM.startAt)/1000);
+  const el = document.getElementById('examTimer');
+  if(el){
+    const m=Math.floor(left/60), s=left%60;
+    el.textContent = m+':'+String(s).padStart(2,'0');
+    el.style.color = left<300 ? 'var(--red)' : '#fff';
+  }
+  if(left<=0){ submitExam(); }
+}
+function renderExamQuestion(){
+  if(!EXAM) return;
+  const q = EXAM.qs[EXAM.cur];
+  const ans = EXAM.answers[EXAM.cur];
+  const qv = document.getElementById('quizView');
+  document.getElementById('resultView').style.display='none';
+  qv.style.display='block';
+  const grid = EXAM.qs.map(function(_,i){
+    const a = EXAM.answers[i];
+    const bg = i===EXAM.cur ? 'var(--blue)' : a!==null ? 'var(--green)' : EXAM.marked.has(i) ? 'var(--amber)' : 'var(--surf2)';
+    const col = (i===EXAM.cur||a!==null||EXAM.marked.has(i)) ? '#fff' : 'var(--mute)';
+    return '<button onclick="examGoto('+i+')" style="width:30px;height:30px;border-radius:7px;border:1px solid var(--bdr);background:'+bg+';color:'+col+';font-size:10px;font-weight:700;cursor:pointer">'+(i+1)+'</button>';
+  }).join('');
+  qv.innerHTML =
+  '<div style="background:linear-gradient(135deg,#0a2342,var(--red));color:#fff;border-radius:13px;padding:12px 14px;margin-bottom:11px;display:flex;justify-content:space-between;align-items:center">'+
+    '<div><div style="font-size:10px;opacity:.75;text-transform:uppercase">EXAM MODE &middot; NEET Pattern &middot; +4/-1</div>'+
+    '<div style="font-size:14px;font-weight:800">Q '+(EXAM.cur+1)+' of '+EXAM.qs.length+' &middot; '+q.sub+'</div></div>'+
+    '<div style="text-align:right"><div style="font-size:9px;opacity:.7">TIME LEFT</div><div id="examTimer" style="font-size:19px;font-weight:800;font-variant-numeric:tabular-nums">--:--</div></div></div>'+
+  '<div class="qcard"><div class="qtag">'+q.ch+(q.pyq?' &middot; PYQ '+q.pyqYr:'')+'</div>'+
+    '<div class="qtext">'+q.text+'</div>'+
+    '<div class="opts">'+['A','B','C','D'].map(function(l,i){
+      if(!q.opts[i]) return '';
+      const sel = ans===i ? 'style="border-color:var(--blue);background:var(--blue-l)"' : '';
+      return '<div class="opt" '+sel+' onclick="examAnswer('+i+')"><div class="oltr" '+(ans===i?'style="background:var(--blue);color:#fff"':'')+'>'+l+'</div>'+q.opts[i]+'</div>';
+    }).join('')+'</div></div>'+
+  '<div style="display:flex;gap:7px;margin:11px 0">'+
+    '<button class="btn btn-ghost" style="flex:1;font-size:12px" onclick="examClear()">Clear</button>'+
+    '<button class="btn btn-ghost" style="flex:1;font-size:12px;color:#7a4800;border-color:var(--amber)" onclick="examMark()"><i class="ti ti-flag"></i> Mark</button>'+
+    '<button class="btn btn-blue" style="flex:2;font-size:12px" onclick="examNext()">Save & Next</button></div>'+
+  '<div class="card" style="padding:11px"><div style="font-size:11px;font-weight:700;margin-bottom:7px">Question Palette <span style="font-weight:400;color:var(--mute)">green=answered amber=marked</span></div>'+
+    '<div style="display:flex;flex-wrap:wrap;gap:5px">'+grid+'</div>'+
+    '<button class="btn btn-full" style="margin-top:11px;background:var(--red);color:#fff" onclick="if(confirm(\'Submit exam? This cannot be undone.\'))submitExam()"><i class="ti ti-send"></i> Submit Exam</button></div>';
+  examTick();
+}
+function examAnswer(i){ if(!EXAM) return; EXAM.answers[EXAM.cur]=i; renderExamQuestion(); }
+function examClear(){ if(!EXAM) return; EXAM.answers[EXAM.cur]=null; renderExamQuestion(); }
+function examMark(){ if(!EXAM) return; EXAM.marked.has(EXAM.cur)?EXAM.marked.delete(EXAM.cur):EXAM.marked.add(EXAM.cur); renderExamQuestion(); }
+function examGoto(i){ if(!EXAM) return; EXAM.cur=i; renderExamQuestion(); }
+function examNext(){ if(!EXAM) return; if(EXAM.cur<EXAM.qs.length-1){ EXAM.cur++; renderExamQuestion(); } else { toast('Last question. Review palette or submit.'); } }
+function submitExam(){
+  if(!EXAM || EXAM.done) return;
+  EXAM.done = true;
+  clearInterval(EXAM.timerInt);
+  let correct=0, wrong=0, skipped=0;
+  EXAM.qs.forEach(function(q,i){
+    const a=EXAM.answers[i];
+    if(a===null) skipped++;
+    else if(a===q.correct) correct++;
+    else { wrong++; addMistake(q, a); }
+  });
+  const score = correct*4 - wrong*1;
+  const maxScore = EXAM.qs.length*4;
+  const score720 = Math.round(score/maxScore*720);
+  const pct = Math.max(0, Math.round(score/maxScore*100));
+  const timeTaken = Math.round((Date.now()-EXAM.startAt)/60000);
+  // Rough AIR estimate from 720-scaled score (based on historical NEET score-rank mapping)
+  let air = score720>=700?'Top 100':score720>=650?'~500-3,000':score720>=600?'~3,000-20,000':score720>=550?'~20,000-60,000':score720>=500?'~60,000-1.2L':score720>=400?'~1.2L-4L':'4L+';
+  const qv=document.getElementById('quizView'); qv.style.display='none';
+  const rv=document.getElementById('resultView'); rv.style.display='block';
+  rv.innerHTML =
+  '<div style="background:linear-gradient(135deg,#0a2342,var(--blue));color:#fff;border-radius:16px;padding:24px;text-align:center;margin-bottom:14px">'+
+    '<div style="font-size:12px;opacity:.75">NEET SIMULATION RESULT</div>'+
+    '<div style="font-size:42px;font-weight:900;margin:6px 0">'+score720+'<span style="font-size:18px;opacity:.6">/720</span></div>'+
+    '<div style="font-size:13px;opacity:.85">Estimated AIR: <b>'+air+'</b></div></div>'+
+  '<div class="quad" style="margin-bottom:13px">'+
+    '<div class="qbox"><div class="qn" style="color:var(--green)">'+correct+'</div><div class="ql">Correct (+4)</div></div>'+
+    '<div class="qbox"><div class="qn" style="color:var(--red)">'+wrong+'</div><div class="ql">Wrong (-1)</div></div>'+
+    '<div class="qbox"><div class="qn" style="color:var(--mute)">'+skipped+'</div><div class="ql">Skipped</div></div>'+
+    '<div class="qbox"><div class="qn" style="color:var(--blue)">'+timeTaken+'m</div><div class="ql">Time</div></div></div>'+
+  '<div class="card" style="margin-bottom:12px;font-size:12px;line-height:1.7">'+
+    (wrong>0?'<b>'+wrong+' mistakes auto-logged to Galti Copy</b> — recover them before the next mock.<br>':'')+
+    'Accuracy: <b>'+pct+'%</b> &middot; NEET marking (+4/-1) applied.<br>'+
+    '<span style="color:var(--mute)">Real NEET 2026 (Re-NEET): 21 June 2026 &middot; 180 Qs &middot; 180 min</span></div>'+
+  '<button class="btn btn-blue btn-full" onclick="startExamMode()"><i class="ti ti-refresh"></i> New Mock Test</button>'+
+  '<button class="btn btn-ghost btn-full" style="margin-top:8px" onclick="switchTab(\'mistakes\')"><i class="ti ti-notebook"></i> Review Mistakes in Galti</button>';
+  if(S.user&&S.sessionToken){
+    try{ api('scoring',{uid:S.user.uid,sessionToken:S.sessionToken,subject:'global',sessionTimeSec:timeTaken*60,
+      results:EXAM.qs.map(function(q,i){return {questionId:q.id,correct:EXAM.answers[i]===null?null:EXAM.answers[i]===q.correct,timeTaken:60,difficulty:q.diff,type:'standard'}})}); }catch(e){}
+  }
+}
+
+// ---- REVISION MODE: rapid-fire due items + weak topics ----
+function startRevisionMode(){
+  if(!S.user){ openAuth(); return; }
+  const now = new Date();
+  const due = mistakes.filter(function(m){ return !m.recovered && (!m.nextReview || new Date(m.nextReview)<=now); });
+  let pool = due.length ? due : mistakes.filter(function(m){return !m.recovered});
+  if(!pool.length){ toast('Nothing to revise — Galti Copy is clear! \uD83C\uDF89'); return; }
+  quizList = shuffleArray(pool).map(shuffleQuestion);
+  activeTopic = {name:'Revision — Galti Recovery', sub:'ALL', id:'revision'};
+  qIdx=0; qCorrect=0; qWrong=0;
+  switchTab('quiz');
+  if(typeof renderQuestion==='function') renderQuestion();
+  toast('\uD83D\uDD01 Revision: '+quizList.length+' items due. Clear them all!');
 }
 
 // ===== INIT =====
