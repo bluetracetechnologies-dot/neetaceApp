@@ -218,21 +218,24 @@ function isActiveToday(festival) {
   const now = new Date();
   const [mm, dd] = festival.mmdd.split('-').map(Number);
   const festDate = new Date(now.getFullYear(), mm - 1, dd);
-  const halfWindow = Math.floor(festival.windowDays / 2);
-  const start = new Date(festDate); start.setDate(start.getDate() - 1);
-  const end = new Date(festDate); end.setDate(end.getDate() + (festival.windowDays - 1));
+  const start = new Date(festDate); start.setDate(start.getDate() - 1); start.setHours(0, 0, 0, 0);
+  const end = new Date(festDate); end.setDate(end.getDate() + (festival.windowDays - 1)); end.setHours(23, 59, 59, 999);
+  // Strict: if now is past the end timestamp, the offer is expired — period.
   return now >= start && now <= end;
 }
+
 
 function hoursRemaining(festival) {
   const now = new Date();
   const [mm, dd] = festival.mmdd.split('-').map(Number);
   const festDate = new Date(now.getFullYear(), mm - 1, dd);
   const end = new Date(festDate);
-  end.setDate(end.getDate() + festival.windowDays);
+  end.setDate(end.getDate() + (festival.windowDays || 1));
   end.setHours(23, 59, 59, 999);
-  return Math.max(0, Math.round((end - now) / 3600000));
+  const diff = end - now;
+  return diff > 0 ? Math.ceil(diff / (1000 * 60 * 60)) : 0;
 }
+
 
 module.exports = async function handler(req, res) {
 
