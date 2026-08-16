@@ -274,6 +274,35 @@ module.exports = async function handler(req, res) {
         message: customPriceRupees ? `Personal price ₹${customPriceRupees} set for this student` : 'Custom price removed — standard pricing applies' });
     }
 
+
+    // ── TRIAL CONFIGURATION (admin) ──────────────────────
+    if (action === 'set_trial_config') {
+      const { days, dailyQuestionCap, features, allFeatures } = req.body;
+      const config = {};
+      if (days !== undefined) config.days = days;
+      if (dailyQuestionCap !== undefined) config.dailyQuestionCap = dailyQuestionCap; // per subject per day
+      if (features !== undefined) config.features = features; // array of feature keys
+      if (allFeatures !== undefined) config.allFeatures = allFeatures; // true = all features during trial
+      config.updatedAt = new Date().toISOString();
+      await db.collection('config').doc('trial').set(config, { merge: true });
+      return res.status(200).json({ ok: true, message: 'Trial config updated', config });
+    }
+    if (action === 'get_trial_config') {
+      const snap = await db.collection('config').doc('trial').get();
+      return res.status(200).json(snap.exists ? snap.data() : { days: 7, dailyQuestionCap: 10, allFeatures: true });
+    }
+
+    // ── ACADEMY ADMIN DELEGATION ─────────────────────────
+    // Grant academy_admin role to a teacher — they get limited admin controls for their academy only
+    if (action === 'grant_academy_admin') {
+      const { targetUid, academyId } = req.body;
+      if (!targetUid || !academyId) return res.status(400).json({ error: 'targetUid and academyId required' });
+      await db.collection('users').doc(targetUid).update({
+        academyRole: 'academy_admin', academyId,
+      });
+      return res.status(200).json({ ok: true, message: 'Academy admin role granted' });
+    }
+
     if (action === 'log_feedback') {
       const { feedback } = req.body;
       if (!feedback) return res.status(400).json({ error: 'feedback required' });
