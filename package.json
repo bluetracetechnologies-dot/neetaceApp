@@ -1,9 +1,10 @@
 {
   "name": "neetace",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": true,
   "dependencies": {
     "firebase-admin": "^12.0.0",
-    "razorpay": "^2.9.4"
+    "razorpay": "^2.9.4",
+    "nodemailer": "^6.9.13"
   }
 }
