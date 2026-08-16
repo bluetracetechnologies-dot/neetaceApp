@@ -711,6 +711,12 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     </div>
     <!-- Live quote -->
     <div id="academyQuote" style="display:none;background:var(--green-l);border-radius:9px;padding:11px;font-size:12px;color:#0a5c0a"></div>
+    <div style="display:flex;gap:8px;margin-bottom:9px">
+      <div style="flex:1"><label style="font-size:11px;color:var(--mute)">Academy banner text (optional)</label>
+        <input class="fin" id="acyBanner" placeholder="e.g. Powered by XYZ Academy" style="margin-top:3px"></div>
+      <div style="flex:1"><label style="font-size:11px;color:var(--mute)">Logo URL (optional)</label>
+        <input class="fin" id="acyLogo" placeholder="https://..." style="margin-top:3px"></div>
+    </div>
     <button class="btn btn-blue btn-full" onclick="createAcademy()"><i class="ti ti-building-plus"></i> Create Academy Partner</button>
   </div>
 </div>
@@ -3003,6 +3009,7 @@ async function loadAcademyList(){
         </div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:9px 0;font-size:11px;text-align:center">
           <div style="background:var(--surf2);border-radius:7px;padding:7px"><div style="font-weight:700">${a.seatsUsed||0}/${a.studentCount}</div><div style="color:var(--mute)">Seats used</div></div>
+          ${a.branding&&a.branding.bannerText?'<div style="background:var(--surf2);border-radius:7px;padding:7px;grid-column:span 3;font-size:10px;text-align:left"><span style="color:var(--mute)">Banner:</span> '+a.branding.bannerText+(a.branding.logoUrl?' · <a href="'+a.branding.logoUrl+'" target="_blank" style="color:var(--blue)">Logo</a>':'')+'</div>':''}
           <div style="background:var(--surf2);border-radius:7px;padding:7px"><div style="font-weight:700">₹${p.pricePerStudentRupees||499}</div><div style="color:var(--mute)">/student</div></div>
           <div style="background:var(--surf2);border-radius:7px;padding:7px"><div style="font-weight:700;color:var(--green)">₹${p.totalRupees||0}</div><div style="color:var(--mute)">Total</div></div>
         </div>
@@ -3010,6 +3017,8 @@ async function loadAcademyList(){
         <div style="display:flex;gap:6px;flex-wrap:wrap">
           ${a.status!=='active'?`<button class="btn btn-green" style="font-size:11px;padding:5px 9px" onclick="markAcademyPaid('${a.id}','${p.totalRupees}')"><i class="ti ti-check"></i> Mark Paid</button>`:''}
           <button class="btn btn-ghost" style="font-size:11px;padding:5px 9px" onclick="copyAcademyCode('${a.academyCode}')"><i class="ti ti-copy"></i> Copy Code</button>
+          <button class="btn btn-ghost" style="font-size:11px;padding:5px 9px" onclick="editAcademyBranding('${a.id}')"><i class="ti ti-palette"></i> Branding</button>
+          <button class="btn btn-ghost" style="font-size:11px;padding:5px 9px" onclick="editAcademyFeatures('${a.id}')"><i class="ti ti-toggle-right"></i> Features</button>
           <button class="btn btn-ghost" style="font-size:11px;padding:5px 9px" onclick="shareAcademyQuote('${a.id}')"><i class="ti ti-send"></i> Share Quote</button>
         </div>
       </div>`;
@@ -3048,6 +3057,8 @@ async function createAcademy(){
     action:'admin_create',uid:S.user.uid,sessionToken:S.sessionToken,
     name,type,city,contactName:contact,contactPhone:phone,
     studentCount:students,customPricePerStudent:custom||undefined,
+    logoUrl: document.getElementById("acyLogo")?.value.trim()||"",
+    bannerText: document.getElementById("acyBanner")?.value.trim()||"",
   });
   if(r.ok){
     toast('✅ '+r.message);
@@ -3910,6 +3921,55 @@ async function saveTrialConfig(){
     featureAccess: document.getElementById("tcFeatures")?.value||"all",
   });
   if(r.ok) toast("Trial config saved!"); else toast("Error: "+(r.error||"Failed"));
+}
+
+
+// ===== ACADEMY BRANDING + PER-ACADEMY FEATURES =====
+let MY_ACADEMY = null;
+
+async function loadMyAcademy(){
+  if(!S.user || !S.user.academyId) return;
+  try{
+    const r = await api("academy", {action:"get_my_academy", uid:S.user.uid, sessionToken:S.sessionToken});
+    MY_ACADEMY = r.academy;
+    if(MY_ACADEMY) renderAcademyBranding();
+  }catch(e){}
+}
+
+function renderAcademyBranding(){
+  if(!MY_ACADEMY || !MY_ACADEMY.branding) return;
+  const b = MY_ACADEMY.branding;
+  // Academy banner at top of app (below nav, above content)
+  let banner = document.getElementById("academyBrandBanner");
+  if(!banner){
+    banner = document.createElement("div");
+    banner.id = "academyBrandBanner";
+    const nav = document.querySelector(".nav-bar") || document.querySelector("nav");
+    if(nav && nav.nextSibling) nav.parentNode.insertBefore(banner, nav.nextSibling);
+    else document.body.prepend(banner);
+  }
+  if(b.bannerText || b.showLogo){
+    const logo = b.showLogo && b.logoUrl ? '<img src="'+b.logoUrl+'" alt="" style="height:22px;border-radius:4px;margin-right:8px">' : '';
+    const text = b.bannerText || MY_ACADEMY.name;
+    banner.style.cssText = "display:flex;align-items:center;justify-content:center;padding:7px 14px;font-size:11px;font-weight:700;color:#fff;background:"+(b.bannerColor||"#0d9488")+";gap:6px";
+    banner.innerHTML = logo + text;
+  } else {
+    banner.style.display = "none";
+  }
+}
+
+// Override hasFeature to check academy-specific overrides first
+const _originalHasFeature = typeof hasFeature === "function" ? hasFeature : null;
+function hasFeatureWithAcademy(featureKey){
+  // Academy override wins over global
+  if(MY_ACADEMY && MY_ACADEMY.featureOverrides){
+    const override = MY_ACADEMY.featureOverrides[featureKey];
+    if(override === true) return true;
+    if(override === false) return false;
+  }
+  // Fall through to global check
+  if(_originalHasFeature) return _originalHasFeature(featureKey);
+  return true;
 }
 
 // ===== INIT =====
