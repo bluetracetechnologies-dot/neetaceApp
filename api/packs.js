@@ -297,7 +297,10 @@ module.exports = async function handler(req, res) {
   // TEACHER (Academy HOD): upload a pack scoped to their academy or batch.
   // Versioning reuses the same engine — re-upload with same targetPackId creates v1.1, v1.2...
   if (action === 'teacher_upload') {
-    const u = uSnap.data();
+    const uSnapT = await db.collection('users').doc(uid).get();
+    if (!uSnapT.exists) return res.status(404).json({ error: 'User not found' });
+    const u = uSnapT.data();
+    if (u.sessionToken !== sessionToken) return res.status(401).json({ error: 'Invalid session' });
     const isTeacher = u.academyRole === 'teacher' || u.role === 'admin';
     if (!isTeacher || !u.academyId) return res.status(403).json({ error: 'Academy teacher only. Register with your academy code first.' });
 
@@ -341,7 +344,10 @@ module.exports = async function handler(req, res) {
   }
 
   if (action === 'teacher_list') {
-    const u = uSnap.data();
+    const uSnapL = await db.collection('users').doc(uid).get();
+    if (!uSnapL.exists) return res.status(404).json({ error: 'User not found' });
+    const u = uSnapL.data();
+    if (u.sessionToken !== sessionToken) return res.status(401).json({ error: 'Invalid session' });
     if (!u.academyId && u.role !== 'admin') return res.status(403).json({ error: 'Academy member only' });
     const snap2 = await db.collection('content_packs').get();
     const mine = [];
