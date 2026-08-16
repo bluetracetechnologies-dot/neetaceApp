@@ -3021,14 +3021,39 @@ function markRecovered(idx){
 }
 
 function classifyMistake(idx){
-  const types = Object.entries(ERROR_TYPES).map(([k,v])=>k+': '+v.label).join('\n');
-  const chosen = prompt('Error type:\n'+types+'\n\nEnter type key:');
-  if(chosen && ERROR_TYPES[chosen]){
-    mistakes[idx].errorType = chosen;
-    saveMistakes();
-    renderMistakesEnhanced();
-    toast('Reclassified as '+ERROR_TYPES[chosen].label);
-  }
+  var el = document.createElement("div");
+  el.id = "classifyModal";
+  el.style.cssText = "position:fixed;inset:0;background:rgba(10,35,66,.85);z-index:700;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)";
+  var h = '<div style="background:var(--surf);border-radius:20px 20px 0 0;width:100%;max-width:420px;padding:20px">';
+  h += '<div style="font-size:15px;font-weight:800;margin-bottom:4px">What went wrong?</div>';
+  h += '<div style="font-size:11px;color:var(--mute);margin-bottom:14px">Tap the reason this question was answered incorrectly</div>';
+  var types = [
+    ["concept","\uD83D\uDCA1","Concept Error","Did not understand the concept"],
+    ["formula","\uD83D\uDCD0","Formula Error","Forgot or misapplied the formula"],
+    ["unit","\uD83D\uDCCF","Unit Error","Wrong unit or conversion mistake"],
+    ["calc","\uD83E\uDDEE","Calculation Error","Right method, wrong arithmetic"],
+    ["careless","\uD83E\uDD26","Careless Error","Knew it but made a silly mistake"],
+    ["time","\u23F0","Time Pressure","Ran out of time on this one"]
+  ];
+  types.forEach(function(t){
+    h += '<div onclick="applyClassification('+idx+',\''+t[0]+'\')" style="display:flex;align-items:center;gap:10px;padding:12px;border-radius:10px;cursor:pointer;margin-bottom:6px;background:var(--surf2);border:1.5px solid var(--bdr)">';
+    h += '<span style="font-size:22px">'+t[1]+'</span>';
+    h += '<div><div style="font-size:13px;font-weight:700">'+t[2]+'</div>';
+    h += '<div style="font-size:11px;color:var(--mute)">'+t[3]+'</div></div></div>';
+  });
+  h += '<button onclick="document.getElementById(\'classifyModal\').remove()" style="width:100%;padding:10px;margin-top:4px;background:none;border:1.5px solid var(--bdr);border-radius:10px;font-size:13px;color:var(--mute);cursor:pointer">Cancel</button></div>';
+  el.innerHTML = h;
+  el.addEventListener("click", function(e){ if(e.target===el) el.remove(); });
+  document.body.appendChild(el);
+}
+function applyClassification(idx, type){
+  mistakes[idx].errorType = type;
+  saveMistakes();
+  renderMistakesEnhanced();
+  updateGaltiStats();
+  var m = document.getElementById("classifyModal"); if(m) m.remove();
+  var labels = {concept:"Concept Error",formula:"Formula Error",unit:"Unit Error",calc:"Calculation Error",careless:"Careless Error",time:"Time Pressure"};
+  toast("Reclassified as " + (labels[type]||type));
 }
 
 
