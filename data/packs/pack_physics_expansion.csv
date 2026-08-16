@@ -1,0 +1,38 @@
+tid,subject,chapter,question,opt_a,opt_b,opt_c,opt_d,correct,explanation,ncert_class,ncert_chapter,ncert_page,syllabus_unit,difficulty,pyq_year,trick
+p1,PHYSICS,Units and Measurements,Dimensional formula of Planck constant equals that of:,Angular momentum,Force,Energy,Power,A,"[h]=ML2T-1, same as angular momentum",11,1,-,Units and Measurements,medium,,E=hf gives h=E/f
+p1,PHYSICS,Units and Measurements,Number of significant figures in 0.06070 is:,3,4,5,2,B,Leading zeros not significant; trailing zero after decimal is,11,1,-,Units and Measurements,easy,,
+p2,PHYSICS,Kinematics,A body dropped from height h reaches ground in time t. Height fallen in t/2 is:,h/2,h/4,3h/4,h/8,B,s ∝ t²; (t/2)² = t²/4,11,3,-,Kinematics,medium,2019,s=½gt²
+p2,PHYSICS,Kinematics,Area under velocity-time graph gives:,Acceleration,Displacement,Force,Jerk,B,∫v dt = displacement,11,3,-,Kinematics,easy,,
+p3,PHYSICS,Laws of Motion,Rocket propulsion is based on conservation of:,Energy,Angular momentum,Linear momentum,Mass,C,Momentum of ejected gas = momentum gained by rocket,11,4,-,Laws of Motion,easy,2021,
+p3,PHYSICS,Laws of Motion,A 2 kg block on frictionless surface pulled by 10 N. Acceleration is:,5 m/s²,10 m/s²,20 m/s²,2 m/s²,A,a=F/m=10/2,11,4,-,Laws of Motion,starter,,F=ma
+p4,PHYSICS,Work Energy Power,Work done by centripetal force in uniform circular motion:,Positive,Negative,Zero,Depends on radius,C,Force perpendicular to displacement; W=Fs cos90=0,11,5,-,Work Energy Power,easy,2020,
+p4,PHYSICS,Work Energy Power,1 kWh equals:,3.6×10⁶ J,3.6×10³ J,6.3×10⁶ J,10⁶ J,A,1000 W × 3600 s,11,5,-,Work Energy Power,easy,,
+p5,PHYSICS,Rotation,"Moment of inertia of ring about its axis (mass M, radius R):",MR²/2,MR²,2MR²/3,2MR²/5,B,All mass at distance R,11,6,-,System of Particles,easy,,Disc is MR²/2
+p5,PHYSICS,Rotation,Angular momentum is conserved when net external ___ is zero:,Force,Torque,Impulse,Work,B,dL/dt = τ,11,6,-,System of Particles,easy,2018,
+p6,PHYSICS,Gravitation,Escape velocity from Earth surface is about:,7.9 km/s,11.2 km/s,9.8 km/s,3.1 km/s,B,v=√(2gR)≈11.2 km/s,11,7,-,Gravitation,easy,,Orbital v is 7.9
+p6,PHYSICS,Gravitation,Value of g at height h=R (R=Earth radius) is:,g/2,g/4,g/9,g,B,g′=g(R/(R+h))²=g/4,11,7,-,Gravitation,medium,2022,
+p7,PHYSICS,Properties of Matter,SI unit of surface tension:,N/m²,N/m,J/m³,Pa·s,B,Force per unit length,11,9,-,Properties of Solids & Fluids,easy,,
+p7,PHYSICS,Properties of Matter,Terminal velocity of sphere in viscous fluid is proportional to:,r,r²,r³,1/r,B,Stokes law: v ∝ r²,11,9,-,Properties of Solids & Fluids,medium,2019,
+p8,PHYSICS,Thermodynamics,In adiabatic process the quantity that remains constant... which exchange is zero?,Work,Heat,Internal energy,Temperature,B,Q=0 defines adiabatic,11,11,-,Thermodynamics,easy,,
+p8,PHYSICS,Thermodynamics,Efficiency of Carnot engine between 727°C and 227°C:,50%,75%,25%,40%,A,η=1−T2/T1=1−500/1000,11,11,-,Thermodynamics,medium,2020,Use Kelvin!
+p9,PHYSICS,Kinetic Theory,Average KE per molecule of ideal gas depends only on:,Pressure,Volume,Temperature,Molar mass,C,KE=(3/2)kT,11,12,-,Kinetic Theory,easy,2021,
+p10,PHYSICS,Oscillations,Time period of simple pendulum on Moon (g/6):,Increases √6 times,Decreases √6 times,Same,Increases 6 times,A,T ∝ 1/√g,11,13,-,Oscillations,medium,,
+p10,PHYSICS,Oscillations,"In SHM, acceleration is maximum at:",Mean position,Extreme position,Everywhere same,Half amplitude,B,"a=−ω²x, max at x=A",11,13,-,Oscillations,easy,2018,
+p11,PHYSICS,Waves,Sound travels fastest in:,Vacuum,Air,Water,Steel,D,Elastic modulus highest in solids,11,14,-,Waves,starter,,
+p11,PHYSICS,Waves,Beats are produced by superposition of waves differing slightly in:,Amplitude,Frequency,Phase,Speed,B,Beat frequency = |f1−f2|,11,14,-,Waves,easy,2019,
+p12,PHYSICS,Electrostatics,Electric field inside a charged conductor is:,Maximum,Zero,Equal to surface field,Infinite,B,Charges reside on surface; E_inside=0,12,1,-,Electrostatics,easy,,
+p12,PHYSICS,Electrostatics,Capacitance of parallel plate capacitor with dielectric K becomes:,C/K,KC,K²C,C,B,C=Kε₀A/d,12,2,-,Electrostatics,easy,2020,
+p13,PHYSICS,Current Electricity,Kirchhoff junction rule is based on conservation of:,Energy,Charge,Momentum,Mass,B,ΣI=0 at node,12,3,-,Current Electricity,easy,,
+p13,PHYSICS,Current Electricity,Three 3Ω resistors in parallel give:,9Ω,1Ω,3Ω,6Ω,B,R/n = 3/3,12,3,-,Current Electricity,starter,,
+p14,PHYSICS,Magnetism,Force on charge moving parallel to magnetic field:,Maximum,Zero,qvB,Depends on mass,B,"F=qvB sinθ, θ=0",12,4,-,Magnetic Effects,easy,2021,
+p14,PHYSICS,Magnetism,"Magnetic field at center of circular loop (current I, radius R):",μ₀I/2R,μ₀I/2πR,μ₀I/4πR,μ₀I/R,A,Standard result,12,4,-,Magnetic Effects,medium,,Straight wire is μ₀I/2πR
+p15,PHYSICS,EMI and AC,Lenz law is consequence of conservation of:,Charge,Energy,Momentum,Flux,B,Induced effects oppose cause,12,6,-,EMI and AC,easy,2019,
+p15,PHYSICS,EMI and AC,"In pure inductive AC circuit, current ___ voltage by 90°:",Leads,Lags,In phase,Opposite,B,V leads I in inductor,12,7,-,EMI and AC,medium,,ELI the ICE man
+p16,PHYSICS,EM Waves,EM waves carry:,Only energy,Only momentum,Both energy and momentum,Neither,C,Radiation pressure proves momentum,12,8,-,Electromagnetic Waves,easy,,
+p16,PHYSICS,EM Waves,Which has shortest wavelength?,X-rays,UV,Gamma rays,Microwaves,C,Gamma < X < UV < visible...,12,8,-,Electromagnetic Waves,starter,2022,
+p17,PHYSICS,Optics,Power of lens of focal length 25 cm:,2.5 D,4 D,0.25 D,25 D,B,P=100/f(cm)=4,12,9,-,Optics,easy,,P=1/f(m)
+p17,PHYSICS,Optics,Total internal reflection requires light going from:,Rarer to denser,Denser to rarer,Any direction,Vacuum only,B,Plus angle > critical angle,12,9,-,Optics,easy,2020,
+p18,PHYSICS,Modern Physics,Photoelectric effect proves ___ nature of light:,Wave,Particle,Both,Neither,B,Einstein photon explanation,12,11,-,Dual Nature Atoms Nuclei,easy,,
+p18,PHYSICS,Modern Physics,Bohr radius of hydrogen first orbit:,0.53 Å,1.06 Å,0.26 Å,5.3 Å,A,a₀=0.529 Å,12,12,-,Dual Nature Atoms Nuclei,medium,2018,
+p19,PHYSICS,Semiconductors,In n-type semiconductor majority carriers are:,Holes,Electrons,Protons,Ions,B,Pentavalent doping donates electrons,12,14,-,Semiconductor Electronics,starter,,
+p19,PHYSICS,Semiconductors,A p-n junction diode in forward bias — depletion layer:,Widens,Narrows,Unchanged,Disappears fully,B,Applied field opposes barrier,12,14,-,Semiconductor Electronics,easy,2021,
