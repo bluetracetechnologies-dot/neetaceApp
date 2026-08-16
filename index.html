@@ -2370,6 +2370,7 @@ function renderSingleQuestion(q, expectedProb){
 async function handleAdaptiveAns(el, idx, q){
   if(answered) return;
   answered = true;
+  const inDoctor = DOCTOR && DOCTOR.currentQ && DOCTOR.currentQ.id===q.id;
   const timeTakenMs = questionStartTime ? Date.now() - questionStartTime : 30000;
   document.querySelectorAll('.opt').forEach(o=>o.classList.add('locked'));
 
@@ -2385,11 +2386,13 @@ async function handleAdaptiveAns(el, idx, q){
     addMistake(q, idx);
     celebrate(false, el);
     toast('❌ Wrong — see explanation');
+    if(!DOCTOR && ADAPTIVE_MODE) startConceptDoctor(q);
   }
 
   document.getElementById('explBox')?.classList.add('show');
   const nextBtn = document.getElementById('nextAdaptiveBtn');
   if(nextBtn) nextBtn.disabled = false;
+  if(inDoctor){ doctorOnAnswer(isCorrect); if(nextBtn) nextBtn.style.display='none'; }
 
   // Record answer to adaptive engine
   if(S.user && S.sessionToken){
@@ -3543,6 +3546,86 @@ function teacherUploadPack(){
 function isAcademyStudent(){
   return !!(S.user && S.user.academyId && S.user.academyRole !== "teacher" && S.user.role !== "admin");
 }
+
+// ===== CONCEPT DOCTOR — staged recovery path =====
+// Wrong (medium/hard) -> Easy DIAGNOSTIC -> Medium CONFIRM -> RETRY original -> Recovered
+let DOCTOR = null;
+const DIFF_RANK = {starter:0, easy:1, medium:2, hard:3, exam:4};
+
+function doctorPick(tid, sub, maxRank, excludeIds){
+  const pool = QUESTIONS.filter(function(q){
+    return q.tid===tid && (DIFF_RANK[q.diff]||2) <= maxRank && excludeIds.indexOf(q.id)<0;
+  });
+  if(!pool.length) return null;
+  return shuffleQuestion(pool[Math.floor(Math.random()*pool.length)]);
+}
+
+function startConceptDoctor(origQ){
+  const rank = DIFF_RANK[origQ.diff]||2;
+  if(rank < 2) return false; // only for medium+ wrongs
+  const diag = doctorPick(origQ.tid, origQ.sub, 1, [origQ.id]);
+  if(!diag) return false; // no easy question available for this tid
+  DOCTOR = { orig: origQ, stage: 1, used: [origQ.id, diag.id] };
+  setTimeout(function(){
+    toast("\uD83E\uDE7A Concept Doctor: let us rebuild this step by step");
+    renderDoctorQuestion(diag, "DIAGNOSTIC — basics first", "var(--teal)");
+  }, 1400);
+  return true;
+}
+
+function renderDoctorQuestion(q, stageLabel, color){
+  renderSingleQuestion(q, null);
+  const qv = document.getElementById("quizView");
+  if(qv){
+    const badge = document.createElement("div");
+    badge.style.cssText = "background:"+color+";color:#fff;border-radius:9px;padding:7px 12px;font-size:11px;font-weight:800;margin-bottom:9px;text-align:center";
+    badge.textContent = "\uD83E\uDE7A CONCEPT DOCTOR \u00b7 " + stageLabel;
+    qv.insertBefore(badge, qv.firstChild);
+  }
+  DOCTOR.currentQ = q;
+}
+
+function doctorOnAnswer(correct){
+  if(!DOCTOR) return false;
+  const d = DOCTOR;
+  setTimeout(function(){
+    if(d.stage===1){
+      if(correct){
+        d.stage=2;
+        const conf = doctorPick(d.orig.tid, d.orig.sub, 2, d.used);
+        if(conf){ d.used.push(conf.id); renderDoctorQuestion(conf, "CONFIRM — one level up", "var(--blue)"); }
+        else { d.stage=3; renderDoctorQuestion(shuffleQuestion(d.orig), "RETRY — the one you missed", "var(--purple)"); }
+      } else {
+        toast("\uD83D\uDCA1 Concept gap confirmed. Read the explanation and NCERT ref, then revisit in Galti.");
+        const m = mistakes.find(function(x){return x.id===d.orig.id});
+        if(m){ m.errorType="concept"; saveMistakes(); }
+        DOCTOR=null;
+      }
+    } else if(d.stage===2){
+      if(correct){
+        d.stage=3;
+        renderDoctorQuestion(shuffleQuestion(d.orig), "RETRY — the one you missed", "var(--purple)");
+      } else {
+        toast("Almost. Practice this topic in Revision mode and come back.");
+        DOCTOR=null;
+      }
+    } else if(d.stage===3){
+      if(correct){
+        confettiBurst(); confettiBurst();
+        toast("\uD83C\uDF89 CONCEPT RECOVERED! Logged in Galti as recovered.");
+        const m = mistakes.find(function(x){return x.id===d.orig.id});
+        if(m){ m.recovered=true; m.recoveryStep=3; m.recoveredAt=new Date().toISOString(); saveMistakes(); }
+      } else {
+        toast("Original still tricky — it stays in Galti for spaced review.");
+        const m = mistakes.find(function(x){return x.id===d.orig.id});
+        if(m){ m.recoveryStep=2; saveMistakes(); }
+      }
+      DOCTOR=null;
+    }
+  }, 1600);
+  return true;
+}
+
 // ===== INIT =====
 window.addEventListener('load', async ()=>{
   loadPricing(); loadFestival(); loadLevels(); loadContentPacks();
