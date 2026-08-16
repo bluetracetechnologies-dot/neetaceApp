@@ -60,5 +60,10 @@ module.exports = async function handler(req, res) {
   });
 
   console.log('Payment verified and recorded:', razorpay_payment_id, 'uid:', uid);
+  // Fire payment notification
+  try {
+    const { dispatch } = require('./notifications');
+    dispatch(uid, 'payment_success', { planLabel: 'Pro' }).catch(()=>{});
+  } catch(e) {}
   return res.status(200).json({ verified: true, paidUntil: paidUntil.toISOString() });
 };
