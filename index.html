@@ -1374,7 +1374,7 @@ async function startPayment(){
       image:'https://bluetrace.tech/logo.png',
       handler: async function(resp){
         toast('Verifying payment...');
-        const vr = await api('verify-payment',{
+        const vr = await api('payments',{action:'verify',
           uid:S.user.uid, sessionToken:S.sessionToken,
           razorpay_order_id:resp.razorpay_order_id,
           razorpay_payment_id:resp.razorpay_payment_id,
@@ -2006,7 +2006,7 @@ async function startPaymentWithPlan(planKey, pricePaise){
       order_id:r.orderId, name:'NEETAce', description:r.planLabel||'NEETAce Plan',
       handler:async function(resp){
         toast('Verifying payment...');
-        const vr = await api('verify-payment',{
+        const vr = await api('payments',{action:'verify',
           uid:S.user.uid, sessionToken:S.sessionToken,
           razorpay_order_id:resp.razorpay_order_id,
           razorpay_payment_id:resp.razorpay_payment_id,
@@ -2060,7 +2060,7 @@ let freePracticeStatus = {enabled:true, daysLeft:null, expired:false};
 
 async function loadLevels(){
   try{
-    const r = await fetch('/api/levels');
+    const r = await fetch('/api/features');
     const d = await r.json();
     if(d.levels && d.levels.length) LEVELS_CONFIG = d.levels;
   }catch(e){}
@@ -2735,6 +2735,7 @@ async function loadFeatureConfig(){
     const r = await fetch('/api/features');
     const d = await r.json();
     window._FEATURES = d.features || {};
+    if(d.levels && d.levels.length) LEVELS_CONFIG = d.levels;
   }catch(e){}
 }
 
@@ -3711,7 +3712,7 @@ calcDays(); buildStreak(); renderPracticeTopics('ALL'); renderAllTopics('ALL'); 
   if(loadSession()){
     // Verify the restored session is still valid
     try{
-      const r=await api('auth-verify',{uid:S.user.uid,sessionToken:S.sessionToken});
+      const r=await api('auth',{action:'verify',uid:S.user.uid,sessionToken:S.sessionToken});
       if(r.valid){ S.user={...S.user,...r.user}; saveSession(S.user,S.sessionToken); startVerify(); updateUI(); toast('Welcome back, '+S.user.name+'! 👋'); setTimeout(()=>runSmartTrial(), 1200); }
       else { clearSession(); updateUI(); }
     }catch(e){ clearSession(); updateUI(); }
