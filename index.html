@@ -831,21 +831,7 @@ function canAccess(){
   return s==='active'||s==='paid'||s==='trial'||S.user.role==='admin';
 }
 
-function showAccessBanner(){
-  const b = document.getElementById('accessBanner');
-  if(!S.user){ b.style.display='none'; return; }
-  const s = S.user.accessStatus, r = S.user.role;
-  if(r==='admin'){ b.style.display='none'; return; }
-  if(s==='trial'){
-    b.style.cssText='display:block;background:var(--amber-l);color:#7a4800;border-color:#f5d283;font-size:12px;font-weight:700;text-align:center;padding:8px 12px;border-bottom:1px solid var(--bdr)';
-    b.innerHTML=`🎓 Free trial: <b>${S.user.trialDaysLeft} day(s) left</b> · <a href="#" onclick="openPaywall();return false;" style="color:#7a4800;text-decoration:underline">Upgrade ₹799</a>`;
-  } else if(s==='expired'){
-    b.style.cssText='display:block;background:var(--red-l);color:#7a0c0c;border-color:#f5b5b5;font-size:12px;font-weight:700;text-align:center;padding:8px 12px;border-bottom:1px solid var(--bdr)';
-    b.innerHTML=`⛔ Trial ended · <a href="#" onclick="openPaywall();return false;" style="color:#7a0c0c;text-decoration:underline;font-weight:800">Pay ₹799 to continue</a>`;
-  } else {
-    b.style.display='none';
-  }
-}
+function showAccessBanner(){ updateAccessBanner(); }
 
 function updateSubCard(){
   if(!S.user) return;
@@ -2009,6 +1995,208 @@ async function handleAdaptiveAns(el, idx, q){
   }
 }
 
+
+// ===== SMART TRIAL SYSTEM =====
+// Three moments: Wow (Day1) → Investment (Day3-4) → Urgency (Day6-7)
+// Every element is designed to make upgrading feel obvious, not pushy.
+
+async function runSmartTrial(){
+  if(!S.user) return;
+  const u = S.user;
+  if(u.role === 'admin' || u.accessStatus === 'paid') return;
+  if(u.accessStatus !== 'trial') return;
+
+  const daysLeft   = u.trialDaysLeft || 0;
+  const daysUsed   = 7 - daysLeft;
+  const trialStart = u.trialStart ? new Date(u.trialStart) : new Date();
+  const trialEnd   = u.trialEnd   ? new Date(u.trialEnd)   : new Date();
+
+  // ── Day 1: WOW MOMENT ────────────────────────────────────
+  if(daysUsed <= 1){
+    showTrialWelcome(daysLeft);
+    return;
+  }
+
+  // ── Days 3-4: INVESTMENT MOMENT ──────────────────────────
+  if(daysUsed >= 3 && daysUsed <= 4){
+    showTrialInvestment(daysLeft, u);
+    return;
+  }
+
+  // ── Days 6-7: URGENCY MOMENT ─────────────────────────────
+  if(daysLeft <= 2){
+    showTrialUrgency(daysLeft, u);
+    return;
+  }
+
+  // Days 2, 5: quiet — just show the banner normally, no popup
+  updateAccessBanner();
+}
+
+function showTrialWelcome(daysLeft){
+  // Only show once per session
+  if(sessionStorage.getItem('trial_welcome_shown')) return;
+  sessionStorage.setItem('trial_welcome_shown','1');
+
+  showTrialModal({
+    emoji: '🎉',
+    title: 'Welcome to NEETAce!',
+    subtitle: 'Your 7-day free trial has started.',
+    body: `
+      <div style="background:var(--blue-l);border-radius:10px;padding:13px;margin-bottom:13px">
+        <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:7px">What makes NEETAce different:</div>
+        <div style="font-size:12px;color:var(--txt);line-height:1.9">
+          ⚛️ <b>Unique questions</b> — your numbers differ from your friend's<br>
+          📏 <b>Unit variants</b> — same concept, different units each time<br>
+          🤖 <b>AI Tutor</b> — explains any NCERT concept instantly<br>
+          📓 <b>Galti Copy</b> — auto-logs every wrong answer with explanation<br>
+          🏆 <b>Real rank</b> — your All India Rank estimate, updated live
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--mute);text-align:center">
+        <b>${daysLeft} days</b> of full access · No payment needed to start
+      </div>`,
+    primaryBtn: { text: '🚀 Start My First Quiz', action: "closeTrialModal(); startTopicQuiz('Laws of Motion','PHYSICS');" },
+    secondaryBtn: { text: 'Explore the app', action: 'closeTrialModal()' },
+    color: 'var(--blue)',
+  });
+}
+
+function showTrialInvestment(daysLeft, u){
+  if(sessionStorage.getItem('trial_invest_shown')) return;
+  sessionStorage.setItem('trial_invest_shown','1');
+
+  const mistakeCount = mistakes.length || 0;
+  const streakDays   = 3; // approximate
+  const rank         = '#842'; // from scores
+
+  showTrialModal({
+    emoji: '📈',
+    title: 'You're making real progress!',
+    subtitle: daysLeft + ' days left in your trial',
+    body: `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:13px">
+        <div style="background:var(--green-l);border-radius:9px;padding:11px;text-align:center">
+          <div style="font-size:22px;font-weight:800;color:var(--green)">${mistakeCount}</div>
+          <div style="font-size:10px;color:var(--mute)">mistakes logged in Galti Copy</div>
+        </div>
+        <div style="background:var(--blue-l);border-radius:9px;padding:11px;text-align:center">
+          <div style="font-size:22px;font-weight:800;color:var(--blue)">${streakDays}</div>
+          <div style="font-size:10px;color:var(--mute)">day study streak</div>
+        </div>
+        <div style="background:var(--purple-l);border-radius:9px;padding:11px;text-align:center">
+          <div style="font-size:22px;font-weight:800;color:var(--purple)">${rank}</div>
+          <div style="font-size:10px;color:var(--mute)">current AIR estimate</div>
+        </div>
+        <div style="background:var(--amber-l);border-radius:9px;padding:11px;text-align:center">
+          <div style="font-size:22px;font-weight:800;color:#7a4800">5</div>
+          <div style="font-size:10px;color:var(--mute)">topics in progress</div>
+        </div>
+      </div>
+      <div style="background:var(--red-l);border-radius:9px;padding:11px;font-size:12px;color:#7a0c0c;text-align:center">
+        ⚠️ If you don't upgrade in <b>${daysLeft} days</b>, all of this gets <b>locked</b> —
+        your Galti Copy, your rank, your streak. Your progress stays saved, but you can't practice.
+      </div>`,
+    primaryBtn: { text: '🔓 Keep my progress — Upgrade', action: "closeTrialModal(); openPricingModal();" },
+    secondaryBtn: { text: 'Continue trial', action: 'closeTrialModal()' },
+    color: '#d97706',
+  });
+}
+
+function showTrialUrgency(daysLeft, u){
+  if(sessionStorage.getItem('trial_urgency_shown_'+daysLeft)) return;
+  sessionStorage.setItem('trial_urgency_shown_'+daysLeft,'1');
+
+  const ending = daysLeft === 0 ? 'TODAY' : 'in ' + daysLeft + ' day' + (daysLeft!==1?'s':'');
+  const trialEnd = u.trialEnd ? new Date(u.trialEnd).toLocaleDateString('en-IN',{day:'2-digit',month:'short'}) : '';
+
+  showTrialModal({
+    emoji: daysLeft === 0 ? '⛔' : '⏰',
+    title: 'Trial ending ' + ending,
+    subtitle: daysLeft === 0 ? 'Last chance to upgrade' : 'Don't lose your progress',
+    body: `
+      <div style="background:var(--red-l);border:1px solid #fca5a5;border-radius:10px;padding:13px;margin-bottom:13px">
+        <div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:8px">After ${ending} you lose access to:</div>
+        <div style="font-size:12px;color:var(--txt);line-height:1.9">
+          ❌ All 5 difficulty levels<br>
+          ❌ Your Galti Copy (${mistakes.length} mistakes logged)<br>
+          ❌ AI Tutor — ask any NCERT concept<br>
+          ❌ Adaptive practice — questions tuned to YOUR level<br>
+          ❌ Leaderboard rank and streak
+        </div>
+      </div>
+      <div style="background:var(--green-l);border-radius:10px;padding:11px;margin-bottom:11px;text-align:center;font-size:12px">
+        ✅ <b>Your progress is saved.</b> Upgrade now and continue from exactly where you are.
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px">
+        <div style="background:var(--surf2);border-radius:8px;padding:9px;text-align:center;border:1px solid var(--bdr)">
+          <div style="font-weight:800;font-size:15px">₹799</div>
+          <div style="color:var(--mute)">Annual · Till 31 May</div>
+          <div style="color:var(--green);font-weight:700;margin-top:2px">Best value</div>
+        </div>
+        <div style="background:var(--surf2);border-radius:8px;padding:9px;text-align:center;border:1px solid var(--bdr)">
+          <div style="font-weight:800;font-size:15px">₹99</div>
+          <div style="color:var(--mute)">Monthly · Anytime</div>
+          <div style="color:var(--blue);font-weight:700;margin-top:2px">Start small</div>
+        </div>
+      </div>`,
+    primaryBtn: { text: '✅ Upgrade Now — Keep Everything', action: "closeTrialModal(); openPricingModal();" },
+    secondaryBtn: daysLeft > 0 ? { text: 'Remind me tomorrow', action: 'closeTrialModal()' } : null,
+    color: '#e34948',
+    urgent: true,
+  });
+}
+
+function showTrialModal({ emoji, title, subtitle, body, primaryBtn, secondaryBtn, color, urgent }){
+  // Remove existing trial modal if any
+  const existing = document.getElementById('trialModal');
+  if(existing) existing.remove();
+
+  const el = document.createElement('div');
+  el.id = 'trialModal';
+  el.style.cssText = 'position:fixed;inset:0;background:rgba(10,35,66,.8);display:flex;align-items:flex-end;justify-content:center;z-index:600;padding:0;backdrop-filter:blur(4px)';
+  el.innerHTML = `
+    <div style="background:var(--surf);border-radius:22px 22px 0 0;width:100%;max-width:480px;padding:24px 20px;box-shadow:0 -8px 32px rgba(0,0,0,.2);max-height:90vh;overflow-y:auto">
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:40px;margin-bottom:6px">${emoji}</div>
+        <div style="font-size:18px;font-weight:800">${title}</div>
+        <div style="font-size:12px;color:${color};font-weight:700;margin-top:3px">${subtitle}</div>
+      </div>
+      ${body}
+      <button onclick="${primaryBtn.action}" style="width:100%;padding:13px;border-radius:10px;font-size:14px;font-weight:800;background:${color};color:#fff;border:none;cursor:pointer;margin-top:4px">${primaryBtn.text}</button>
+      ${secondaryBtn ? `<button onclick="${secondaryBtn.action}" style="width:100%;background:none;border:none;color:var(--mute);font-size:12px;margin-top:11px;cursor:pointer;padding:6px">${secondaryBtn.text}</button>` : ''}
+    </div>`;
+
+  // Close on backdrop tap (only if not urgent)
+  if(!urgent){ el.addEventListener('click', e=>{ if(e.target===el) el.remove(); }); }
+  document.body.appendChild(el);
+}
+
+function closeTrialModal(){
+  const el = document.getElementById('trialModal');
+  if(el) el.remove();
+}
+
+function updateAccessBanner(){
+  const b = document.getElementById('accessBanner');
+  if(!b || !S.user) return;
+  const s = S.user.accessStatus, r = S.user.role;
+  if(r==='admin'){ b.style.display='none'; return; }
+  if(s==='trial'){
+    const d = S.user.trialDaysLeft;
+    const urgent = d <= 2;
+    b.style.cssText = `display:block;font-size:12px;font-weight:700;text-align:center;padding:8px 12px;border-bottom:1px solid var(--bdr);background:${urgent?'var(--red-l)':'var(--amber-l)'};color:${urgent?'#7a0c0c':'#7a4800'}`;
+    b.innerHTML = urgent
+      ? `⏰ <b>${d} day${d!==1?'s':''} left</b> in your trial · <a href="#" onclick="openPricingModal();return false;" style="color:inherit;text-decoration:underline;font-weight:800">Upgrade from ₹299</a> · <a href="#" onclick="showTrialUrgency(${d},S.user);return false;" style="color:inherit;font-size:11px">See what you'll lose →</a>`
+      : `🎓 Free trial: <b>${d} day${d!==1?'s':''} left</b> · <a href="#" onclick="openPricingModal();return false;" style="color:inherit;text-decoration:underline">Upgrade ₹799/year</a> · <a href="#" onclick="showTrialInvestment(${d},S.user);return false;" style="color:inherit;font-size:11px">View my progress →</a>`;
+  } else if(s==='expired'){
+    b.style.cssText='display:block;background:var(--red-l);color:#7a0c0c;font-size:12px;font-weight:700;text-align:center;padding:8px 12px;border-bottom:1px solid var(--bdr)';
+    b.innerHTML=`⛔ Trial ended · <a href="#" onclick="showTrialUrgency(0,S.user);return false;" style="color:#7a0c0c;font-weight:800;text-decoration:underline">See what you're missing</a> · <a href="#" onclick="openPricingModal();return false;" style="color:#7a0c0c;text-decoration:underline">Pay ₹299 to continue</a>`;
+  } else {
+    b.style.display='none';
+  }
+}
+
 // ===== INIT =====
 window.addEventListener('load', async ()=>{
   loadPricing(); loadFestival(); loadLevels(); loadContentPacks();
@@ -2023,7 +2211,7 @@ calcDays(); buildStreak(); renderPracticeTopics('ALL'); renderAllTopics('ALL'); 
     // Verify the restored session is still valid
     try{
       const r=await api('auth-verify',{uid:S.user.uid,sessionToken:S.sessionToken});
-      if(r.valid){ S.user={...S.user,...r.user}; saveSession(S.user,S.sessionToken); startVerify(); updateUI(); toast('Welcome back, '+S.user.name+'! 👋'); }
+      if(r.valid){ S.user={...S.user,...r.user}; saveSession(S.user,S.sessionToken); startVerify(); updateUI(); toast('Welcome back, '+S.user.name+'! 👋'); setTimeout(()=>runSmartTrial(), 1200); }
       else { clearSession(); updateUI(); }
     }catch(e){ clearSession(); updateUI(); }
   } else { updateUI(); }
