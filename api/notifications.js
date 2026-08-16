@@ -1,23 +1,23 @@
 // api/notifications.js
-// Notification system — Email (Gmail SMTP) + WhatsApp link generation + SMS ready
+// Notification system - Email (Gmail SMTP) + WhatsApp link generation + SMS ready
 //
 // Env vars needed in Vercel:
 //   GMAIL_USER      = bluetracetechnologies@gmail.com
 //   GMAIL_APP_PASS  = (16-char App Password from Google Account → Security → App Passwords)
-//   MSG91_KEY       = (optional, for SMS — get from msg91.com)
+//   MSG91_KEY       = (optional, for SMS - get from msg91.com)
 //   MSG91_SENDER    = NEETAC (optional, 6-char SMS sender ID)
 //
 // Trigger events (called internally by other APIs):
-//   trial_started   — Day 1: welcome email + WhatsApp to student + parent
-//   trial_warning   — Day 5: 2 days left warning
-//   trial_last_day  — Day 7: final push + offer
-//   trial_expired   — Expired: last chance
-//   payment_success — Paid: confirmation
-//   weekly_progress — Every Monday: progress digest
-//   offer_alert     — Festival offer went live
+//   trial_started   - Day 1: welcome email + WhatsApp to student + parent
+//   trial_warning   - Day 5: 2 days left warning
+//   trial_last_day  - Day 7: final push + offer
+//   trial_expired   - Expired: last chance
+//   payment_success - Paid: confirmation
+//   weekly_progress - Every Monday: progress digest
+//   offer_alert     - Festival offer went live
 //
-// POST { action:'send', uid, sessionToken, event, targetUid? } — admin triggered
-// POST { action:'update_contacts', uid, sessionToken, phone, parentPhone, whatsapp } — user updates
+// POST { action:'send', uid, sessionToken, event, targetUid? } - admin triggered
+// POST { action:'update_contacts', uid, sessionToken, phone, parentPhone, whatsapp } - user updates
 
 const { db } = require('./_firebase');
 const nodemailer = require('nodemailer');
@@ -43,11 +43,11 @@ const EMAIL_TEMPLATES = {
     <div style="font-size:13px;opacity:.8">Every student. Every dream. One app.</div>
   </div>
   <h2 style="color:#0a2342">Welcome, ${name}! 👋</h2>
-  <p style="color:#444;line-height:1.7">Your <b>7-day free trial</b> has started. You now have full access to everything NEETAce offers — no payment needed yet.</p>
+  <p style="color:#444;line-height:1.7">Your <b>7-day free trial</b> has started. You now have full access to everything NEETAce offers - no payment needed yet.</p>
   <div style="background:#f0f4f8;border-radius:10px;padding:16px;margin:16px 0">
     <b style="color:#0a2342">What to do in your first 7 days:</b>
     <ul style="color:#444;line-height:2;margin-top:8px">
-      <li>⚛️ Try a <b>topic quiz</b> — your questions have unique numbers, so no one can copy your answers</li>
+      <li>⚛️ Try a <b>topic quiz</b> - your questions have unique numbers, so no one can copy your answers</li>
       <li>🤖 Ask the <b>AI Tutor</b> any NCERT concept you're confused about</li>
       <li>📓 Let <b>Galti Copy</b> auto-log every wrong answer with an explanation</li>
       <li>🏆 Check your <b>All India Rank</b> estimate in the leaderboard</li>
@@ -75,7 +75,7 @@ const EMAIL_TEMPLATES = {
     <div style="font-size:13px;opacity:.9">in your free trial</div>
   </div>
   <h2 style="color:#0a2342">Don't lose your progress, ${name}</h2>
-  <p style="color:#444;line-height:1.7">Your trial ends in <b>${daysLeft} day${daysLeft!==1?'s':''}</b>. If you don't upgrade, you'll lose access to your Galti Copy, your rank, and your adaptive practice — but your progress is saved and ready to continue.</p>
+  <p style="color:#444;line-height:1.7">Your trial ends in <b>${daysLeft} day${daysLeft!==1?'s':''}</b>. If you don't upgrade, you'll lose access to your Galti Copy, your rank, and your adaptive practice - but your progress is saved and ready to continue.</p>
   <div style="background:#fef3e2;border-left:4px solid #f59e0b;border-radius:0 10px 10px 0;padding:14px;margin:16px 0">
     <b>Plans start at just ₹299:</b><br>
     <span style="color:#444;font-size:13px">Annual Pro ₹799 · Monthly ₹99 · Starter ₹299</span>
@@ -88,7 +88,7 @@ const EMAIL_TEMPLATES = {
   }),
 
   trial_last_day: (name) => ({
-    subject: `⛔ Last day of your NEETAce trial, ${name} — upgrade today`,
+    subject: `⛔ Last day of your NEETAce trial, ${name} - upgrade today`,
     html: `
 <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:20px">
   <div style="background:#e34948;color:#fff;border-radius:14px;padding:22px;text-align:center;margin-bottom:20px">
@@ -106,7 +106,7 @@ const EMAIL_TEMPLATES = {
       <li>❌ Leaderboard rank</li>
       <li>❌ Adaptive learning engine</li>
     </ul>
-    <b style="color:#16a34a">✅ Your progress stays saved — upgrade and continue exactly where you are.</b>
+    <b style="color:#16a34a">✅ Your progress stays saved - upgrade and continue exactly where you are.</b>
   </div>
   <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:20px 0">
     <a href="https://neet.bluetrace.tech" style="background:#e34948;color:#fff;padding:14px 24px;border-radius:9px;text-decoration:none;font-weight:700">Upgrade Now →</a>
@@ -117,7 +117,7 @@ const EMAIL_TEMPLATES = {
   }),
 
   payment_success: (name, planLabel, paidUntil) => ({
-    subject: `✅ Payment confirmed — Welcome to NEETAce ${planLabel}, ${name}!`,
+    subject: `✅ Payment confirmed - Welcome to NEETAce ${planLabel}, ${name}!`,
     html: `
 <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:20px">
   <div style="background:linear-gradient(135deg,#0a2342,#1a56db);color:#fff;border-radius:14px;padding:28px;text-align:center;margin-bottom:20px">
@@ -131,8 +131,8 @@ const EMAIL_TEMPLATES = {
     <b style="color:#0a5c0a">What's unlocked:</b>
     <ul style="color:#444;line-height:2;margin-top:8px">
       <li>✅ All 5 difficulty levels (Free Practice → Talent Required)</li>
-      <li>✅ Parameterized questions — unique numbers for you</li>
-      <li>✅ Full AI Tutor — ask anything</li>
+      <li>✅ Parameterized questions - unique numbers for you</li>
+      <li>✅ Full AI Tutor - ask anything</li>
       <li>✅ Galti Copy + Flashcards + Analytics</li>
       <li>✅ Global leaderboard rank</li>
     </ul>
@@ -167,13 +167,13 @@ const EMAIL_TEMPLATES = {
       <div style="font-size:12px;color:#666">Mistakes logged</div>
     </div>
     <div style="background:#f0f4f8;border-radius:10px;padding:14px;text-align:center">
-      <div style="font-size:26px;font-weight:800;color:#4a3aa7">${stats.currentRank||'—'}</div>
+      <div style="font-size:26px;font-weight:800;color:#4a3aa7">${stats.currentRank||' - '}</div>
       <div style="font-size:12px;color:#666">AIR estimate</div>
     </div>
   </div>
   ${stats.weakestTopic ? `<div style="background:#feecec;border-radius:10px;padding:14px;margin:12px 0">
     <b style="color:#e34948">Focus area this week:</b><br>
-    <span style="color:#444">${stats.weakestTopic} — your weakest topic. 20 minutes daily will move your rank.</span>
+    <span style="color:#444">${stats.weakestTopic} - your weakest topic. 20 minutes daily will move your rank.</span>
   </div>` : ''}
   <div style="text-align:center;margin:20px 0">
     <a href="https://neet.bluetrace.tech" style="background:#1a56db;color:#fff;padding:14px 32px;border-radius:9px;text-decoration:none;font-weight:700">Continue Studying →</a>
@@ -191,10 +191,10 @@ const EMAIL_TEMPLATES = {
     <div style="font-size:13px;opacity:.8">AI-powered NEET preparation</div>
   </div>
   <h2 style="color:#0a2342">Dear ${parentName||'Parent'},</h2>
-  <p style="color:#444;line-height:1.7"><b>${studentName}</b> has started a <b>7-day free trial</b> on NEETAce — an AI-powered NEET preparation app by Bluetrace Technologies.</p>
+  <p style="color:#444;line-height:1.7"><b>${studentName}</b> has started a <b>7-day free trial</b> on NEETAce - an AI-powered NEET preparation app by Bluetrace Technologies.</p>
   <div style="background:#f0f4f8;border-radius:10px;padding:16px;margin:16px 0;color:#444;line-height:1.7">
     <b>About NEETAce:</b><br>
-    Smart quiz practice with NCERT references, an AI tutor that explains any concept, automatic mistake tracking, and a live All India Rank estimate. Questions are unique per student — no answer sharing between classmates.
+    Smart quiz practice with NCERT references, an AI tutor that explains any concept, automatic mistake tracking, and a live All India Rank estimate. Questions are unique per student - no answer sharing between classmates.
   </div>
   <p style="color:#444;line-height:1.7">The free trial ends on <b>${trialEnd}</b>. After that, full annual access costs just <b>₹799</b> (less than ₹2.20/day for the entire academic year).</p>
   <div style="text-align:center;margin:20px 0">
@@ -206,7 +206,7 @@ const EMAIL_TEMPLATES = {
   }),
 
   offer_alert: (name, festivalName, discountPct, promoCode, hoursLeft) => ({
-    subject: `🎉 ${festivalName} offer — ${discountPct}% off NEETAce (${hoursLeft}h left)`,
+    subject: `🎉 ${festivalName} offer - ${discountPct}% off NEETAce (${hoursLeft}h left)`,
     html: `
 <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:20px">
   <div style="background:#f59e0b;color:#fff;border-radius:14px;padding:22px;text-align:center;margin-bottom:20px">
@@ -228,7 +228,7 @@ const EMAIL_TEMPLATES = {
 // ── WhatsApp message templates ───────────────────────────
 const WA_TEMPLATES = {
   trial_started:  (name, trialEnd) =>
-    `🎉 Hi ${name}! Your NEETAce 7-day free trial has started!\n\nYou now have full access to:\n✅ AI Tutor\n✅ Unique parameterized questions\n✅ Galti Copy & Flashcards\n✅ All India Rank\n\nTrial ends: ${trialEnd}\n\nStart now → https://neet.bluetrace.tech\n\n_Crack NEET. Not your budget. — NEETAce by Bluetrace Technologies_`,
+    `🎉 Hi ${name}! Your NEETAce 7-day free trial has started!\n\nYou now have full access to:\n✅ AI Tutor\n✅ Unique parameterized questions\n✅ Galti Copy & Flashcards\n✅ All India Rank\n\nTrial ends: ${trialEnd}\n\nStart now → https://neet.bluetrace.tech\n\n_Crack NEET. Not your budget. - NEETAce by Bluetrace Technologies_`,
 
   trial_warning:  (name, daysLeft) =>
     `⏰ Hi ${name}! Only *${daysLeft} days* left in your NEETAce free trial.\n\nDon't lose your Galti Copy, rank & progress.\n\nUpgrade from just ₹299 → https://neet.bluetrace.tech\n\n_NEETAce · support@bluetrace.tech_`,
@@ -240,13 +240,13 @@ const WA_TEMPLATES = {
     `✅ Hi ${name}! Payment confirmed. Welcome to *NEETAce ${planLabel}*!\n\nAll features unlocked. Go crack NEET! 💪\n\n📱 https://neet.bluetrace.tech`,
 
   parent_trial:   (studentName, parentName) =>
-    `🙏 Namaste ${parentName||''}!\n\n*${studentName}* has started preparing for NEET using NEETAce — an AI-powered app by Bluetrace Technologies.\n\nFeatures: Unique questions, AI Tutor, Mistake tracking, Live rank.\n\nFull year access: ₹799 only (₹2.20/day).\n\nLearn more: https://neet.bluetrace.tech\n📞 Support: +91 94622 25303`,
+    `🙏 Namaste ${parentName||''}!\n\n*${studentName}* has started preparing for NEET using NEETAce - an AI-powered app by Bluetrace Technologies.\n\nFeatures: Unique questions, AI Tutor, Mistake tracking, Live rank.\n\nFull year access: ₹799 only (₹2.20/day).\n\nLearn more: https://neet.bluetrace.tech\n📞 Support: +91 94622 25303`,
 
   weekly_progress: (name, q, acc, rank) =>
-    `📊 *NEETAce Weekly Update — ${name}*\n\n✅ Questions done: ${q}\n🎯 Accuracy: ${acc}%\n🏆 AIR estimate: ${rank}\n\nKeep going — consistency beats talent every time!\n\nhttps://neet.bluetrace.tech`,
+    `📊 *NEETAce Weekly Update - ${name}*\n\n✅ Questions done: ${q}\n🎯 Accuracy: ${acc}%\n🏆 AIR estimate: ${rank}\n\nKeep going - consistency beats talent every time!\n\nhttps://neet.bluetrace.tech`,
 
   offer_alert:    (name, festival, discount, code) =>
-    `🎉 *${festival} Special Offer!*\n\nHi ${name}, celebrate with *${discount}% OFF* NEETAce!\n\nUse code: *${code}*\nValid for limited time only.\n\n👉 https://neet.bluetrace.tech\n\n_Crack NEET. Not your budget. — NEETAce_`,
+    `🎉 *${festival} Special Offer!*\n\nHi ${name}, celebrate with *${discount}% OFF* NEETAce!\n\nUse code: *${code}*\nValid for limited time only.\n\n👉 https://neet.bluetrace.tech\n\n_Crack NEET. Not your budget. - NEETAce_`,
 };
 
 // ── Send email ───────────────────────────────────────────
@@ -298,7 +298,7 @@ async function dispatch(uid, event, customData = {}) {
   const phone      = u.phone || '';
   const parentPhone = u.parentPhone || '';
   const parentEmail = u.parentEmail || '';
-  const trialEnd   = u.trialEnd ? new Date(u.trialEnd).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+  const trialEnd   = u.trialEnd ? new Date(u.trialEnd).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : ' - ';
   const daysLeft   = u.trialEnd ? Math.max(0, Math.ceil((new Date(u.trialEnd)-new Date())/86400000)) : 0;
   const planLabel  = customData.planLabel || 'Pro';
   const paidUntil  = u.paidUntil ? new Date(u.paidUntil).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : '31 May';
@@ -328,7 +328,7 @@ async function dispatch(uid, event, customData = {}) {
       trial_warning:   WA_TEMPLATES.trial_warning(name, daysLeft),
       trial_last_day:  WA_TEMPLATES.trial_last_day(name),
       payment_success: WA_TEMPLATES.payment_success(name, planLabel),
-      weekly_progress: WA_TEMPLATES.weekly_progress(name, customData.stats?.questionsThisWeek||0, customData.stats?.accuracy||0, customData.stats?.currentRank||'—'),
+      weekly_progress: WA_TEMPLATES.weekly_progress(name, customData.stats?.questionsThisWeek||0, customData.stats?.accuracy||0, customData.stats?.currentRank||' - '),
       offer_alert:     WA_TEMPLATES.offer_alert(name, customData.festival, customData.discount, customData.code),
     }[event];
 
@@ -387,7 +387,7 @@ module.exports = async function handler(req, res) {
     const { targetUid, event, broadcast, customData } = req.body;
 
     if (broadcast) {
-      // Bulk send — process in batches of 50 to avoid timeouts
+      // Bulk send - process in batches of 50 to avoid timeouts
       const snap = await db.collection('users').where('role','!=','admin').limit(50).get();
       const results = await Promise.all(snap.docs.map(d => dispatch(d.id, event, customData||{})));
       return res.status(200).json({ ok: true, sent: results.length });
