@@ -9,7 +9,7 @@
 //     { version, questions[], questionCount, uploadedAt, uploadedBy, changeNote }
 //
 // versionHistory on the live doc is a LIGHTWEIGHT summary (no question arrays) for fast admin listing.
-// Full question data for any past version lives only in the versions subcollection — fetched on demand.
+// Full question data for any past version lives only in the versions subcollection - fetched on demand.
 
 const { db } = require('./_firebase');
 const fs = require('fs');
@@ -66,13 +66,13 @@ function bumpVersion(current) {
 }
 
 const STARTER_PACKS = [
-  { id: 'pack_physics_core',   name: 'Physics Core',   subject: 'PHYSICS',   file: 'pack_physics_core.csv',   description: 'Foundational Physics — Mechanics, Electricity, Modern Physics' },
+  { id: 'pack_physics_core',   name: 'Physics Core',   subject: 'PHYSICS',   file: 'pack_physics_core.csv',   description: 'Foundational Physics - Mechanics, Electricity, Modern Physics' },
   { id: 'pack_chemistry_core', name: 'Chemistry Core', subject: 'CHEMISTRY', file: 'pack_chemistry_core.csv', description: 'Physical, Organic, and Inorganic Chemistry fundamentals' },
   { id: 'pack_biology_core',   name: 'Biology Core',   subject: 'BIOLOGY',   file: 'pack_biology_core.csv',   description: 'Cell Biology, Genetics, Physiology, Ecology fundamentals' },
   { id: 'pack_pyq_highlights', name: 'PYQ Highlights', subject: 'ALL',       file: 'pack_pyq_highlights.csv', description: 'Previous Year Questions across all subjects, 2019-2024' },
-  { id: 'pack_physics_expansion',   name: 'Physics Expansion',   subject: 'PHYSICS',   file: 'pack_physics_expansion.csv',   description: 'All 19 Physics units covered — Class 11 and 12' },
+  { id: 'pack_physics_expansion',   name: 'Physics Expansion',   subject: 'PHYSICS',   file: 'pack_physics_expansion.csv',   description: 'All 19 Physics units covered - Class 11 and 12' },
   { id: 'pack_chemistry_expansion', name: 'Chemistry Expansion', subject: 'CHEMISTRY', file: 'pack_chemistry_expansion.csv', description: 'All 20 Chemistry units covered' },
-  { id: 'pack_biology_expansion',   name: 'Biology Expansion',   subject: 'BIOLOGY',   file: 'pack_biology_expansion.csv',   description: 'All 10 Biology units — high-weightage NCERT facts' },
+  { id: 'pack_biology_expansion',   name: 'Biology Expansion',   subject: 'BIOLOGY',   file: 'pack_biology_expansion.csv',   description: 'All 10 Biology units - high-weightage NCERT facts' },
 ];
 
 async function verifyAdmin(uid, sessionToken) {
@@ -88,7 +88,7 @@ async function saveNewVersion(packId, meta, questions, uid, changeNote, existing
   const version = bumpVersion(meta.currentVersion);
   const now = new Date().toISOString();
 
-  // Full snapshot goes into the versions subcollection — never overwritten
+  // Full snapshot goes into the versions subcollection - never overwritten
   await db.collection('content_packs').doc(packId).collection('versions').doc(version).set({
     version, questions, questionCount: questions.length,
     uploadedAt: now, uploadedBy: uid, changeNote: changeNote || '',
@@ -112,7 +112,7 @@ async function saveNewVersion(packId, meta, questions, uid, changeNote, existing
 
 module.exports = async function handler(req, res) {
 
-  // GET — public, merged questions from enabled packs (always serves current live version)
+  // GET - public, merged questions from enabled packs (always serves current live version)
   if (req.method === 'GET') {
     try {
       // Scope-aware: global packs for everyone; academy/batch packs only for members.
@@ -146,7 +146,7 @@ module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   const { action, uid, sessionToken } = req.body || {};
 
-  // SEED — first-time load of bundled starter packs (each becomes v1.0)
+  // SEED - first-time load of bundled starter packs (each becomes v1.0)
   if (action === 'seed_starter_packs') {
     const admin = await verifyAdmin(uid, sessionToken);
     if (!admin) return res.status(403).json({ error: 'Admin only' });
@@ -156,7 +156,7 @@ module.exports = async function handler(req, res) {
       try {
         const existing = await db.collection('content_packs').doc(pack.id).get();
         if (existing.exists) {
-          results.push({ id: pack.id, status: 'skipped', reason: 'already exists — use update to add a new version' });
+          results.push({ id: pack.id, status: 'skipped', reason: 'already exists - use update to add a new version' });
           continue;
         }
         const csvPath = path.join(__dirname, '..', 'data', 'packs', pack.file);
@@ -177,7 +177,7 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ ok: true, results });
   }
 
-  // ADMIN: list all packs (lightweight — includes version + history summary, no question arrays)
+  // ADMIN: list all packs (lightweight - includes version + history summary, no question arrays)
   if (action === 'admin_list') {
     const admin = await verifyAdmin(uid, sessionToken);
     if (!admin) return res.status(403).json({ error: 'Admin only' });
@@ -216,11 +216,11 @@ module.exports = async function handler(req, res) {
 
     return res.status(200).json({
       ok: true, packId, version, questionCount: questions.length,
-      message: `Pack "${name}" created as v${version} with ${questions.length} questions. ${enabledByDefault ? 'Live now.' : 'Disabled — enable when ready.'}`,
+      message: `Pack "${name}" created as v${version} with ${questions.length} questions. ${enabledByDefault ? 'Live now.' : 'Disabled - enable when ready.'}`,
     });
   }
 
-  // ADMIN: upload a NEW VERSION of an EXISTING pack — old version preserved, never lost
+  // ADMIN: upload a NEW VERSION of an EXISTING pack - old version preserved, never lost
   if (action === 'admin_upload_version') {
     const admin = await verifyAdmin(uid, sessionToken);
     if (!admin) return res.status(403).json({ error: 'Admin only' });
@@ -260,7 +260,7 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ currentVersion: p.version, history: p.versionHistory || [] });
   }
 
-  // ADMIN: rollback to a previous version — restores that snapshot as the live version
+  // ADMIN: rollback to a previous version - restores that snapshot as the live version
   if (action === 'admin_rollback') {
     const admin = await verifyAdmin(uid, sessionToken);
     if (!admin) return res.status(403).json({ error: 'Admin only' });
@@ -298,7 +298,7 @@ module.exports = async function handler(req, res) {
   }
 
   // TEACHER (Academy HOD): upload a pack scoped to their academy or batch.
-  // Versioning reuses the same engine — re-upload with same targetPackId creates v1.1, v1.2...
+  // Versioning reuses the same engine - re-upload with same targetPackId creates v1.1, v1.2...
   if (action === 'teacher_upload') {
     const uSnapT = await db.collection('users').doc(uid).get();
     if (!uSnapT.exists) return res.status(404).json({ error: 'User not found' });
@@ -332,7 +332,7 @@ module.exports = async function handler(req, res) {
         message: 'Updated to v' + version + ' (' + questions.length + ' questions). Previous version preserved.' });
     }
 
-    // Brand new teacher pack — live immediately for their own students
+    // Brand new teacher pack - live immediately for their own students
     if (!name) return res.status(400).json({ error: 'name required' });
     const packId = 'pack_t_' + name.toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 36) + '_' + Date.now().toString(36);
     const rows = parseCSV(csvText);
