@@ -1,0 +1,26 @@
+tid,subject,chapter,question,opt_a,opt_b,opt_c,opt_d,correct,explanation,ncert_class,ncert_chapter,ncert_page,syllabus_unit,difficulty,pyq_year,trick
+p3,PHYSICS,Laws of Motion,Newton first law defines:,Force,Inertia,Acceleration,Momentum,B,First law is the law of inertia - body resists change in state,11,4,-,Laws of Motion,starter,,
+p3,PHYSICS,Laws of Motion,SI unit of force:,Dyne,Newton,Joule,Watt,B,1 N = 1 kg m/s2,11,4,-,Laws of Motion,starter,2019,
+p3,PHYSICS,Laws of Motion,Action and reaction forces act on:,Same body,Different bodies,Same point,Parallel lines,B,Newton third law - forces on different objects,11,4,-,Laws of Motion,easy,2020,
+p3,PHYSICS,Laws of Motion,Coefficient of friction depends on:,Area of contact,Nature of surfaces,Weight,Velocity,B,mu depends on material and surface roughness not area,11,4,-,Laws of Motion,easy,,Common misconception: area
+p3,PHYSICS,Laws of Motion,Impulse equals change in:,Energy,Momentum,Velocity,Acceleration,B,J = F x t = delta p,11,4,-,Laws of Motion,easy,2018,
+p4,PHYSICS,Work Energy Power,Work done is zero when force is:,Along displacement,Opposite to displacement,Perpendicular to displacement,At 45 degrees,C,W = Fs cos90 = 0,11,5,-,Work Energy Power,easy,,Centripetal force does zero work
+p4,PHYSICS,Work Energy Power,Kinetic energy depends on:,Velocity only,Mass only,Both mass and velocity,Neither,C,KE = half mv2,11,5,-,Work Energy Power,starter,2019,
+p4,PHYSICS,Work Energy Power,Power is rate of doing:,Force,Work,Energy,Momentum,B,P = W/t = dW/dt,11,5,-,Work Energy Power,starter,,
+p4,PHYSICS,Work Energy Power,Elastic collision conserves:,KE only,Momentum only,Both KE and momentum,Neither,C,Both kinetic energy and momentum conserved,11,5,-,Work Energy Power,easy,2021,Inelastic conserves only p
+p12,PHYSICS,Electrostatics,Coulomb force between two charges is proportional to:,Sum of charges,Product of charges,Difference of charges,Ratio of charges,B,F = kq1q2/r2,12,1,-,Electrostatics,easy,,
+p12,PHYSICS,Electrostatics,Electric field lines:,Cross each other,Start from negative charge,Are always straight,Start from positive charge,D,Field lines originate from positive and terminate at negative,12,1,-,Electrostatics,easy,2020,
+p12,PHYSICS,Electrostatics,Gauss theorem relates electric flux to:,Charge enclosed,Total charge,Potential,Field strength at surface,A,Flux = q_enclosed / epsilon_0,12,1,-,Electrostatics,medium,2019,
+p12,PHYSICS,Electrostatics,Two capacitors in series: total capacitance is:,C1 + C2,C1 x C2,C1C2/(C1+C2),1/(C1+C2),C,1/C_total = 1/C1 + 1/C2,12,2,-,Electrostatics,easy,,Opposite of resistors
+p12,PHYSICS,Electrostatics,Energy stored in capacitor:,CV,CV2,half CV2,2CV2,C,U = half CV2 = Q2/2C = QV/2,12,2,-,Electrostatics,easy,2021,
+p17,PHYSICS,Optics,Snell law relates:,Focal length and radius,Angle of incidence and refraction,Wavelength and frequency,Speed and distance,B,n1 sin i = n2 sin r,12,9,-,Optics,easy,,
+p17,PHYSICS,Optics,Convex lens is also called:,Diverging lens,Converging lens,Plano lens,Cylindrical lens,B,Convex = converging; concave = diverging,12,9,-,Optics,starter,2018,
+p17,PHYSICS,Optics,Magnification of plane mirror is always:,0,+1,-1,Infinity,B,Image size equals object size; erect so positive,12,9,-,Optics,starter,,
+p17,PHYSICS,Optics,In Young double slit experiment fringe width is proportional to:,Slit separation d,1/d (inversely),d2,Square root of d,B,Beta = lambda D / d; inversely proportional to d,12,10,-,Optics,medium,2022,
+p17,PHYSICS,Optics,Polarization proves light is:,Longitudinal,Transverse,Both,Neither,B,Only transverse waves can be polarized,12,10,-,Optics,easy,2019,Sound cannot be polarized
+p13,PHYSICS,Current Electricity,Ohm law states V equals:,IR,I/R,R/I,I2R,A,V = IR for ohmic conductors,12,3,-,Current Electricity,starter,,
+p13,PHYSICS,Current Electricity,Internal resistance of ideal ammeter:,Infinite,Zero,1 ohm,Depends on circuit,B,Ammeter in series - zero resistance so no voltage drop,12,3,-,Current Electricity,easy,2020,Voltmeter = infinite
+p13,PHYSICS,Current Electricity,Wheatstone bridge is used to measure:,Current,Voltage,Unknown resistance,Capacitance,C,At balance: P/Q = R/S; galvanometer shows zero,12,3,-,Current Electricity,easy,,
+p13,PHYSICS,Current Electricity,Drift velocity of electrons is typically:,Speed of light,10 km/s,Few mm/s,Zero,C,Very slow (about 1 mm/s) but electric field propagates fast,12,3,-,Current Electricity,medium,2021,
+p18,PHYSICS,Modern Physics,Work function in photoelectric effect is:,Maximum KE,Minimum energy to eject electron,Total energy of photon,Threshold frequency,B,Phi = h x nu_0 (threshold frequency),12,11,-,Modern Physics,easy,2019,
+p18,PHYSICS,Modern Physics,de Broglie wavelength lambda equals:,h/mv,mv/h,h/E,E/h,A,Matter wave: lambda = h/p = h/(mv),12,11,-,Modern Physics,easy,,
