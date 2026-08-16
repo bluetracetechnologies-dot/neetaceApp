@@ -561,7 +561,22 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
       <span>Cap: 90 days</span>
     </div>
   </div>
-  <div class="sec-hd" style="margin-top:14px"><i class="ti ti-phone"></i> Contact & Notifications</div>
+  <div id="teacherPanel" style="display:none">
+  <div class="sec-hd" style="margin-top:14px"><i class="ti ti-chalkboard"></i> Teacher Zone <span style="font-size:10px;font-weight:400;color:var(--mute)">your packs, your students only</span></div>
+  <div class="card">
+    <div style="font-size:11px;color:var(--mute);margin-bottom:9px">Upload a CSV question pack visible only to your academy or your batch. Re-upload to the same pack to create a new version (old versions preserved, rollback via admin).</div>
+    <select id="tpTarget" style="width:100%;padding:9px 12px;border:1.5px solid var(--bdr);border-radius:9px;font-size:12px;background:var(--surf);color:var(--txt)" onchange="var n=document.getElementById('tpName'); if(n) n.style.display=this.value?'none':'block'"></select>
+    <input class="fin" id="tpName" placeholder="Pack name e.g. Physics DPP Week 3" style="margin-top:8px">
+    <select id="tpScope" style="width:100%;padding:9px 12px;border:1.5px solid var(--bdr);border-radius:9px;font-size:12px;background:var(--surf);color:var(--txt);margin-top:8px">
+      <option value="academy">Visible to: whole academy</option>
+      <option value="batch">Visible to: my batch only</option>
+    </select>
+    <input type="file" id="tpFile" accept=".csv" style="margin:10px 0;font-size:12px">
+    <button class="btn btn-blue btn-full" onclick="teacherUploadPack()"><i class="ti ti-upload"></i> Upload / New Version</button>
+    <div id="teacherPacksList" style="margin-top:10px"></div>
+  </div>
+</div>
+<div class="sec-hd" style="margin-top:14px"><i class="ti ti-phone"></i> Contact & Notifications</div>
   <div class="card">
     <div style="font-size:11px;color:var(--mute);margin-bottom:11px">We send trial reminders, progress reports, and offers via email and WhatsApp.</div>
     <div style="display:flex;flex-direction:column;gap:9px">
@@ -1306,7 +1321,7 @@ function switchTab(tab){
   if(tab==='about'){ initAbout(); loadReferral(); }
   if(tab==='syllabus') renderSyllabus();
   if(tab==='analytics') renderMasteryDash();
-  if(tab==='profile') loadProfileContacts();
+  if(tab==='profile'){ loadProfileContacts(); loadTeacherPanel(); }
   if(tab==='flash') renderFlash();
   if(tab==='practice') renderPracticeTopics('ALL');
   if(tab==='search') renderAllTopics('ALL');
@@ -2124,7 +2139,7 @@ const SLOGANS = {
 // ===== CONTENT PACKS — pulls questions from admin-enabled packs =====
 async function loadContentPacks(){
   try{
-    const r = await fetch('/api/packs?active=true');
+    const r = await fetch('/api/packs?active=true'+(S.user?('&uid='+encodeURIComponent(S.user.uid)):''));
     const d = await r.json();
     if(d.questions && d.questions.length){
       // Merge pack questions into the live QUESTIONS pool, avoiding id collisions
@@ -3462,6 +3477,52 @@ function renderScorePredictor(r){
     '<div style="font-size:34px;font-weight:900;color:var(--blue)">'+mid+'<span style="font-size:15px;color:var(--mute)">/720</span></div>'+
     '<div style="font-size:11px;color:var(--mute)">Confidence range: '+lo+' \u2013 '+hi+' &middot; based on '+g.attempted+' answers</div></div>'+
     '<div style="background:var(--amber-l);border-radius:9px;padding:10px;font-size:11.5px;color:#7a4800;line-height:1.6"><b>\uD83C\uDFAF Highest-gain move:</b> Fix <b>'+wu.name+'</b> (your weakest) — worth roughly +'+gain+' marks. Tap it in Chapter Mastery above to practice now.</div>';
+}
+
+
+// ===== TEACHER (HOD) PACK PANEL =====
+function loadTeacherPanel(){
+  const box = document.getElementById("teacherPanel"); if(!box) return;
+  const isTeacher = S.user && (S.user.academyRole === "teacher" || S.user.role === "admin") && S.user.academyId;
+  box.style.display = isTeacher ? "block" : "none";
+  if(isTeacher) loadTeacherPacks();
+}
+async function loadTeacherPacks(){
+  const el = document.getElementById("teacherPacksList"); if(!el) return;
+  try{
+    const r = await api("packs",{action:"teacher_list",uid:S.user.uid,sessionToken:S.sessionToken});
+    const packs = r.packs || [];
+    const sel = document.getElementById("tpTarget");
+    if(sel) sel.innerHTML = '<option value="">— New pack —</option>' +
+      packs.map(function(p){ return '<option value="'+p.id+'">'+p.name+' (v'+(p.version||'1.0')+')</option>'; }).join("");
+    if(!packs.length){ el.innerHTML='<div style="font-size:11px;color:var(--mute);padding:8px 0">No packs yet. Upload your first DPP below.</div>'; return; }
+    el.innerHTML = packs.map(function(p){
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--bdr);font-size:12px">'+
+        '<div><b>'+p.name+'</b> <span class="badge" style="background:var(--purple-l);color:var(--purple)">v'+(p.version||'1.0')+'</span>'+
+        '<div style="font-size:10px;color:var(--mute)">'+p.questionCount+' Qs &middot; scope: '+(p.scope&&p.scope.type||'academy')+' &middot; '+((p.versionHistory||[]).length)+' versions</div></div>'+
+        '<span style="font-size:10px;font-weight:700;color:'+(p.enabled?'var(--green)':'var(--mute)')+'">'+(p.enabled?'LIVE':'OFF')+'</span></div>';
+    }).join("");
+  }catch(e){ el.innerHTML='<div style="font-size:11px;color:var(--red)">Could not load your packs</div>'; }
+}
+function teacherUploadPack(){
+  const target = document.getElementById("tpTarget") ? document.getElementById("tpTarget").value : "";
+  const name = document.getElementById("tpName") ? document.getElementById("tpName").value.trim() : "";
+  const scopeType = document.getElementById("tpScope") ? document.getElementById("tpScope").value : "academy";
+  const fi = document.getElementById("tpFile");
+  if(!target && !name){ toast("Enter a pack name or pick an existing pack to update"); return; }
+  if(!fi || !fi.files.length){ toast("Select a CSV file"); return; }
+  const reader = new FileReader();
+  reader.onload = async function(e){
+    const body = {action:"teacher_upload",uid:S.user.uid,sessionToken:S.sessionToken,csvText:e.target.result,scopeType};
+    if(target){ body.targetPackId = target; body.changeNote = prompt("What changed in this version? (optional)")||""; }
+    else body.name = name;
+    const r = await api("packs", body);
+    if(r.ok){ toast("OK: "+r.message);
+      if(document.getElementById("tpName")) document.getElementById("tpName").value="";
+      fi.value=""; loadTeacherPacks(); loadContentPacks();
+    } else toast("Error: "+(r.error||"Upload failed"));
+  };
+  reader.readAsText(fi.files[0]);
 }
 
 // ===== INIT =====
