@@ -38,7 +38,13 @@ module.exports = async function handler(req, res) {
       const existing = await db.collection('users').doc(userUid).get();
       if (existing.exists) return res.status(200).json({ ok: true });
       const now = new Date();
-      const trialEnd = new Date(now); trialEnd.setDate(trialEnd.getDate() + 7);
+      // Admin-configurable trial duration
+      let trialDays = 7;
+      try {
+        const tcSnap = await db.collection('config').doc('trial').get();
+        if (tcSnap.exists) trialDays = tcSnap.data().days || 7;
+      } catch(e) {}
+      const trialEnd = new Date(now); trialEnd.setDate(trialEnd.getDate() + trialDays);
       const isAdmin = email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
       await db.collection('users').doc(userUid).set({
         uid: userUid, email, name,
@@ -71,8 +77,27 @@ module.exports = async function handler(req, res) {
       const profile = snap.data();
       if (profile.disabled) return res.status(403).json({ error: 'Your account has been disabled by the admin.' });
       const crypto = require('crypto');
+      // ── SINGLE DEVICE: confirm before replacing ──
+      const existingSession = profile.sessionToken;
+      const forceLogin = body.forceLogin === true; // user confirmed on new device
+      if (existingSession && !forceLogin) {
+        // Another device is active — ask user to confirm
+        // Log the attempt so old device can show notification
+        await db.collection('users').doc(uid2).update({
+          loginAttempt: { at: new Date().toISOString(), device: body.deviceInfo || 'Unknown device' }
+        });
+        return res.status(409).json({
+          error: 'DEVICE_CONFLICT',
+          message: 'This account is active on another device. Sign in here? The other device will be signed out.',
+          requireConfirm: true,
+        });
+      }
       const sessionToken = crypto.randomBytes(32).toString('hex');
-      await db.collection('users').doc(uid2).update({ sessionToken, lastLogin: new Date().toISOString() });
+      await db.collection('users').doc(uid2).update({
+        sessionToken, lastLogin: new Date().toISOString(),
+        loginAttempt: null, // clear after successful login
+        lastDevice: body.deviceInfo || 'Unknown',
+      });
       const now = new Date();
       let accessStatus = 'active';
       let trialDaysLeft = null;
