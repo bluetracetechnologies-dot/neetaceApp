@@ -3972,6 +3972,29 @@ function hasFeatureWithAcademy(featureKey){
   return true;
 }
 
+
+function editAcademyBranding(academyId){
+  var bannerText = prompt("Banner text (shown to academy students):", "");
+  if(bannerText===null) return;
+  var logoUrl = prompt("Logo URL (https://..., leave blank for none):", "");
+  var bannerColor = prompt("Banner color hex:", "#0d9488");
+  api("academy", {action:"admin_update_branding", uid:S.user.uid, sessionToken:S.sessionToken,
+    academyId:academyId, branding:{bannerText:bannerText, logoUrl:logoUrl, bannerColor:bannerColor, showLogo:!!logoUrl}
+  }).then(function(r){ if(r.ok) toast("Branding updated!"); loadAcademyList(); });
+}
+function editAcademyFeatures(academyId){
+  var input = prompt("Feature overrides JSON (e.g. {\"ai_tutor\":true})\nBlank = use global defaults:");
+  if(input === null) return;
+  var overrides = null;
+  if(input.trim()){
+    try{ overrides = JSON.parse(input); }
+    catch(e){ toast("Invalid JSON"); return; }
+  }
+  api("academy", {action:"admin_update_branding", uid:S.user.uid, sessionToken:S.sessionToken,
+    academyId:academyId, featureOverrides: overrides
+  }).then(function(r){ if(r.ok) toast("Academy features updated!"); loadAcademyList(); });
+}
+
 // ===== INIT =====
 window.addEventListener('load', async ()=>{
   loadPricing(); loadFestival(); loadLevels(); loadContentPacks();
@@ -3986,6 +4009,7 @@ calcDays(); buildStreak(); renderPracticeTopics('ALL'); renderAllTopics('ALL'); 
     // Verify the restored session is still valid
     try{
       const r=await api('auth',{action:'verify',uid:S.user.uid,sessionToken:S.sessionToken});
+  loadMyAcademy();
       if(r.valid){ S.user={...S.user,...r.user}; saveSession(S.user,S.sessionToken); startVerify(); updateUI(); toast('Welcome back, '+S.user.name+'! 👋'); setTimeout(()=>runSmartTrial(), 1200); }
       else { clearSession(); updateUI(); }
     }catch(e){ clearSession(); updateUI(); }
