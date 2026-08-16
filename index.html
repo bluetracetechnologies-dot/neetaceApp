@@ -547,6 +547,8 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     <div style="display:flex;gap:8px">
       <button class="btn btn-green" onclick="shareReferral()"><i class="ti ti-share"></i> Share on WhatsApp</button>
       <button class="btn btn-ghost" onclick="copyRefCode()"><i class="ti ti-copy"></i> Copy</button>
+      <button class="btn btn-ghost" onclick="shareMyProgress()"><i class="ti ti-chart-line"></i> Share Progress</button>
+      <button class="btn btn-ghost" onclick="shareProgressToParent()"><i class="ti ti-user-heart"></i> Send to Parent</button>
     </div>
     <div style="display:flex;gap:12px;margin-top:10px;font-size:11px">
       <span>Referred: <b id="refCount">0</b></span>
@@ -1298,6 +1300,7 @@ function switchTab(tab){
   if(tab==='admin'){ loadAdminUsers(); loadPacksList(); }
   if(tab==='about'){ initAbout(); loadReferral(); }
   if(tab==='syllabus') renderSyllabus();
+  if(tab==='analytics') renderMasteryDash();
   if(tab==='profile') loadProfileContacts();
   if(tab==='flash') renderFlash();
   if(tab==='practice') renderPracticeTopics('ALL');
@@ -3261,7 +3264,7 @@ function startExamMode(){
   EXAM = {
     qs, answers: new Array(qs.length).fill(null), marked: new Set(),
     cur: 0, startAt: Date.now(),
-    totalSec: qs.length * 60, // 1 min per question, NEET ratio
+    totalSec: qs.length * getTimerSec(),
     done: false,
   };
   switchTab('quiz');
@@ -3375,6 +3378,85 @@ function startRevisionMode(){
   switchTab('quiz');
   if(typeof renderQuestion==='function') renderQuestion();
   toast('\uD83D\uDD01 Revision: '+quizList.length+' items due. Clear them all!');
+}
+
+
+// ===== TIMER SLIDER (seconds per question) =====
+function getTimerSec(){ return parseInt(localStorage.getItem("na_timer_sec")||"60"); }
+function setTimerSec(v){
+  localStorage.setItem("na_timer_sec", v);
+  const lbl=document.getElementById("timerSecLabel"); if(lbl) lbl.textContent=v+"s / question";
+  toast("Timer set: "+v+" seconds per question");
+}
+
+// ===== SHARE PROGRESS (student + parent, WhatsApp) =====
+function buildProgressText(){
+  const g = (S.user && S.user.scores && S.user.scores.global) || {};
+  const name = (S.user && S.user.name) || "Student";
+  const done = g.attempted || 0;
+  const acc  = g.accuracy || 0;
+  const rank = g.rank ? "#"+g.rank : "building up";
+  const ref  = (S.user && S.user.referralCode) ? "\n\nJoin me with code "+S.user.referralCode+" for 7 extra free days!" : "";
+  return "\uD83C\uDF93 *NEETAce Progress — "+name+"*\n\n\u2705 Questions solved: "+done+"\n\uD83C\uDFAF Accuracy: "+acc+"%\n\uD83C\uDFC6 Rank: "+rank+"\n\uD83D\uDCC5 "+new Date().toLocaleDateString("en-IN",{day:"2-digit",month:"short"})+"\n\nPreparing for NEET 2026 on https://neet.bluetrace.tech"+ref;
+}
+function shareMyProgress(){
+  if(!S.user){ openAuth(); return; }
+  window.open("https://wa.me/?text="+encodeURIComponent(buildProgressText()),"_blank");
+}
+function shareProgressToParent(){
+  if(!S.user){ openAuth(); return; }
+  const ph = (S.user.parentPhone||"").replace(/\D/g,"");
+  if(!ph){ toast("Add parent WhatsApp number in Profile first"); switchTab("profile"); return; }
+  const num = ph.startsWith("91") ? ph : "91"+ph;
+  window.open("https://wa.me/"+num+"?text="+encodeURIComponent(buildProgressText()),"_blank");
+}
+
+// ===== CHAPTER MASTERY DASHBOARD (Learning DNA) =====
+function tidToUnitName(tid){
+  let found=null;
+  Object.entries(NEET_SYLLABUS).forEach(function(e){
+    e[1].units.forEach(function(u){ if(u.tids.includes(tid)) found={name:u.name, sub:e[0]}; });
+  });
+  return found;
+}
+async function renderMasteryDash(){
+  const el=document.getElementById("masteryDash"); if(!el||!S.user) return;
+  el.innerHTML='<div style="text-align:center;padding:14px;color:var(--mute);font-size:12px">Loading your Learning DNA...</div>';
+  try{
+    const r=await api("adaptive",{action:"get_mastery",uid:S.user.uid,sessionToken:S.sessionToken});
+    const list=r.mastery||[];
+    if(!list.length){ el.innerHTML='<div style="text-align:center;padding:14px;color:var(--mute);font-size:12px">Attempt adaptive practice to build your mastery map.</div>'; renderScorePredictor(null); return; }
+    el.innerHTML=list.slice(0,12).map(function(m){
+      const u=tidToUnitName(m.tid)||{name:m.tid,sub:""};
+      const pct=Math.round((m.theta-100)/800*100);
+      const col=m.theta<400?"var(--red)":m.theta<580?"var(--amber)":"var(--green)";
+      return '<div style="margin-bottom:9px"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span style="font-weight:600">'+u.name+'</span><span style="color:'+col+';font-weight:700">'+m.level+' &middot; '+m.accuracy+'%</span></div>'+
+        '<div style="height:6px;background:var(--bdr);border-radius:3px;overflow:hidden"><div style="height:100%;width:'+Math.max(3,pct)+'%;background:'+col+';border-radius:3px"></div></div></div>';
+    }).join("");
+    renderScorePredictor(r);
+  }catch(e){ el.innerHTML='<div style="color:var(--mute);font-size:12px;padding:10px">Mastery data unavailable.</div>'; }
+}
+
+// ===== SCORE PREDICTOR (ongoing, from mastery + accuracy) =====
+function renderScorePredictor(r){
+  const el=document.getElementById("scorePredictor"); if(!el) return;
+  const g=(S.user&&S.user.scores&&S.user.scores.global)||{};
+  if(!r||!r.mastery||!r.mastery.length||!g.attempted){
+    el.innerHTML='<div style="font-size:12px;color:var(--mute)">Solve 20+ adaptive questions to unlock your NEET score prediction.</div>'; return;
+  }
+  const avgTheta = r.mastery.reduce(function(s,m){return s+m.theta},0)/r.mastery.length;
+  const acc=(g.accuracy||50)/100;
+  // Honest blend: theta ability (100-900 scale) + demonstrated accuracy, mapped to 720
+  const base = ((avgTheta-100)/800)*0.6 + acc*0.4;
+  const mid = Math.round(base*720);
+  const conf = Math.max(30, 90 - Math.min(60, g.attempted/5)); // range narrows with more attempts
+  const lo=Math.max(0,mid-conf), hi=Math.min(720,mid+conf);
+  const weakest=r.mastery[0]; const wu=tidToUnitName(weakest.tid)||{name:weakest.tid};
+  const gain=Math.round((720/49)*0.6); // approx marks recoverable per weak unit fixed
+  el.innerHTML='<div style="text-align:center;margin-bottom:9px"><div style="font-size:11px;color:var(--mute)">PREDICTED NEET SCORE</div>'+
+    '<div style="font-size:34px;font-weight:900;color:var(--blue)">'+mid+'<span style="font-size:15px;color:var(--mute)">/720</span></div>'+
+    '<div style="font-size:11px;color:var(--mute)">Confidence range: '+lo+' \u2013 '+hi+' &middot; based on '+g.attempted+' answers</div></div>'+
+    '<div style="background:var(--amber-l);border-radius:9px;padding:10px;font-size:11.5px;color:#7a4800;line-height:1.6"><b>\uD83C\uDFAF Highest-gain move:</b> Fix <b>'+wu.name+'</b> (your weakest) — worth roughly +'+gain+' marks. Tap it in Chapter Mastery above to practice now.</div>';
 }
 
 // ===== INIT =====
