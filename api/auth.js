@@ -1,4 +1,4 @@
-// api/auth.js — merged auth endpoints
+// api/auth.js - merged auth endpoints
 // POST { action: 'register' | 'login' | 'verify', ... }
 const { auth, db } = require('./_firebase');
 const ADMIN_EMAIL = 'bluetracetechnologies@gmail.com';
@@ -83,7 +83,7 @@ module.exports = async function handler(req, res) {
       const existingSession = profile.sessionToken;
       const forceLogin = body.forceLogin === true; // user confirmed on new device
       if (existingSession && !forceLogin) {
-        // Another device is active — ask user to confirm
+        // Another device is active - ask user to confirm
         // Log the attempt so old device can show notification
         await db.collection('users').doc(uid2).update({
           loginAttempt: { at: new Date().toISOString(), device: body.deviceInfo || 'Unknown device' }
