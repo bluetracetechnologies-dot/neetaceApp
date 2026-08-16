@@ -626,7 +626,58 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     <div style="font-size:11px;color:var(--mute);margin-bottom:8px">Sends to first 50 users. Use carefully.</div>
     <button class="btn btn-ghost btn-full" style="border-color:var(--amber);color:#7a4800" onclick="if(confirm('Send to ALL users?'))sendAdminNotif(true)"><i class="ti ti-broadcast"></i> Broadcast Notification</button>
   </div>
-  <div class="sec-hd"><i class="ti ti-lock"></i> Kill Switch</div>
+  
+<div class="sec-hd" style="margin-top:14px"><i class="ti ti-building"></i> Academy Partners <span style="font-size:10px;font-weight:400;color:var(--mute)">coaching · school · college · tuition</span></div>
+<div style="font-size:11px;color:var(--mute);margin-bottom:9px">Create and manage B2B partnerships. Admin sets pricing — discounts auto-apply by student count.</div>
+
+<!-- Pricing config strip -->
+<div class="card" style="padding:11px 14px;margin-bottom:11px;background:var(--blue-l);border-color:var(--border-accent)">
+  <div style="font-size:12px;font-weight:700;margin-bottom:8px;color:var(--blue)">Current Academy Pricing Tiers</div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center;font-size:11px" id="academyPricingTiers">
+    <div style="background:var(--surf);border-radius:8px;padding:8px"><div style="font-weight:700">10-24</div><div style="color:var(--mute)">₹499/student</div><div style="color:var(--green);font-size:10px">0% off</div></div>
+    <div style="background:var(--surf);border-radius:8px;padding:8px"><div style="font-weight:700">25-49</div><div style="color:var(--mute)">₹449/student</div><div style="color:var(--green);font-size:10px">10% off</div></div>
+    <div style="background:var(--surf);border-radius:8px;padding:8px"><div style="font-weight:700">50-99</div><div style="color:var(--mute)">₹399/student</div><div style="color:var(--green);font-size:10px">20% off</div></div>
+    <div style="background:var(--surf);border-radius:8px;padding:8px"><div style="font-weight:700">100+</div><div style="color:var(--mute)">₹349/student</div><div style="color:var(--green);font-size:10px">30% off</div></div>
+  </div>
+  <button class="btn btn-ghost btn-full" style="margin-top:9px;font-size:11px" onclick="showAcademyPricingConfig()"><i class="ti ti-settings"></i> Adjust Pricing</button>
+</div>
+
+<!-- Create new academy -->
+<div class="card" style="margin-bottom:11px">
+  <div style="font-size:12px;font-weight:700;margin-bottom:9px">Create New Academy Partner</div>
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <input class="fin" id="acyName" placeholder="Academy name e.g. Parbhani Medical Academy" style="margin-top:0">
+    <div style="display:flex;gap:8px">
+      <select id="acyType" style="flex:1;padding:9px 12px;border:1.5px solid var(--bdr);border-radius:9px;font-size:12px;background:var(--surf);color:var(--txt)">
+        <option value="coaching">Coaching Centre</option>
+        <option value="school">School</option>
+        <option value="college">College</option>
+        <option value="tuition">Tuition Class</option>
+        <option value="district">District Centre</option>
+      </select>
+      <input class="fin" id="acyCity" placeholder="City" style="flex:1;margin-top:0">
+    </div>
+    <input class="fin" id="acyContact" placeholder="Contact name" style="margin-top:0">
+    <input class="fin" id="acyPhone" placeholder="Contact phone" style="margin-top:0">
+    <div style="display:flex;gap:8px;align-items:center">
+      <div style="flex:1">
+        <label style="font-size:11px;color:var(--mute)">Number of students</label>
+        <input class="fin" id="acyStudents" type="number" placeholder="30" min="10" style="margin-top:4px" oninput="updateAcademyQuote()">
+      </div>
+      <div style="flex:1">
+        <label style="font-size:11px;color:var(--mute)">Custom price/student (₹) — optional</label>
+        <input class="fin" id="acyCustomPrice" type="number" placeholder="Leave blank for auto" style="margin-top:4px">
+      </div>
+    </div>
+    <!-- Live quote -->
+    <div id="academyQuote" style="display:none;background:var(--green-l);border-radius:9px;padding:11px;font-size:12px;color:#0a5c0a"></div>
+    <button class="btn btn-blue btn-full" onclick="createAcademy()"><i class="ti ti-building-plus"></i> Create Academy Partner</button>
+  </div>
+</div>
+
+<!-- Academy list -->
+<div id="academyList"><div style="text-align:center;padding:12px;color:var(--mute);font-size:12px">Loading academies...</div></div>
+<div class="sec-hd"><i class="ti ti-lock"></i> Kill Switch</div>
   <div class="card" style="border-color:var(--red)">
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
       <button class="btn btn-red" onclick="adminAction('kill_all')"><i class="ti ti-shield-x"></i> Kill All Pilots</button>
@@ -2841,6 +2892,109 @@ function classifyMistake(idx){
     renderMistakesEnhanced();
     toast('Reclassified as '+ERROR_TYPES[chosen].label);
   }
+}
+
+
+// ===== ACADEMY PARTNER SYSTEM =====
+async function loadAcademyList(){
+  if(!S.user||S.user.role!=='admin') return;
+  const el = document.getElementById('academyList'); if(!el) return;
+  try{
+    const r = await api('academy',{action:'admin_list',uid:S.user.uid,sessionToken:S.sessionToken});
+    const acads = r.academies||[];
+    if(!acads.length){
+      el.innerHTML='<div style="text-align:center;padding:12px;color:var(--mute);font-size:12px">No academy partners yet. Create the first one above.</div>'; return;
+    }
+    el.innerHTML = acads.map(a=>{
+      const p = a.pricing||{};
+      const statusColor = a.status==='active'?'var(--green)':a.status==='pending'?'#7a4800':'var(--mute)';
+      return `<div class="card" style="padding:11px 14px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div style="font-size:13px;font-weight:700">${a.name}</div>
+            <div style="font-size:11px;color:var(--mute)">${a.type} · ${a.city||''} · ${a.academyCode}</div>
+          </div>
+          <span style="font-size:10px;font-weight:700;padding:2px 9px;border-radius:12px;background:${statusColor}22;color:${statusColor}">${(a.status||'pending').toUpperCase()}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:9px 0;font-size:11px;text-align:center">
+          <div style="background:var(--surf2);border-radius:7px;padding:7px"><div style="font-weight:700">${a.studentCount}</div><div style="color:var(--mute)">Students</div></div>
+          <div style="background:var(--surf2);border-radius:7px;padding:7px"><div style="font-weight:700">₹${p.pricePerStudentRupees||499}</div><div style="color:var(--mute)">/student</div></div>
+          <div style="background:var(--surf2);border-radius:7px;padding:7px"><div style="font-weight:700;color:var(--green)">₹${p.totalRupees||0}</div><div style="color:var(--mute)">Total</div></div>
+        </div>
+        ${p.savingsRupees>0?`<div style="font-size:10px;color:var(--green);margin-bottom:6px">Saving ₹${p.savingsRupees} (${p.discountPct}% off) vs individual pricing</div>`:''}
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          ${a.status!=='active'?`<button class="btn btn-green" style="font-size:11px;padding:5px 9px" onclick="markAcademyPaid('${a.id}','${p.totalRupees}')"><i class="ti ti-check"></i> Mark Paid</button>`:''}
+          <button class="btn btn-ghost" style="font-size:11px;padding:5px 9px" onclick="copyAcademyCode('${a.academyCode}')"><i class="ti ti-copy"></i> Copy Code</button>
+          <button class="btn btn-ghost" style="font-size:11px;padding:5px 9px" onclick="shareAcademyQuote('${a.id}')"><i class="ti ti-send"></i> Share Quote</button>
+        </div>
+      </div>`;
+    }).join('');
+  }catch(e){ document.getElementById('academyList').innerHTML='<div style="color:var(--red);font-size:12px;padding:12px">Could not load academies</div>'; }
+}
+
+async function updateAcademyQuote(){
+  const students = parseInt(document.getElementById('acyStudents')?.value)||0;
+  const customPrice = parseInt(document.getElementById('acyCustomPrice')?.value)||0;
+  const el = document.getElementById('academyQuote'); if(!el) return;
+  if(students < 10){ el.style.display='none'; return; }
+  try{
+    const r = await api('academy',{action:'get_quote',uid:S.user.uid,sessionToken:S.sessionToken,studentCount:students});
+    const p = r.pricing;
+    const price = customPrice ? customPrice : p.pricePerStudentRupees;
+    const total = customPrice ? customPrice*students : p.totalRupees;
+    el.style.display='block';
+    el.innerHTML=`<b>${students} students</b> × ₹${price}/student = <b style="font-size:14px">₹${total} total</b>` +
+      (p.discountPct&&!customPrice?` <span style="color:var(--green)">(${p.discountPct}% discount applied — saving ₹${p.savingsRupees})</span>`:'') +
+      (customPrice?'<span style="color:var(--amber)"> (custom price)</span>':'');
+  }catch(e){}
+}
+
+async function createAcademy(){
+  const name = document.getElementById('acyName')?.value.trim();
+  const type = document.getElementById('acyType')?.value;
+  const city = document.getElementById('acyCity')?.value.trim();
+  const contact = document.getElementById('acyContact')?.value.trim();
+  const phone = document.getElementById('acyPhone')?.value.trim();
+  const students = parseInt(document.getElementById('acyStudents')?.value)||0;
+  const custom = parseInt(document.getElementById('acyCustomPrice')?.value)||0;
+  if(!name){ toast('Enter academy name'); return; }
+  if(students < 10){ toast('Minimum 10 students'); return; }
+  const r = await api('academy',{
+    action:'admin_create',uid:S.user.uid,sessionToken:S.sessionToken,
+    name,type,city,contactName:contact,contactPhone:phone,
+    studentCount:students,customPricePerStudent:custom||undefined,
+  });
+  if(r.ok){
+    toast('✅ '+r.message);
+    ['acyName','acyCity','acyContact','acyPhone','acyStudents','acyCustomPrice'].forEach(id=>{
+      const el=document.getElementById(id); if(el) el.value='';
+    });
+    document.getElementById('academyQuote').style.display='none';
+    loadAcademyList();
+  } else toast('Error: '+(r.error||'Failed'));
+}
+
+async function markAcademyPaid(academyId, totalRupees){
+  if(!confirm('Mark this academy as paid and activate all students?')) return;
+  const r = await api('academy',{action:'admin_mark_paid',uid:S.user.uid,sessionToken:S.sessionToken,academyId,amountPaid:totalRupees});
+  if(r.ok){ toast('✅ Academy activated! '+r.activatedStudents+' students unlocked.'); loadAcademyList(); }
+  else toast('Error: '+(r.error||'Failed'));
+}
+
+function copyAcademyCode(code){
+  navigator.clipboard?.writeText(code).then(()=>toast('Academy code copied: '+code)).catch(()=>toast('Code: '+code));
+}
+
+function shareAcademyQuote(academyId){
+  toast('Opening WhatsApp with academy quote...');
+  // Future: generate and share a formatted quote PDF/message
+}
+
+function showAcademyPricingConfig(){
+  const base = prompt('Base price per student (₹):','499');
+  if(!base||isNaN(parseInt(base))) return;
+  api('academy',{action:'admin_update_config',uid:S.user.uid,sessionToken:S.sessionToken,pricePerStudent:parseInt(base)})
+    .then(r=>{ if(r.ok) toast('Academy pricing updated'); });
 }
 
 // ===== INIT =====
