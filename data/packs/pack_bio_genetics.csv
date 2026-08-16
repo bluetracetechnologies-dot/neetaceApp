@@ -1,0 +1,26 @@
+tid,subject,chapter,question,opt_a,opt_b,opt_c,opt_d,correct,explanation,ncert_class,ncert_chapter,ncert_page,syllabus_unit,difficulty,pyq_year,trick
+b7,BIOLOGY,Genetics,Mendel worked on which plant?,Maize,Pisum sativum,Drosophila,Neurospora,B,Garden pea with 7 contrasting pairs of traits,12,4,-,Genetics,starter,2019,
+b7,BIOLOGY,Genetics,Law of segregation is also called:,Law of purity of gametes,Law of dominance,Law of independent assortment,Mendel third law,A,Each gamete receives only one allele of a pair,12,4,-,Genetics,easy,,
+b7,BIOLOGY,Genetics,Incomplete dominance is seen in:,Pisum sativum,Mirabilis jalapa,Drosophila,Human,B,Pink flowers from red x white cross (4 o clock plant),12,4,-,Genetics,easy,2020,Snapdragon also shows it
+b7,BIOLOGY,Genetics,ABO blood group is example of:,Simple dominance,Co-dominance and multiple allelism,Epistasis,Pleiotropy,B,IA and IB co-dominant; three alleles in population,12,4,-,Genetics,medium,2018,
+b7,BIOLOGY,Genetics,Linked genes show:,Independent assortment,Higher recombination,Lower recombination,No inheritance,C,Genes on same chromosome tend to inherit together,12,4,-,Genetics,medium,,Morgan Drosophila experiment
+b7,BIOLOGY,Genetics,Distance between genes is measured in:,Angstrom,Morgan or centiMorgan,Dalton,Svedberg,B,1 cM equals 1 percent recombination frequency,12,4,-,Genetics,medium,2021,
+b7,BIOLOGY,Genetics,Turner syndrome karyotype:,44 plus XXY,44 plus XO,44 plus XXX,44 plus XY,B,45 chromosomes total; short stature sterile female,12,4,-,Genetics,easy,2019,Klinefelter is XXY
+b7,BIOLOGY,Genetics,Down syndrome is trisomy of chromosome:,18,21,13,X,B,47 chromosomes; most common autosomal aneuploidy,12,4,-,Genetics,starter,,Patau 13 Edwards 18
+b7,BIOLOGY,Genetics,DNA replication is:,Conservative,Semi-conservative,Dispersive,Non-conservative,B,Meselson and Stahl experiment with N15 N14,12,5,-,Genetics,easy,2020,
+b7,BIOLOGY,Genetics,RNA primer in DNA replication is synthesized by:,DNA polymerase,Primase,Helicase,Ligase,B,Short RNA primer provides 3-OH for DNA pol III,12,5,-,Genetics,easy,,
+b7,BIOLOGY,Genetics,Beadle and Tatum proposed:,Central dogma,One gene one enzyme hypothesis,Operon model,Wobble hypothesis,B,Work on Neurospora crassa,12,5,-,Genetics,easy,2018,
+b7,BIOLOGY,Genetics,Promoter in lac operon:,Binds repressor,Binds RNA polymerase,Codes for enzymes,Binds inducer,B,RNA polymerase binds promoter to initiate transcription,12,5,-,Genetics,medium,,Operator binds repressor
+b7,BIOLOGY,Genetics,Inducer of lac operon is:,Glucose,Galactose,Allolactose,ATP,C,Lactose form allolactose binds repressor and inactivates it,12,5,-,Genetics,medium,2022,
+b7,BIOLOGY,Genetics,Start codon in mRNA:,UAA,AUG,UAG,UGA,B,AUG codes for methionine and initiates translation,12,5,-,Genetics,starter,2019,Stop codons UAA UAG UGA
+b7,BIOLOGY,Genetics,Wobble hypothesis was given by:,Watson,Crick,Nirenberg,Jacob and Monod,B,Third base of codon can have non-standard pairing,12,5,-,Genetics,medium,,
+b7,BIOLOGY,Genetics,Hardy-Weinberg equation is:,p2 plus q2 equals 1,p plus q equals 1,p2 plus 2pq plus q2 equals 1,p2 minus q2 equals 1,C,Genotype frequencies in genetic equilibrium,12,6,-,Genetics,medium,2020,p plus q equals 1 for alleles
+b7,BIOLOGY,Genetics,Founder effect is a type of:,Natural selection,Genetic drift,Gene flow,Mutation,B,Small population establishes new colony with limited gene pool,12,6,-,Genetics,medium,,Bottleneck is also drift
+b7,BIOLOGY,Genetics,Analogous organs indicate:,Divergent evolution,Convergent evolution,Coevolution,Parallel evolution,B,Similar function different origin like wings of bat and insect,12,6,-,Genetics,easy,2021,Homologous means divergent
+b7,BIOLOGY,Genetics,Which is vestigial organ in humans?,Appendix,Liver,Heart,Kidney,A,Vermiform appendix has reduced function in humans,12,6,-,Genetics,starter,,Also wisdom teeth
+b7,BIOLOGY,Genetics,Sickle cell anemia substitution:,Glu by Ala,Glu by Val,Val by Glu,Leu by Val,B,GAG to GUG in beta globin gene at position 6,12,4,-,Genetics,medium,2022,Point mutation
+b7,BIOLOGY,Genetics,Phenylketonuria is:,Autosomal dominant,Autosomal recessive,X-linked recessive,Y-linked,B,Deficiency of phenylalanine hydroxylase; mental retardation,12,4,-,Genetics,easy,2018,
+b7,BIOLOGY,Genetics,Thalassemia is due to:,Point mutation,Reduced globin chain synthesis,Chromosomal aberration,Aneuploidy,B,Alpha or beta globin chains produced in reduced quantity,12,4,-,Genetics,medium,,Alpha Chr16 Beta Chr11
+b7,BIOLOGY,Genetics,Which human chromosome has maximum genes?,1,X,22,21,A,Chromosome 1 is largest human chromosome with most genes,12,5,-,Genetics,hard,,Y has fewest
+b7,BIOLOGY,Genetics,Oparin and Haldane proposed:,Biogenesis,Chemical evolution of life,Spontaneous generation,Panspermia,B,Primitive earth conditions led to chemical origin of life,12,6,-,Genetics,easy,2019,Miller-Urey tested it
+b7,BIOLOGY,Genetics,First organism on earth was most likely:,Autotroph,Chemoheterotroph,Photoautotroph,Aerobe,B,Early life was anaerobic heterotrophic feeding on organic soup,12,6,-,Genetics,easy,,
