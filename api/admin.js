@@ -260,6 +260,20 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ ok: true, expiresAt: exp.toISOString(), affected: snap.docs.length });
     }
 
+    // ── PER-STUDENT CUSTOM PRICING ────────────────────
+    // Admin sets a personal price for one student — overrides all plan pricing.
+    if (action === 'set_custom_price') {
+      const { targetUid, customPriceRupees, note } = req.body;
+      if (!targetUid) return res.status(400).json({ error: 'targetUid required' });
+      const update = customPriceRupees && customPriceRupees > 0
+        ? { customPricePaise: Math.round(customPriceRupees * 100),
+            customPriceNote: note || '', customPriceSetAt: new Date().toISOString(), customPriceSetBy: uid }
+        : { customPricePaise: null, customPriceNote: null }; // clear override
+      await db.collection('users').doc(targetUid).update(update);
+      return res.status(200).json({ ok: true,
+        message: customPriceRupees ? `Personal price ₹${customPriceRupees} set for this student` : 'Custom price removed — standard pricing applies' });
+    }
+
     if (action === 'log_feedback') {
       const { feedback } = req.body;
       if (!feedback) return res.status(400).json({ error: 'feedback required' });
