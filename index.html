@@ -1191,7 +1191,7 @@ function featureList(items){
 async function verifySession(){
   if(!S.user||!S.sessionToken) return;
   try{
-    const r = await api('auth-verify', { uid:S.user.uid, sessionToken:S.sessionToken });
+    const r = await api('auth', {action:'verify', { uid:S.user.uid, sessionToken:S.sessionToken });
     if(r.error==='SESSION_REPLACED'){
       clearSession(); stopVerify();
       toast('⚠️ You were signed in on another device. Signed out here.');
@@ -1221,10 +1221,10 @@ async function doGoogleSignIn(){
     const idToken = await result.user.getIdToken();
     const name = result.user.displayName || result.user.email.split('@')[0];
     // Try login first, if user doesn't exist register them automatically
-    let r = await api('auth-login', { idToken });
+    let r = await api('auth', {action:'login', { idToken });
     if(r.error === 'User profile not found. Please register.'){
       // Auto-register Google user
-      const reg = await api('auth-register', {
+      const reg = await api('auth', {action:'register', {
         email: result.user.email,
         password: 'google_oauth_' + result.user.uid,
         name: name,
@@ -1232,7 +1232,7 @@ async function doGoogleSignIn(){
       });
       if(reg.error){ showAuthErr(reg.error); return; }
       // Now login
-      r = await api('auth-login', { idToken });
+      r = await api('auth', {action:'login', { idToken });
     }
     if(r.error){ showAuthErr(r.error); return; }
     saveSession(r.user, r.sessionToken);
@@ -1267,7 +1267,7 @@ async function doLogin(){
     const cred = await window._fbSignIn(window._fbAuth, email, pass);
     const idToken = await cred.user.getIdToken();
     // Step 2: Server session (kills old sessions on other devices)
-    const r = await api('auth-login', { idToken });
+    const r = await api('auth', {action:'login', { idToken });
     if(r.error){ showAuthErr(r.error); btn.disabled=false; btn.innerHTML='<i class="ti ti-login"></i> Sign In'; return; }
     saveSession(r.user, r.sessionToken);
     startVerify();
@@ -1289,7 +1289,7 @@ async function doRegister(){
   const btn=document.getElementById('regBtn'); btn.disabled=true; btn.textContent='Creating account...';
   try{
     // Step 1: Create Firestore profile via our API (sets trial start, role etc.)
-    const r = await api('auth-register', { email, password:pass, name });
+    const r = await api('auth', {action:'register', { email, password:pass, name });
     if(r.error){ showAuthErr(r.error); btn.disabled=false; btn.innerHTML='<i class="ti ti-user-plus"></i> Create Account'; return; }
     // Step 2: Auto sign-in after registration
     toast('Account created! Signing you in...');
@@ -1365,7 +1365,7 @@ async function startPayment(){
   if(!S.user||!S.sessionToken){ toast('Please sign in first.'); return; }
   const btn=document.getElementById('pwPayBtn'); btn.disabled=true; btn.textContent='Creating order...';
   try{
-    const r = await api('create-order', { uid:S.user.uid, sessionToken:S.sessionToken });
+    const r = await api('payments', {action:'create_order', { uid:S.user.uid, sessionToken:S.sessionToken });
     if(r.error){ toast('⚠️ '+r.error); btn.disabled=false; btn.innerHTML='<i class="ti ti-lock-open"></i> Pay ₹799 — Unlock Full Access'; return; }
     const rzp = new window.Razorpay({
       key: r.keyId, amount: r.amount, currency: r.currency,
@@ -1894,7 +1894,7 @@ async function joinBatch(){
   statusEl.style.cssText='display:block;background:var(--blue-l);color:var(--blue);padding:8px 12px;border-radius:8px;font-size:12px';
   statusEl.textContent='Joining batch...';
   try{
-    const r = await api('institute', { action:'join_batch', uid:S.user.uid, sessionToken:S.sessionToken, batchCode:code });
+    const r = await api('academy', { action:'join_batch', uid:S.user.uid, sessionToken:S.sessionToken, batchCode:code });
     if(r.ok){
       statusEl.style.background='var(--green-l)'; statusEl.style.color='#0a5c0a';
       statusEl.textContent='✅ Joined "'+r.batchName+'" successfully! Check your leaderboard.';
@@ -1996,7 +1996,7 @@ async function startPaymentWithPlan(planKey, pricePaise){
   const btn = document.getElementById('pwPayBtn');
   if(btn){ btn.disabled=true; btn.textContent='Creating order...'; }
   try{
-    const r = await api('create-order', {
+    const r = await api('payments', {action:'create_order', {
       uid:S.user.uid, sessionToken:S.sessionToken,
       planKey, pricePaise  // server validates planKey against Firestore config
     });
