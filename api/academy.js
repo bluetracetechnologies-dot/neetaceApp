@@ -108,7 +108,7 @@ module.exports = async function handler(req, res) {
       customPrice: !!customPricePerStudent,
       status: 'pending', // pending | active | expired
       paid: false, paidAt: null, paidAmount: null,
-      batchCount: 0, activeStudents: 0,
+      batchCount: 0, activeStudents: 0, seatsUsed: 0,
       createdAt: new Date().toISOString(),
       createdBy: uid,
     });
@@ -224,13 +224,35 @@ module.exports = async function handler(req, res) {
     if (snap.empty) return res.status(404).json({ error: 'Invalid batch code. Check with your teacher.' });
     const batchDoc = snap.docs[0];
     const batch = batchDoc.data();
+
+    // SEAT ENFORCEMENT: academy bought N seats — block joins beyond that.
+    const acadSnap = await db.collection('academies').doc(batch.academyId).get();
+    if (!acadSnap.exists) return res.status(404).json({ error: 'Academy not found' });
+    const acad = acadSnap.data();
+    const seats = acad.studentCount || 0;
+    const used  = acad.seatsUsed || 0;
+    const alreadyMember = user.academyId === batch.academyId; // re-joining another batch = no new seat
+    if (!alreadyMember && used >= seats) {
+      return res.status(403).json({ error: 'Seat limit reached (' + used + '/' + seats + '). Ask your academy to add more seats.' });
+    }
+    if (!alreadyMember) {
+      await db.collection('academies').doc(batch.academyId).update({ seatsUsed: used + 1 });
+    }
+
     await batchDoc.ref.collection('students').doc(uid).set({
       uid, email: user.email, name: user.name, joinedAt: new Date().toISOString(), active: true,
     });
-    await db.collection('users').doc(uid).update({
+    const userUpdate = {
       academyId: batch.academyId, batchId: batchDoc.id,
       batchCode: batch.batchCode, batchName: batch.batchName, academyRole: 'student',
-    });
+      academyName: acad.name,
+    };
+    // Late joiner into an already-paid academy → activate immediately
+    if (acad.paid) {
+      const exp = new Date(); exp.setMonth(exp.getMonth() + 10);
+      userUpdate.paid = true; userUpdate.paidUntil = exp.toISOString(); userUpdate.planKey = 'plan_academy';
+    }
+    await db.collection('users').doc(uid).update(userUpdate);
     await batchDoc.ref.update({ studentCount: (batch.studentCount||0)+1 });
     return res.status(200).json({ ok: true, batchName: batch.batchName });
   }
