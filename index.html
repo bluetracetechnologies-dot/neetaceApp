@@ -1097,10 +1097,13 @@ function updateSubCard(){
     medium:  { name:'Medium Plan',     tagline:'Up to Hard difficulty',               color:'#d97706', pill:'MEDIUM',  pillCls:'sp-trial'   },
     monthly: { name:'Monthly Plan',    tagline:'Renews every month · All features',   color:'#7c3aed', pill:'MONTHLY', pillCls:'sp-active'  },
     trial:   { name:'Free Trial',      tagline:'All features · 7 days',               color:'#d97706', pill:'TRIAL',   pillCls:'sp-trial'   },
+    academy: { name:'Academy Plan',   tagline:'Sponsored access · all features',      color:'#0d9488', pill:'ACADEMY', pillCls:'sp-active'  },
     expired: { name:'Trial Ended',     tagline:'Upgrade to continue',                 color:'#e34948', pill:'EXPIRED', pillCls:'sp-expired' },
   };
 
-  const planKey = role==='admin' ? 'admin' : s==='paid' ? (u.planKey||'paid') : s==='trial' ? 'trial' : 'expired';
+  let planKey = role==='admin' ? 'admin' : s==='paid' ? (u.planKey||'paid') : s==='trial' ? 'trial' : 'expired';
+  if(planKey==='plan_academy' || (s==='paid' && isAcademyStudent())) planKey='academy';
+  if(planKey && planKey.indexOf('plan_')===0) planKey='paid'; // plan_pro/plan_medium etc -> paid card
   const plan    = PLANS[planKey] || PLANS.expired;
 
   bandEl.style.background = `linear-gradient(135deg, ${plan.color}, ${plan.color}cc)`;
@@ -1127,6 +1130,13 @@ function updateSubCard(){
     featEl.innerHTML=featureList(['All levels + Admin console','Kill switch + User management','CSV bulk upload','All analytics + leaderboard']);
     actEl.innerHTML='';
 
+  } else if(planKey === 'academy'){
+    const expiry = u.paidUntil ? new Date(u.paidUntil) : new Date(now.getFullYear(),4,31);
+    const daysLeft = Math.max(0, Math.ceil((expiry-now)/86400000));
+    expiryEl.textContent = 'Valid till '+expiry.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+    showProgress(daysLeft, 300, '#0d9488', 'Access sponsored by '+(u.academyName||'your academy')+'.');
+    featEl.innerHTML = featureList(['All 5 difficulty levels','Adaptive engine + AI Tutor','Your academy and batch question packs','Batch leaderboard','Galti Copy + flashcards + analytics']);
+    actEl.innerHTML = '<div style="text-align:center;font-size:11px;color:var(--mute)">Managed by '+(u.academyName||'your academy')+'. No payment needed.</div>';
   } else if(s === 'paid'){
     const expiry = u.paidUntil ? new Date(u.paidUntil) : new Date(now.getFullYear(),4,31);
     const daysLeft = Math.max(0, Math.ceil((expiry-now)/86400000));
@@ -2011,6 +2021,7 @@ async function startPaymentWithPlan(planKey, pricePaise){
 
 // ===== FESTIVAL BANNER =====
 async function loadFestival(){
+  if(isAcademyStudent()){ var fb=document.getElementById('festivalBanner'); if(fb) fb.style.display='none'; return; }
   try{
     const userState = localStorage.getItem('na_state') || '';
     const r = await fetch('/api/festivals?state='+userState);
@@ -2409,6 +2420,7 @@ async function handleAdaptiveAns(el, idx, q){
 
 async function runSmartTrial(){
   if(!S.user) return;
+  if(isAcademyStudent()) return; // academy students never see trial/upgrade pushes
   const u = S.user;
   if(u.role === 'admin' || u.accessStatus === 'paid') return;
   if(u.accessStatus !== 'trial') return;
@@ -2587,6 +2599,7 @@ function closeTrialModal(){
 function updateAccessBanner(){
   const b = document.getElementById('accessBanner');
   if(!b || !S.user) return;
+  if(isAcademyStudent()){ b.style.display='none'; return; }
   const s = S.user.accessStatus, r = S.user.role;
   if(r==='admin'){ b.style.display='none'; return; }
   if(s==='trial'){
@@ -2959,7 +2972,7 @@ async function loadAcademyList(){
           <span style="font-size:10px;font-weight:700;padding:2px 9px;border-radius:12px;background:${statusColor}22;color:${statusColor}">${(a.status||'pending').toUpperCase()}</span>
         </div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:9px 0;font-size:11px;text-align:center">
-          <div style="background:var(--surf2);border-radius:7px;padding:7px"><div style="font-weight:700">${a.studentCount}</div><div style="color:var(--mute)">Students</div></div>
+          <div style="background:var(--surf2);border-radius:7px;padding:7px"><div style="font-weight:700">${a.seatsUsed||0}/${a.studentCount}</div><div style="color:var(--mute)">Seats used</div></div>
           <div style="background:var(--surf2);border-radius:7px;padding:7px"><div style="font-weight:700">₹${p.pricePerStudentRupees||499}</div><div style="color:var(--mute)">/student</div></div>
           <div style="background:var(--surf2);border-radius:7px;padding:7px"><div style="font-weight:700;color:var(--green)">₹${p.totalRupees||0}</div><div style="color:var(--mute)">Total</div></div>
         </div>
@@ -3525,6 +3538,11 @@ function teacherUploadPack(){
   reader.readAsText(fi.files[0]);
 }
 
+
+// ===== ACADEMY STUDENT: suppress all B2C promos =====
+function isAcademyStudent(){
+  return !!(S.user && S.user.academyId && S.user.academyRole !== "teacher" && S.user.role !== "admin");
+}
 // ===== INIT =====
 window.addEventListener('load', async ()=>{
   loadPricing(); loadFestival(); loadLevels(); loadContentPacks();
