@@ -562,7 +562,26 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     </div>
   </div>
   <div id="packsList"><div style="text-align:center;padding:16px;color:var(--mute);font-size:12px">Loading packs...</div></div>
-  <div class="sec-hd"><i class="ti ti-bell"></i> Notifications</div>
+  
+<div class="sec-hd" style="margin-top:14px"><i class="ti ti-toggle-right"></i> Feature Flags</div>
+<div style="font-size:11px;color:var(--mute);margin-bottom:9px">Enable/disable any feature without code changes. Cost indicators help you decide what to charge.</div>
+<div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+  <select id="featCatFilter" style="padding:8px 12px;border:1.5px solid var(--bdr);border-radius:9px;font-size:12px;background:var(--surf);color:var(--txt)" onchange="renderFeatureList()">
+    <option value="all">All categories</option>
+    <option value="quiz">Quiz</option>
+    <option value="ai">AI</option>
+    <option value="analytics">Analytics</option>
+    <option value="social">Social</option>
+    <option value="notifications">Notifications</option>
+    <option value="admin">Admin</option>
+  </select>
+  <button class="btn btn-ghost" style="font-size:12px;padding:8px 12px" onclick="loadFeatureFlags()"><i class="ti ti-refresh"></i> Refresh</button>
+  <button class="btn btn-ghost" style="font-size:12px;padding:8px 12px" onclick="showCostEstimate()"><i class="ti ti-calculator"></i> Cost Estimate</button>
+  <button class="btn btn-ghost" style="font-size:12px;padding:8px 12px" onclick="seedFeatureDefaults()"><i class="ti ti-rocket"></i> Seed Defaults</button>
+</div>
+<div id="featureFlagsList"><div style="text-align:center;padding:16px;color:var(--mute);font-size:12px">Click Seed Defaults first, then Refresh to load features.</div></div>
+<div id="costEstimateBox" style="display:none;margin-top:11px;background:var(--surf2);border:1px solid var(--bdr);border-radius:12px;padding:14px"></div>
+<div class="sec-hd"><i class="ti ti-bell"></i> Notifications</div>
   <div class="card" style="margin-bottom:14px">
     <div style="font-size:12px;font-weight:700;margin-bottom:9px">Send to a user</div>
     <input id="notifTargetUid" class="fin" placeholder="User UID (from user table)" style="margin-bottom:8px">
@@ -2454,6 +2473,114 @@ function updateAccessBanner(){
   } else {
     b.style.display='none';
   }
+}
+
+
+// ===== FEATURE FLAGS ADMIN =====
+let FEATURES_CACHE = {};
+
+async function loadFeatureFlags(){
+  if(!S.user||S.user.role!=='admin') return;
+  try{
+    const r = await api('features',{action:'admin_list',uid:S.user.uid,sessionToken:S.sessionToken});
+    FEATURES_CACHE = r.features || {};
+    renderFeatureList();
+  }catch(e){ document.getElementById('featureFlagsList').innerHTML='<div style="color:var(--red);font-size:12px;padding:12px">Could not load features — click Seed Defaults first</div>'; }
+}
+
+function renderFeatureList(){
+  const el = document.getElementById('featureFlagsList'); if(!el) return;
+  const cat = document.getElementById('featCatFilter')?.value || 'all';
+  const features = Object.values(FEATURES_CACHE).filter(f => cat==='all' || f.category===cat);
+  if(!features.length){ el.innerHTML='<div style="text-align:center;padding:16px;color:var(--mute);font-size:12px">No features found. Click Seed Defaults.</div>'; return; }
+
+  const CATEGORY_COLORS = {quiz:'var(--blue)',ai:'var(--purple)',analytics:'var(--teal)',social:'var(--green)',notifications:'var(--amber)',admin:'var(--red)'};
+
+  el.innerHTML = features.map(f=>{
+    const color = CATEGORY_COLORS[f.category] || 'var(--mute)';
+    const costTag = f.hasCost ? `<span style="background:var(--red-l);color:var(--red);padding:2px 7px;border-radius:6px;font-size:9px;font-weight:700">COST ₹${f.costPerUse||'?'}/use</span>` : '';
+    const chargeTag = f.chargeable ? `<span style="background:var(--green-l);color:var(--green);padding:2px 7px;border-radius:6px;font-size:9px;font-weight:700">CHARGEABLE ₹${((f.addOnPrice||0)/100)}</span>` : '';
+    const planBadges = (f.plans||[]).map(p=>`<span style="background:var(--blue-l);color:var(--blue);padding:1px 6px;border-radius:5px;font-size:9px">${p}</span>`).join(' ');
+    return `<div class="card" style="padding:11px 14px;margin-bottom:8px;border-left:3px solid ${f.enabled?color:'var(--bdr)'}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div style="flex:1">
+          <div style="font-size:12px;font-weight:700;margin-bottom:3px">${f.label}</div>
+          <div style="font-size:11px;color:var(--mute);margin-bottom:6px;line-height:1.5">${f.description||''}</div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
+            <span style="background:var(--surf2);color:var(--mute);padding:1px 6px;border-radius:5px;font-size:9px;text-transform:uppercase">${f.category}</span>
+            ${f.free?'<span style="background:var(--green-l);color:var(--green);padding:1px 6px;border-radius:5px;font-size:9px">FREE</span>':''}
+            ${f.adminOnly?'<span style="background:var(--purple-l);color:var(--purple);padding:1px 6px;border-radius:5px;font-size:9px">ADMIN ONLY</span>':''}
+            ${costTag} ${chargeTag}
+            ${planBadges}
+          </div>
+          ${f.note?`<div style="font-size:10px;color:var(--amber);margin-top:5px;font-style:italic">💡 ${f.note}</div>`:''}
+        </div>
+        <button class="tsw ${f.enabled?'on':''}" onclick="toggleFeature('${f.key}',${!f.enabled})" style="flex-shrink:0;margin-top:2px" aria-label="Toggle ${f.label}"></button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function toggleFeature(featureKey, enabled){
+  const r = await api('features',{action:'toggle',uid:S.user.uid,sessionToken:S.sessionToken,featureKey,enabled});
+  if(r.ok){
+    toast(r.message);
+    if(FEATURES_CACHE[featureKey]) FEATURES_CACHE[featureKey].enabled = enabled;
+    renderFeatureList();
+  } else toast('Error: '+(r.error||'Failed'));
+}
+
+async function seedFeatureDefaults(){
+  const r = await api('features',{action:'seed_defaults',uid:S.user.uid,sessionToken:S.sessionToken});
+  if(r.ok){ toast('✅ '+r.message); loadFeatureFlags(); } else toast('Error seeding defaults');
+}
+
+async function showCostEstimate(){
+  const box = document.getElementById('costEstimateBox'); if(!box) return;
+  const users = parseInt(prompt('Estimated monthly active users:','100')||'100');
+  box.style.display='block';
+  box.innerHTML='<div style="text-align:center;padding:12px;color:var(--mute)">Calculating...</div>';
+  try{
+    const r = await api('features',{action:'cost_estimate',uid:S.user.uid,sessionToken:S.sessionToken,monthlyUsers:users});
+    let html='<div style="font-size:12px;font-weight:700;margin-bottom:9px">Monthly Cost Estimate — '+users+' users</div>';
+    if(r.costs.length){
+      html+=r.costs.map(c=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:11px">
+        <span>${c.feature}</span>
+        <span style="color:${c.monthlyCost>100?'var(--red)':c.monthlyCost>10?'#7a4800':'var(--green)'}">₹${c.monthlyCost}</span>
+      </div>`).join('');
+    }
+    html+=`<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;font-weight:700;border-top:1.5px solid var(--bdr);margin-top:4px"><span>Total/month</span><span style="color:var(--blue)">₹${r.totalMonthlyRupees}</span></div>`;
+    html+=`<div style="font-size:10px;color:var(--mute);margin-top:5px">Assuming ${r.assumptions.avgQuestionsPerDay} Qs/day, ${r.assumptions.avgAiQueriesPerDay} AI queries/day per user</div>`;
+    box.innerHTML=html;
+  }catch(e){ box.innerHTML='<div style="color:var(--red);font-size:12px">Cost estimate failed</div>'; }
+}
+
+// Check if a feature is accessible by current user's plan
+function hasFeature(featureKey){
+  if(!S.user) return false;
+  if(S.user.role==='admin') return true;
+  // Load from server-fetched feature config (cached at load time)
+  const f = window._FEATURES?.[featureKey];
+  if(!f) return true; // default allow if not configured
+  if(!f.enabled) return false;
+  if(f.free) return true;
+  const status = S.user.accessStatus;
+  const plan   = S.user.planKey || 'plan_pro';
+  if(status==='paid'){
+    const planShort = plan.replace('plan_','');
+    return (f.plans||[]).includes(planShort);
+  }
+  if(status==='trial') return f.free || (f.plans||[]).length > 0; // trial gets all enabled features
+  return false;
+}
+
+// Load feature config on init (for client-side checks)
+async function loadFeatureConfig(){
+  try{
+    const r = await fetch('/api/features');
+    const d = await r.json();
+    window._FEATURES = d.features || {};
+  }catch(e){}
 }
 
 // ===== INIT =====
