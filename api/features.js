@@ -448,5 +448,34 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ ok: true });
   }
 
+
+  // ── TRIAL CONFIG (admin controls trial parameters) ──
+  if (action === 'get_trial_config') {
+    try {
+      const snap3 = await db.collection('config').doc('trial').get();
+      const defaults = { trialDays: 7, dailyQuestionCap: null, featureAccess: 'all',
+        subjectCaps: { PHYSICS: null, CHEMISTRY: null, BIOLOGY: null },
+        fullAccessDays: 3, afterFullAccess: 'daily_cap',
+        dailyCapAmount: 10, showUpgradeAfterCap: true };
+      return res.status(200).json({ trial: snap3.exists ? { ...defaults, ...snap3.data() } : defaults });
+    } catch(e) { return res.status(200).json({ trial: { trialDays: 7 } }); }
+  }
+  if (action === 'update_trial_config') {
+    const uS4 = await db.collection('users').doc(uid).get();
+    if (!uS4.exists || uS4.data().role !== 'admin' || uS4.data().sessionToken !== sessionToken)
+      return res.status(403).json({ error: 'Admin only' });
+    const { trialDays, dailyQuestionCap, featureAccess, fullAccessDays, dailyCapAmount, subjectCaps } = req.body;
+    const update = {};
+    if (trialDays !== undefined) update.trialDays = trialDays;
+    if (dailyQuestionCap !== undefined) update.dailyQuestionCap = dailyQuestionCap;
+    if (featureAccess !== undefined) update.featureAccess = featureAccess;
+    if (fullAccessDays !== undefined) update.fullAccessDays = fullAccessDays;
+    if (dailyCapAmount !== undefined) update.dailyCapAmount = dailyCapAmount;
+    if (subjectCaps !== undefined) update.subjectCaps = subjectCaps;
+    update.updatedAt = new Date().toISOString();
+    await db.collection('config').doc('trial').set(update, { merge: true });
+    return res.status(200).json({ ok: true, message: 'Trial config updated' });
+  }
+
   return res.status(400).json({ error: 'Unknown action' });
 };
