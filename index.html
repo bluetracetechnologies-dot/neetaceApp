@@ -576,7 +576,51 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     <div id="teacherPacksList" style="margin-top:10px"></div>
   </div>
 </div>
-<div class="sec-hd" style="margin-top:14px"><i class="ti ti-phone"></i> Contact & Notifications</div>
+<div class="sec-hd" style="margin-top:14px"><i class="ti ti-building"></i> Academy / Coaching</div>
+  <div class="card" id="academyJoinCard">
+    <!-- State 1: Not in any academy → show join form -->
+    <div id="academyJoinForm">
+      <div style="font-size:13px;font-weight:700;margin-bottom:4px">Join your Academy</div>
+      <div style="font-size:11px;color:var(--mute);margin-bottom:11px;line-height:1.6">
+        If your coaching class, school, or tuition uses NEETAce, enter the code your teacher shared.
+        You will get access to your batch leaderboard and teacher-uploaded question packs.
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <input class="fin" id="batchCodeInput" placeholder="Enter batch code e.g. BT4A2F91" style="flex:1;margin-top:0;text-transform:uppercase;letter-spacing:1px;font-family:monospace;font-weight:700">
+        <button class="btn btn-blue" onclick="joinBatch()" style="white-space:nowrap"><i class="ti ti-login"></i> Join</button>
+      </div>
+      <div id="batchStatus" style="display:none;padding:9px 12px;border-radius:8px;font-size:12px;margin-top:6px"></div>
+      <div style="font-size:10px;color:var(--mute);margin-top:6px">
+        <b>Are you a teacher?</b> Enter your Academy Code (starts with ACY) below instead.
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <input class="fin" id="academyCodeInput" placeholder="Academy code e.g. ACY4F2B91" style="flex:1;margin-top:0;text-transform:uppercase;letter-spacing:1px;font-family:monospace">
+        <button class="btn btn-ghost" onclick="teacherRegister()" style="white-space:nowrap"><i class="ti ti-chalkboard"></i> Register as Teacher</button>
+      </div>
+    </div>
+    <!-- State 2: Already in an academy → show status -->
+    <div id="academyStatusCard" style="display:none">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:9px">
+        <div id="academyStatusLogo" style="font-size:28px">\uD83C\uDFEB</div>
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:800" id="academyStatusName"></div>
+          <div style="font-size:11px;color:var(--mute)" id="academyStatusInfo"></div>
+        </div>
+        <span id="academyStatusBadge" class="sp sp-active" style="font-size:10px">ACTIVE</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px">
+        <div style="background:var(--surf2);border-radius:7px;padding:8px;text-align:center">
+          <div style="font-weight:700" id="academyBatchLabel">—</div>
+          <div style="color:var(--mute)">Your batch</div>
+        </div>
+        <div style="background:var(--surf2);border-radius:7px;padding:8px;text-align:center">
+          <div style="font-weight:700" id="academyRoleLabel">Student</div>
+          <div style="color:var(--mute)">Your role</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="sec-hd" style="margin-top:14px"><i class="ti ti-phone"></i> Contact & Notifications</div>
   <div class="card">
     <div style="font-size:11px;color:var(--mute);margin-bottom:11px">We send trial reminders, progress reports, and offers via email and WhatsApp.</div>
     <div style="display:flex;flex-direction:column;gap:9px">
@@ -1361,7 +1405,7 @@ function switchTab(tab){
   if(tab==='about'){ initAbout(); loadReferral(); }
   if(tab==='syllabus') renderSyllabus();
   if(tab==='analytics') renderMasteryDash();
-  if(tab==='profile'){ loadProfileContacts(); loadTeacherPanel(); }
+  if(tab==='profile'){ loadProfileContacts(); loadTeacherPanel(); renderAcademyStatus(); }
   if(tab==='flash') renderFlash();
   if(tab==='practice') renderPracticeTopics('ALL');
   if(tab==='search') renderAllTopics('ALL');
@@ -3993,6 +4037,47 @@ function editAcademyFeatures(academyId){
   api("academy", {action:"admin_update_branding", uid:S.user.uid, sessionToken:S.sessionToken,
     academyId:academyId, featureOverrides: overrides
   }).then(function(r){ if(r.ok) toast("Academy features updated!"); loadAcademyList(); });
+}
+
+
+// ===== ACADEMY JOIN: student + teacher flows =====
+async function teacherRegister(){
+  if(!S.user){ toast("Sign in first"); return; }
+  var code = (document.getElementById("academyCodeInput")||{}).value;
+  if(!code || code.trim().length < 6){ toast("Enter a valid academy code"); return; }
+  var r = await api("academy", {action:"teacher_register", uid:S.user.uid, sessionToken:S.sessionToken, academyCode:code.trim().toUpperCase()});
+  if(r.ok){
+    toast("You are now a teacher at " + r.academy.name + "!");
+    S.user.academyId = r.academy.id || S.user.academyId;
+    S.user.academyRole = "teacher";
+    S.user.academyName = r.academy.name;
+    saveSession(S.user, S.sessionToken);
+    renderAcademyStatus();
+    loadMyAcademy();
+  } else toast("Error: " + (r.error||"Failed"));
+}
+
+function renderAcademyStatus(){
+  var form = document.getElementById("academyJoinForm");
+  var card = document.getElementById("academyStatusCard");
+  if(!form || !card) return;
+  if(!S.user || !S.user.academyId){
+    form.style.display = "block"; card.style.display = "none"; return;
+  }
+  form.style.display = "none"; card.style.display = "block";
+  var nameEl = document.getElementById("academyStatusName");
+  var infoEl = document.getElementById("academyStatusInfo");
+  var batchEl = document.getElementById("academyBatchLabel");
+  var roleEl = document.getElementById("academyRoleLabel");
+  var badgeEl = document.getElementById("academyStatusBadge");
+  if(nameEl) nameEl.textContent = S.user.academyName || "Academy";
+  if(infoEl) infoEl.textContent = (S.user.batchCode ? "Batch: " + S.user.batchCode : "No batch yet") + " \u00b7 " + (S.user.accessStatus==="paid" ? "Access active" : "Pending activation");
+  if(batchEl) batchEl.textContent = S.user.batchName || S.user.batchCode || "\u2014";
+  if(roleEl) roleEl.textContent = S.user.academyRole === "teacher" ? "Teacher" : "Student";
+  if(badgeEl){
+    badgeEl.textContent = S.user.accessStatus === "paid" ? "ACTIVE" : "PENDING";
+    badgeEl.className = "sp " + (S.user.accessStatus === "paid" ? "sp-active" : "sp-trial");
+  }
 }
 
 // ===== INIT =====
