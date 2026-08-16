@@ -1,5 +1,5 @@
 // api/academy.js
-// Academy Partner System — replaces "institute.js" conceptually but extends it.
+// Academy Partner System - replaces "institute.js" conceptually but extends it.
 // The word "Academy" covers: coaching centre, school, college, tuition class, district centre.
 //
 // B2B PRICING MODEL (all admin-controlled, no code changes):
@@ -11,7 +11,7 @@
 //     100+   students → 30%  off  (₹349/student)
 //   Admin can override for specific academies (flat deal price)
 //
-// ACADEMY TYPES (for display/categorization — no functional difference):
+// ACADEMY TYPES (for display/categorization - no functional difference):
 //   coaching | school | college | tuition | district | state
 //
 // FLOW:
@@ -236,7 +236,7 @@ module.exports = async function handler(req, res) {
     const batchDoc = snap.docs[0];
     const batch = batchDoc.data();
 
-    // SEAT ENFORCEMENT: academy bought N seats — block joins beyond that.
+    // SEAT ENFORCEMENT: academy bought N seats - block joins beyond that.
     const acadSnap = await db.collection('academies').doc(batch.academyId).get();
     if (!acadSnap.exists) return res.status(404).json({ error: 'Academy not found' });
     const acad = acadSnap.data();
