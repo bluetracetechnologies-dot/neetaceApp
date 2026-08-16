@@ -290,7 +290,8 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
   <div class="sgrid">
     <div class="sc phy" onclick="goSubject('PHYSICS')" ondblclick="startAdaptiveQuiz('PHYSICS')" title="Double-tap for Adaptive Mode"><div class="si">⚛️</div><div class="sn">Physics</div><div style="font-size:10px;color:var(--mute)">4,200 Qs</div><div class="pbg"><div class="pfill" style="width:62%;background:var(--blue)"></div></div><div style="font-size:10px;color:var(--mute);margin-top:4px">62% done</div></div>
     <div class="sc chem" onclick="goSubject('CHEMISTRY')" ondblclick="startAdaptiveQuiz('CHEMISTRY')" title="Double-tap for Adaptive Mode"><div class="si">🧪</div><div class="sn">Chemistry</div><div style="font-size:10px;color:var(--mute)">3,800 Qs</div><div class="pbg"><div class="pfill" style="width:48%;background:var(--teal)"></div></div><div style="font-size:10px;color:var(--mute);margin-top:4px">48% done</div></div>
-    <div class="sc bio" onclick="goSubject('BIOLOGY')" ondblclick="startAdaptiveQuiz('BIOLOGY')" title="Double-tap for Adaptive Mode"><div class="si">🧬</div><div class="sn">Biology</div><div style="font-size:10px;color:var(--mute)">5,600 Qs</div><div class="pbg"><div class="pfill" style="width:75%;background:var(--amber)"></div></div><div style="font-size:10px;color:var(--mute);margin-top:4px">75% done</div></div>
+    <div class="sc bio" onclick="goSubject('BIOLOGY')" ondblclick="startAdaptiveQuiz('BIOLOGY')" title="Double-tap for Adaptive Mode"><div class="si">🧬</div><div class="sn">Biology</div>
+  <div class="card" style="margin-top:11px;background:linear-gradient(135deg,var(--purple-l),var(--blue-l));border-color:#c4b5fd;cursor:pointer" onclick="startBrainBoost()"><div style="display:flex;align-items:center;gap:11px"><div style="font-size:28px">🧠</div><div style="flex:1"><b>Brain Boost</b><div style="font-size:11px;color:var(--mute)">5-minute IQ warm-up. Patterns, logic, speed. Sharpens your NEET brain.</div></div><i class="ti ti-chevron-right" style="color:var(--mute)"></i></div></div><div style="font-size:10px;color:var(--mute)">5,600 Qs</div><div class="pbg"><div class="pfill" style="width:75%;background:var(--amber)"></div></div><div style="font-size:10px;color:var(--mute);margin-top:4px">75% done</div></div>
   </div>
   <div class="sec-hd"><i class="ti ti-target"></i> Today's Targets</div>
   <div id="targetsArea">
@@ -1746,6 +1747,7 @@ async function showUserDetail(targetUid){
         ${u.role!=='admin'?`
         <button class="btn btn-green" style="font-size:12px;padding:7px 11px" onclick="adminUserAction('grant_pro','${u.uid}')"><i class="ti ti-star"></i> Grant Pro</button>
         <button class="btn btn-blue" style="font-size:12px;padding:7px 11px" onclick="grantDays('${u.uid}')"><i class="ti ti-calendar-plus"></i> Add Days</button>
+        <button class="btn" style="font-size:12px;padding:7px 11px;background:var(--purple);color:#fff" onclick="setStudentPrice('${u.uid}','${u.name}')"><i class="ti ti-tag"></i> Set Price</button>
         <button class="btn ${u.disabled?'btn-green':'btn-red'}" style="font-size:12px;padding:7px 11px" onclick="adminUserAction('${u.disabled?'enable':'disable'}','${u.uid}')">
           <i class="ti ti-${u.disabled?'lock-open':'lock'}"></i> ${u.disabled?'Enable':'Disable'}
         </button>`:''}
@@ -2325,12 +2327,14 @@ async function handleAdaptiveAns(el, idx, q){
   const isCorrect = idx === q.correct;
   if(isCorrect){
     el.classList.add('correct'); el.querySelector('.oltr').style.cssText='background:var(--green);color:#fff';
+    celebrate(true, el);
     toast('✅ Correct!');
   } else {
     el.classList.add('wrong'); el.querySelector('.oltr').style.cssText='background:var(--red);color:#fff';
     const cEl=document.querySelectorAll('.opt')[q.correct];
     if(cEl){ cEl.classList.add('correct'); cEl.querySelector('.oltr').style.cssText='background:var(--green);color:#fff'; }
     addMistake(q, idx);
+    celebrate(false, el);
     toast('❌ Wrong — see explanation');
   }
 
@@ -2995,6 +2999,95 @@ function showAcademyPricingConfig(){
   if(!base||isNaN(parseInt(base))) return;
   api('academy',{action:'admin_update_config',uid:S.user.uid,sessionToken:S.sessionToken,pricePerStudent:parseInt(base)})
     .then(r=>{ if(r.ok) toast('Academy pricing updated'); });
+}
+
+
+// ===== PER-STUDENT PRICING (admin) =====
+async function setStudentPrice(targetUid, name){
+  const val = prompt('Personal price (Rs) for '+name+'. Enter 0 to remove override:','499');
+  if(val===null) return;
+  const rupees = parseInt(val)||0;
+  const note = rupees>0 ? (prompt('Reason/note (optional):','Special discount')||'') : '';
+  const r = await api('admin',{action:'set_custom_price',uid:S.user.uid,sessionToken:S.sessionToken,
+    targetUid, customPriceRupees:rupees, note});
+  if(r.ok){ toast('OK: '+r.message); showUserDetail(targetUid); } else toast('Error: '+(r.error||'Failed'));
+}
+
+// ===== CELEBRATION LAYER =====
+function confettiBurst(){
+  const colors=['#1a56db','#16a34a','#f59e0b','#e34948','#7c3aed'];
+  for(let i=0;i<24;i++){
+    const p=document.createElement('div');
+    const sz=5+Math.random()*6;
+    p.style.cssText='position:fixed;z-index:999;pointer-events:none;width:'+sz+'px;height:'+sz+'px;border-radius:'+(Math.random()>.5?'50%':'2px')+';background:'+colors[i%5]+';left:'+(45+Math.random()*10)+'%;top:38%';
+    document.body.appendChild(p);
+    const dx=(Math.random()-.5)*320, dy=-(80+Math.random()*220), rot=Math.random()*720;
+    p.animate([
+      {transform:'translate(0,0) rotate(0)',opacity:1},
+      {transform:'translate('+dx+'px,'+dy+'px) rotate('+rot+'deg)',opacity:1,offset:.6},
+      {transform:'translate('+(dx*1.2)+'px,'+(dy+340)+'px) rotate('+(rot*1.5)+'deg)',opacity:0}
+    ],{duration:1100+Math.random()*500,easing:'cubic-bezier(.2,.8,.4,1)'});
+    setTimeout(function(){p.remove()},1700);
+  }
+}
+function pulseCorrect(el){
+  if(!el) return;
+  el.animate([{transform:'scale(1)'},{transform:'scale(1.04)'},{transform:'scale(1)'}],{duration:350,easing:'ease-out'});
+}
+function shakeWrong(el){
+  if(!el) return;
+  el.animate([{transform:'translateX(0)'},{transform:'translateX(-7px)'},{transform:'translateX(7px)'},{transform:'translateX(-4px)'},{transform:'translateX(0)'}],{duration:320});
+}
+let streakCount = 0;
+function celebrate(correct, el){
+  if(correct){
+    streakCount++;
+    confettiBurst(); pulseCorrect(el);
+    if(streakCount>0 && streakCount%3===0){
+      const f=document.createElement('div');
+      f.textContent='\uD83D\uDD25 '+streakCount+' streak!';
+      f.style.cssText='position:fixed;top:20%;left:50%;transform:translateX(-50%);z-index:999;font-size:26px;font-weight:800;color:#f59e0b;pointer-events:none;text-shadow:0 2px 8px rgba(0,0,0,.2)';
+      document.body.appendChild(f);
+      f.animate([{opacity:0,transform:'translateX(-50%) scale(.5)'},{opacity:1,transform:'translateX(-50%) scale(1.15)'},{opacity:1,transform:'translateX(-50%) scale(1)'},{opacity:0,transform:'translateX(-50%) translateY(-40px)'}],{duration:1400});
+      setTimeout(function(){f.remove()},1400);
+    }
+  } else { streakCount=0; shakeWrong(el); }
+}
+
+// ===== RICH QUESTION EXTRAS =====
+function renderQuestionExtras(q){
+  let out='';
+  if(q.realLife) out+='<div style="background:var(--teal-l);border-left:3px solid var(--teal);border-radius:0 9px 9px 0;padding:10px 12px;margin-top:9px;font-size:12px;line-height:1.6"><b>\uD83C\uDF0D Real life:</b> '+q.realLife+'</div>';
+  if(q.story)    out+='<div style="background:var(--purple-l);border-left:3px solid var(--purple);border-radius:0 9px 9px 0;padding:10px 12px;margin-top:9px;font-size:12px;line-height:1.6"><b>\uD83D\uDCD6 Story:</b> '+q.story+'</div>';
+  if(q.diagram)  out+='<div style="text-align:center;margin-top:9px;background:var(--surf2);border-radius:9px;padding:10px">'+q.diagram+'</div>';
+  return out;
+}
+
+// ===== BRAIN BOOST — IQ mini-set =====
+const BRAIN_QUESTIONS = [
+  {id:'iq1',text:'2, 6, 12, 20, 30, ... What comes next?',opts:['40','42','44','36'],correct:1,explanation:'Differences: 4,6,8,10 so next is +12 = 42. Pattern recognition is the same skill as spotting formula patterns in Physics.',realLife:'NEET numericals often hide arithmetic patterns — sequence sense makes you faster.'},
+  {id:'iq2',text:'All enzymes are proteins. Ribozyme is not a protein. Therefore:',opts:['Ribozyme is an enzyme','Ribozyme is not an enzyme by that rule','Proteins are enzymes','Cannot conclude'],correct:1,explanation:'Pure syllogism — if ALL enzymes are proteins, a non-protein cannot be an enzyme (by the stated rule). Real biology later broke this rule when ribozymes were discovered!',realLife:'Assertion-Reason questions in NEET are exactly this logic structure.'},
+  {id:'iq3',text:'A doctor gives you 3 pills, one every 30 minutes. How long until all are taken?',opts:['90 min','60 min','30 min','120 min'],correct:1,explanation:'Pill 1 at 0 min, pill 2 at 30, pill 3 at 60. Total = 60 minutes. Careless reading costs marks!',realLife:'This is the #1 error type in NEET — answering the question you assumed, not the one asked.'},
+  {id:'iq4',text:'Mirror shows 2:30. What is the actual time?',opts:['9:30','10:30','8:30','3:30'],correct:0,explanation:'Mirror time: subtract from 12:00. 12:00 minus 2:30 = 9:30. Spatial reasoning = ray diagrams in Optics.',realLife:'Lateral inversion is literally the Physics of plane mirrors (Class 12 Optics).'},
+  {id:'iq5',text:'If CELL is coded as DFMM, how is GENE coded?',opts:['HFOF','HGOF','FDMD','HFPF'],correct:0,explanation:'Each letter +1: G to H, E to F, N to O, E to F = HFOF. Coding speed helps mnemonic speed for biology terms.',realLife:'Fast symbol manipulation helps in organic chemistry mechanisms.'},
+];
+let brainIdx = 0, brainSet = [];
+function startBrainBoost(){
+  if(!S.user){ openAuth(); return; }
+  ADAPTIVE_MODE=false;
+  switchTab('quiz');
+  brainSet=[...BRAIN_QUESTIONS].sort(function(){return Math.random()-.5});
+  brainIdx=0;
+  nextBrainQuestion();
+}
+function nextBrainQuestion(){
+  if(brainIdx>=brainSet.length){ toast('\uD83E\uDDE0 Brain Boost complete! Back to NEET practice.'); switchTab('home'); return; }
+  const q=brainSet[brainIdx++];
+  renderSingleQuestion({...q,sub:'BRAIN',ch:'Brain Boost',diff:'medium',ncertCl:'-',ncertCh:'-',ncertPg:'-',unit:'IQ',tid:'brain'},null);
+  setTimeout(function(){
+    const btn=document.getElementById('nextAdaptiveBtn');
+    if(btn){ btn.removeAttribute('onclick'); btn.onclick=nextBrainQuestion; }
+  },50);
 }
 
 // ===== INIT =====
