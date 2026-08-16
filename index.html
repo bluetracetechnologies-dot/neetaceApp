@@ -2304,6 +2304,7 @@ function renderSingleQuestion(q, expectedProb){
     ).join('')}</div>
     <div class="expl" id="explBox">
       <b>Explanation:</b><br><span id="explTxt">${q.explanation}</span>
+      ${renderQuestionExtras(q)}
       <div style="margin-top:10px;background:var(--surf2);border-radius:8px;padding:10px;font-size:12px;line-height:1.6">
         <b>NCERT:</b> Class ${q.ncertCl}, Chapter ${q.ncertCh}, Page ${q.ncertPg}<br>
         <b>Unit:</b> ${q.unit}
