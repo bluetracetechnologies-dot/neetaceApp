@@ -1227,7 +1227,7 @@ async function doGoogleSignIn(){
     // Try login first, if user doesn't exist register them automatically
     let deviceInfo = navigator.userAgent.slice(0, 60);
     let r = await api('auth', {action:'login', idToken: idToken, deviceInfo: deviceInfo});
-    if(r.error === 'DEVICE_CONFLICT'){
+    if(r.error === 'DEVICE_CONFLICT' || r.error === 'SESSION_CONFLICT'){
       const confirmed = await handleDeviceConflict();
       if(confirmed){
         r = await api('auth', {action:'login', idToken: idToken, deviceInfo: deviceInfo, forceLogin: true});
@@ -2330,6 +2330,7 @@ function startAdaptiveQuiz(subject){
 }
 
 async function loadNextAdaptiveQuestion(subject){
+  if(!checkDailyQuestionCap()) return;
   const pool = QUESTIONS.filter(q => !subject || q.sub === subject);
   if(!pool.length){ toast('No questions available. Load content packs first.'); return; }
   try{
@@ -3290,6 +3291,7 @@ function renderSyllabus(){
 }
 
 function startSyllabusUnitQuiz(sub, unitId){
+  if(!checkDailyQuestionCap()) return;
   const unit = NEET_SYLLABUS[sub].units.find(function(u){return u.id===unitId});
   if(!unit) return;
   if(!canAccess() && !checkAnonymousFreeAccess()){ openPaywall(); return; }
