@@ -383,9 +383,31 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 
 <!-- GALTI COPY -->
 <div class="screen" id="screen-mistakes">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:13px">
-    <div><div class="sec-hd" style="margin-bottom:2px"><i class="ti ti-notebook"></i> Galti Copy</div><div style="font-size:11px;color:var(--mute)">Wrong answers auto-logged with NCERT reference</div></div>
-    <button class="btn btn-blue" style="font-size:11px;padding:7px 12px" onclick="practiceMistakes()"><i class="ti ti-zap"></i> Practice All</button>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:11px">
+    <div>
+      <div class="sec-hd" style="margin-bottom:2px"><i class="ti ti-notebook"></i> Galti Copy</div>
+      <div style="font-size:11px;color:var(--mute)">Your personal mistake recovery system</div>
+    </div>
+    <button class="btn btn-blue" style="font-size:11px;padding:7px 12px" onclick="practiceMistakes()"><i class="ti ti-zap"></i> Practice</button>
+  </div>
+
+  <!-- Galti stats strip -->
+  <div class="quad" style="margin-bottom:12px">
+    <div class="qbox"><div class="qn" id="galtiTotal" style="color:var(--red)">0</div><div class="ql">Total</div></div>
+    <div class="qbox"><div class="qn" id="galtiRecovered" style="color:var(--green)">0</div><div class="ql">Recovered</div></div>
+    <div class="qbox"><div class="qn" id="galtiDueToday" style="color:var(--amber)">0</div><div class="ql">Due Today</div></div>
+    <div class="qbox"><div class="qn" id="galtiConceptErr" style="color:var(--purple)">0</div><div class="ql">Concept Err</div></div>
+  </div>
+
+  <!-- Error type tabs -->
+  <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;scrollbar-width:none">
+    <button class="galtitab active" onclick="setGaltiFilter('all',this)">All</button>
+    <button class="galtitab" onclick="setGaltiFilter('concept',this)">💡 Concept</button>
+    <button class="galtitab" onclick="setGaltiFilter('formula',this)">📐 Formula</button>
+    <button class="galtitab" onclick="setGaltiFilter('unit',this)">📏 Unit</button>
+    <button class="galtitab" onclick="setGaltiFilter('careless',this)">🤦 Careless</button>
+    <button class="galtitab" onclick="setGaltiFilter('time',this)">⏰ Time</button>
+    <button class="galtitab" onclick="setGaltiFilter('due',this)" style="background:var(--amber-l);color:#7a4800;border-color:#f5d283">📅 Due</button>
   </div>
   <div id="mistakeArea"><div style="text-align:center;padding:40px 20px;color:var(--mute)"><i class="ti ti-mood-happy" style="font-size:36px;display:block;margin-bottom:9px"></i><div style="font-size:13px;font-weight:600">Notebook is empty — keep solving!</div></div></div>
 </div>
@@ -644,10 +666,22 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     </button>
   </div>
 
+  <!-- Bulk action bar -->
+  <div id="bulkBar" style="display:none;background:var(--blue-l);border:1px solid var(--border-accent);border-radius:10px;padding:10px 14px;margin-bottom:10px;display:none;align-items:center;gap:10px;flex-wrap:wrap">
+    <span style="font-size:12px;font-weight:700;color:var(--blue)" id="bulkCount">0 selected</span>
+    <div style="display:flex;gap:7px;flex-wrap:wrap;margin-left:4px">
+      <button class="btn btn-green" style="font-size:11px;padding:6px 11px" onclick="bulkAction('grant_pro')"><i class="ti ti-star"></i> Grant Pro</button>
+      <button class="btn btn-blue" style="font-size:11px;padding:6px 11px" onclick="promptBulkDays()"><i class="ti ti-calendar-plus"></i> Add Days</button>
+      <button class="btn btn-ghost" style="font-size:11px;padding:6px 11px;color:var(--amber);border-color:var(--amber)" onclick="bulkAction('enable')"><i class="ti ti-lock-open"></i> Enable</button>
+      <button class="btn btn-ghost" style="font-size:11px;padding:6px 11px;color:var(--red);border-color:var(--red)" onclick="bulkAction('disable')"><i class="ti ti-lock"></i> Disable</button>
+      <button class="btn btn-ghost" style="font-size:11px;padding:6px 11px;color:var(--mute)" onclick="clearSelection()"><i class="ti ti-x"></i> Clear</button>
+    </div>
+  </div>
   <!-- User table -->
   <div class="dtw">
     <table class="dt">
       <thead><tr>
+        <th style="width:32px"><input type="checkbox" id="selectAllUsers" onchange="toggleSelectAll(this)" style="cursor:pointer"></th>
         <th>User</th><th>Status</th><th>Plan / Expiry</th><th>Score</th><th>Actions</th>
       </tr></thead>
       <tbody id="userTable">
@@ -1428,7 +1462,8 @@ function addMistake(q,sel){
     const dot=document.getElementById('mistakeDot'); dot.textContent=mistakes.length; dot.style.display='inline-block';
   }
 }
-function renderMistakes(){
+function renderMistakes(){ if(galtiFilter !== undefined){ renderMistakesEnhanced(); updateGaltiStats(); return; } // legacy path
+
   const box=document.getElementById('mistakeArea'); if(!box) return;
   if(!mistakes.length){ box.innerHTML='<div style="text-align:center;padding:40px 20px;color:var(--mute)"><i class="ti ti-mood-happy" style="font-size:36px;display:block;margin-bottom:9px"></i><div style="font-size:13px;font-weight:600">Galti Copy is empty!</div><div style="font-size:11px;margin-top:4px">Wrong answers appear here automatically.</div></div>'; return; }
   box.innerHTML=mistakes.map((m,i)=>`<div class="mc"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px"><span style="font-size:10px;font-weight:700;color:var(--red);text-transform:uppercase">${m.sub} · ${m.ch}</span><div style="display:flex;align-items:center;gap:7px"><span style="font-size:10px;background:var(--purple-l);color:var(--purple);padding:2px 7px;border-radius:6px;font-weight:700">${m.loggedOn}</span><select style="padding:3px 6px;border-radius:6px;border:1px solid var(--bdr);font-size:11px;background:var(--surf);color:var(--txt)" onchange="mistakes[${i}].errTag=this.value"><option>Conceptual Error</option><option>Calculation Error</option><option>Silly Mistake</option><option>Time Crunch</option></select></div></div><div style="font-size:13px;font-weight:600;margin-bottom:7px">${m.text}</div><div style="font-size:12px;color:var(--mute);margin-bottom:7px">Your answer: <b style="color:var(--red)">${m.opts[m.userIdx]}</b> | Correct: <b style="color:var(--green)">${m.opts[m.correct]}</b></div><div style="font-size:12px;background:var(--surf2);padding:10px;border-radius:8px;margin-bottom:7px;line-height:1.6">${m.explanation}</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:7px"><span class="ncert-tag"><i class="ti ti-book"></i> NCERT Cl.${m.ncertCl} Ch.${m.ncertCh} Pg.${m.ncertPg}</span><span class="syl-tag"><i class="ti ti-list"></i> ${m.unit}</span>${m.pyq?`<span class="badge bh">PYQ ${m.pyqYr}</span>`:''}</div><div style="text-align:right"><button onclick="mistakes.splice(${i},1);if(!mistakes.length)document.getElementById('mistakeDot').style.display='none';else document.getElementById('mistakeDot').textContent=mistakes.length;renderMistakes();toast('✅ Marked mastered!')" style="background:none;border:none;color:var(--mute);font-size:11px;cursor:pointer;font-weight:700;padding:4px 8px;border-radius:6px"><i class="ti ti-check"></i> Mark Mastered</button></div></div>`).join('');
@@ -1574,12 +1609,13 @@ function renderUserTable(users){
           <button class="ab" style="border-color:var(--blue);color:var(--blue)" onclick="showUserDetail('${u.uid}')">View</button>
         </div>`
       : '<span style="font-size:10px;color:var(--mute)">Protected</span>';
-    return `<tr>
+    return `<tr data-uid="${u.uid}" onclick="handleRowClick(event,'${u.uid}')" style="cursor:pointer">
+      <td onclick="event.stopPropagation()"><input type="checkbox" class="user-cb" data-uid="${u.uid}" onchange="updateBulkBar()" style="cursor:pointer"></td>
       <td><div style="font-size:12px;font-weight:600">${u.name||'—'}</div><div style="font-size:10px;color:var(--mute)">${u.email}</div></td>
       <td><span class="sp ${statusCls}" style="font-size:10px">${u.status.toUpperCase()}</span></td>
       <td style="font-size:11px;color:var(--mute)">${expiry}</td>
       <td style="font-size:12px;font-weight:600">${score}</td>
-      <td>${actions}</td>
+      <td onclick="event.stopPropagation()">${actions}</td>
     </tr>`;
   }).join('');
 }
@@ -2581,6 +2617,230 @@ async function loadFeatureConfig(){
     const d = await r.json();
     window._FEATURES = d.features || {};
   }catch(e){}
+}
+
+
+// ===== ADMIN BULK ACTIONS =====
+let selectedUids = new Set();
+
+function handleRowClick(e, uid){
+  // Click anywhere on row = open detail drawer
+  showUserDetail(uid);
+}
+
+function toggleSelectAll(cb){
+  const boxes = document.querySelectorAll('.user-cb');
+  boxes.forEach(b => { b.checked = cb.checked; });
+  selectedUids.clear();
+  if(cb.checked) boxes.forEach(b => selectedUids.add(b.dataset.uid));
+  updateBulkBar();
+}
+
+function updateBulkBar(){
+  selectedUids.clear();
+  document.querySelectorAll('.user-cb:checked').forEach(b => selectedUids.add(b.dataset.uid));
+  const bar = document.getElementById('bulkBar');
+  const cnt = document.getElementById('bulkCount');
+  if(selectedUids.size > 0){
+    bar.style.display='flex';
+    cnt.textContent = selectedUids.size + ' user' + (selectedUids.size!==1?'s':'') + ' selected';
+  } else {
+    bar.style.display='none';
+  }
+}
+
+function clearSelection(){
+  selectedUids.clear();
+  document.querySelectorAll('.user-cb').forEach(b => b.checked=false);
+  const sa = document.getElementById('selectAllUsers'); if(sa) sa.checked=false;
+  updateBulkBar();
+}
+
+async function bulkAction(action){
+  if(!selectedUids.size){ toast('Select at least one user'); return; }
+  const uids = Array.from(selectedUids);
+  const label = {grant_pro:'Grant Pro',enable:'Enable',disable:'Disable'}[action]||action;
+  if(!confirm(`Apply "${label}" to ${uids.length} selected user(s)?`)) return;
+  let ok=0, fail=0;
+  for(const targetUid of uids){
+    const r = await api('admin',{action,uid:S.user.uid,sessionToken:S.sessionToken,targetUid});
+    r.ok ? ok++ : fail++;
+  }
+  toast(`Done: ${ok} succeeded${fail?', '+fail+' failed':''}`);
+  clearSelection();
+  loadAdminUsers(adminPage);
+}
+
+async function promptBulkDays(){
+  if(!selectedUids.size){ toast('Select at least one user'); return; }
+  const days = parseInt(prompt('Add how many days to selected users:','7')||'0');
+  if(!days||isNaN(days)) return;
+  const uids = Array.from(selectedUids);
+  if(!confirm(`Add ${days} days to ${uids.length} user(s)?`)) return;
+  let ok=0;
+  for(const targetUid of uids){
+    const r = await api('admin',{action:'grant_days',uid:S.user.uid,sessionToken:S.sessionToken,targetUid,days});
+    if(r.ok) ok++;
+  }
+  toast(`Added ${days} days to ${ok} user(s)`);
+  clearSelection();
+  loadAdminUsers(adminPage);
+}
+
+
+// ===== GALTI ENHANCED =====
+let galtiFilter = 'all';
+
+// Error types (classify when adding to mistakes)
+const ERROR_TYPES = {
+  concept:  { label:'Concept Error',         emoji:'💡', desc:'Did not understand the concept', color:'var(--purple)' },
+  formula:  { label:'Formula Recall Error',  emoji:'📐', desc:'Forgot or misapplied formula',   color:'var(--blue)'   },
+  unit:     { label:'Unit Conversion Error', emoji:'📏', desc:'Wrong unit or conversion',        color:'var(--teal)'   },
+  calc:     { label:'Calculation Error',     emoji:'🧮', desc:'Right method, wrong arithmetic',  color:'var(--amber)'  },
+  careless: { label:'Careless Error',        emoji:'🤦', desc:'Knew it but made a silly mistake',color:'var(--green)'  },
+  time:     { label:'Time Pressure Error',   emoji:'⏰', desc:'Ran out of time',                 color:'var(--red)'    },
+  unknown:  { label:'Unknown',               emoji:'❓', desc:'Not yet diagnosed',               color:'var(--mute)'   },
+};
+
+function classifyError(q, idx, timeTakenMs, expectedTimeMs){
+  // Auto-classify based on question type and time
+  if(timeTakenMs && expectedTimeMs && timeTakenMs > expectedTimeMs * 1.8) return 'time';
+  if(q.diff === 'easy' || q.diff === 'starter') return 'careless';
+  if(q.opts && q.opts[idx] && q.text && q.text.toLowerCase().includes('unit')) return 'unit';
+  if(q.trick && q.trick.toLowerCase().includes('formula')) return 'formula';
+  return 'concept'; // default for hard/medium wrong answers
+}
+
+function setGaltiFilter(filter, btn){
+  galtiFilter = filter;
+  document.querySelectorAll('.galtitab').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  renderMistakes();
+}
+
+function updateGaltiStats(){
+  const now = new Date();
+  const total = mistakes.length;
+  const recovered = mistakes.filter(m=>m.recovered).length;
+  const due = mistakes.filter(m=>{
+    if(m.recovered) return false;
+    if(!m.nextReview) return true;
+    return new Date(m.nextReview) <= now;
+  }).length;
+  const conceptErr = mistakes.filter(m=>m.errorType==='concept').length;
+
+  const t=document.getElementById('galtiTotal'); if(t) t.textContent=total;
+  const r=document.getElementById('galtiRecovered'); if(r) r.textContent=recovered;
+  const d=document.getElementById('galtiDueToday'); if(d) d.textContent=due;
+  const c=document.getElementById('galtiConceptErr'); if(c) c.textContent=conceptErr;
+}
+
+// Override addMistake to include error classification + spaced repetition
+function addMistakeEnhanced(q, selectedIdx, timeTakenMs){
+  const errorType = classifyError(q, selectedIdx, timeTakenMs, 30000);
+  const now = new Date();
+  // Spaced repetition schedule: Day 1, 3, 7, 15, 30
+  const nextReview = new Date(now); nextReview.setDate(nextReview.getDate()+1);
+  const existing = mistakes.findIndex(m=>m.id===q.id);
+  if(existing>=0){
+    mistakes[existing].count = (mistakes[existing].count||1)+1;
+    mistakes[existing].lastWrong = now.toISOString();
+    mistakes[existing].errorType = errorType; // re-classify on repeat wrong
+  } else {
+    mistakes.push({
+      ...q,
+      wrongOption: selectedIdx,
+      wrongLabel: ['A','B','C','D'][selectedIdx]||'?',
+      errorType,
+      count: 1,
+      recoveryStep: 0, // 0=wrong,1=diagnostic,2=confirmation,3=recovered
+      addedAt: now.toISOString(),
+      lastWrong: now.toISOString(),
+      nextReview: nextReview.toISOString(),
+      recovered: false,
+    });
+  }
+  saveMistakes();
+  updateGaltiStats();
+}
+
+// Enhanced renderMistakes with filter + diagnosis path
+function renderMistakesEnhanced(){
+  const el = document.getElementById('mistakeArea'); if(!el) return;
+  const now = new Date();
+  let filtered = mistakes;
+
+  if(galtiFilter === 'due'){
+    filtered = mistakes.filter(m=>!m.recovered && (!m.nextReview || new Date(m.nextReview)<=now));
+  } else if(galtiFilter !== 'all'){
+    filtered = mistakes.filter(m=>m.errorType===galtiFilter);
+  }
+
+  if(!filtered.length){
+    el.innerHTML=`<div style="text-align:center;padding:32px 16px">
+      <div style="font-size:40px;margin-bottom:8px">${galtiFilter==='due'?'🎉':'📝'}</div>
+      <div style="font-size:14px;font-weight:700">${galtiFilter==='due'?'Nothing due today!':'No mistakes in this category'}</div>
+      <div style="font-size:12px;color:var(--mute);margin-top:4px">${galtiFilter==='due'?'Great consistency!':'Keep practicing to see your mistakes here.'}</div>
+    </div>`; return;
+  }
+
+  el.innerHTML = filtered.map((m,i)=>{
+    const et = ERROR_TYPES[m.errorType||'unknown'];
+    const due = !m.recovered && m.nextReview && new Date(m.nextReview)<=now;
+    const stepLabels = ['Wrong','Diagnostic','Confirmation','Recovered'];
+    const step = m.recoveryStep||0;
+    return `<div class="mcard" style="border-left:3px solid ${m.recovered?'var(--green)':et.color};opacity:${m.recovered?.7:1}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:7px">
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <span style="font-size:11px;font-weight:700;color:${et.color};background:${et.color}22;padding:2px 8px;border-radius:6px">${et.emoji} ${et.label}</span>
+          ${m.count>1?`<span style="font-size:10px;background:var(--red-l);color:var(--red);padding:2px 7px;border-radius:6px;font-weight:700">✗ ${m.count}×</span>`:''}
+          ${due?'<span style="font-size:10px;background:var(--amber-l);color:#7a4800;padding:2px 7px;border-radius:6px;font-weight:700">📅 Due</span>':''}
+          ${m.recovered?'<span style="font-size:10px;background:var(--green-l);color:var(--green);padding:2px 7px;border-radius:6px;font-weight:700">✅ Recovered</span>':''}
+        </div>
+        <span style="font-size:10px;color:var(--mute)">${new Date(m.addedAt).toLocaleDateString('en-IN',{day:'2-digit',month:'short'})}</span>
+      </div>
+      <div style="font-size:12px;margin-bottom:7px;line-height:1.5">${m.text?.slice(0,120)||''}${m.text?.length>120?'...':''}</div>
+      <div style="font-size:11px;color:var(--mute);margin-bottom:8px">
+        ${m.sub} · ${m.ch} · Class ${m.ncertCl||11}, Ch ${m.ncertCh||'—'}, Pg ${m.ncertPg||'—'}
+      </div>
+      <!-- Recovery progress bar -->
+      <div style="display:flex;gap:4px;margin-bottom:8px">
+        ${stepLabels.map((sl,si)=>`<div style="flex:1;height:4px;border-radius:2px;background:${si<=step?(si===3?'var(--green)':'var(--blue)'):'var(--bdr)'}"></div>`).join('')}
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${!m.recovered?`<button class="btn btn-blue" style="font-size:10px;padding:5px 9px" onclick="practiceOneMistake(${i})"><i class="ti ti-zap"></i> Practice</button>`:''}
+        <button class="btn btn-ghost" style="font-size:10px;padding:5px 9px" onclick="classifyMistake(${i})"><i class="ti ti-tag"></i> Reclassify</button>
+        <button class="btn btn-ghost" style="font-size:10px;padding:5px 9px;color:var(--green)" onclick="markRecovered(${i})"><i class="ti ti-check"></i> Mark Recovered</button>
+        <button class="btn btn-ghost" style="font-size:10px;padding:5px 9px;color:var(--red)" onclick="removeMistake(${i})"><i class="ti ti-trash"></i></button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function markRecovered(idx){
+  const now = new Date();
+  const m = mistakes[idx]; if(!m) return;
+  m.recovered = true;
+  m.recoveryStep = 3;
+  m.recoveredAt = now.toISOString();
+  // Next review in 30 days (final spaced repetition step)
+  const next = new Date(now); next.setDate(next.getDate()+30);
+  m.nextReview = next.toISOString();
+  saveMistakes();
+  renderMistakesEnhanced();
+  updateGaltiStats();
+  toast('✅ Marked as recovered! Scheduled for review in 30 days.');
+}
+
+function classifyMistake(idx){
+  const types = Object.entries(ERROR_TYPES).map(([k,v])=>k+': '+v.label).join('\n');
+  const chosen = prompt('Error type:\n'+types+'\n\nEnter type key:');
+  if(chosen && ERROR_TYPES[chosen]){
+    mistakes[idx].errorType = chosen;
+    saveMistakes();
+    renderMistakesEnhanced();
+    toast('Reclassified as '+ERROR_TYPES[chosen].label);
+  }
 }
 
 // ===== INIT =====
