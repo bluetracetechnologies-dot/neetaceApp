@@ -1,0 +1,37 @@
+tid,subject,chapter,question,opt_a,opt_b,opt_c,opt_d,correct,explanation,ncert_class,ncert_chapter,ncert_page,syllabus_unit,difficulty,pyq_year,trick
+c1,CHEMISTRY,Basic Concepts,Number of moles in 22 g CO₂:,1,0.5,2,0.25,B,22/44 = 0.5 mol,11,1,-,Basic Concepts,starter,,M(CO₂)=44
+c1,CHEMISTRY,Basic Concepts,Avogadro number of molecules present in:,11.2 L gas STP,22.4 L gas STP,44.8 L STP,5.6 L STP,B,1 mol = 22.4 L at STP,11,1,-,Basic Concepts,easy,,
+c2,CHEMISTRY,Atomic Structure,Maximum electrons in n=3 shell:,8,18,32,9,B,2n² = 18,11,2,-,Structure of Atom,easy,,
+c2,CHEMISTRY,Atomic Structure,Quantum number that gives orbital shape:,n,l,m,s,B,Azimuthal l defines shape,11,2,-,Structure of Atom,easy,2019,
+c3,CHEMISTRY,Periodicity,Largest atomic radius among:,Na,Mg,Al,Si,A,Radius decreases across period,11,3,-,Periodicity,starter,,
+c3,CHEMISTRY,Periodicity,Most electronegative element:,O,F,Cl,N,B,F = 4.0 Pauling,11,3,-,Periodicity,starter,,
+c4,CHEMISTRY,Chemical Bonding,Shape of NH₃ molecule:,Trigonal planar,Pyramidal,Tetrahedral,Bent,B,sp³ with one lone pair,11,4,-,Chemical Bonding,easy,2020,
+c4,CHEMISTRY,Chemical Bonding,Bond order of O₂ molecule:,1,1.5,2,2.5,C,(10−6)/2 by MOT,11,4,-,Chemical Bonding,medium,,O₂⁺ is 2.5
+c5,CHEMISTRY,Thermodynamics,For spontaneous process at all temperatures:,ΔH>0 ΔS<0,ΔH<0 ΔS>0,ΔH>0 ΔS>0,ΔH<0 ΔS<0,B,ΔG=ΔH−TΔS always negative,11,5,-,Thermodynamics Chem,medium,2021,
+c5,CHEMISTRY,Thermodynamics,Enthalpy of formation of an element in standard state:,Positive,Negative,Zero,Infinite,C,Reference state definition,11,5,-,Thermodynamics Chem,easy,,
+c6,CHEMISTRY,Equilibrium,pH of 0.001 M HCl:,1,2,3,11,C,pH=−log(10⁻³),11,6,-,Equilibrium,easy,,Strong acid full dissociation
+c6,CHEMISTRY,Equilibrium,Adding catalyst to equilibrium system:,Shifts right,Shifts left,"No shift, faster attainment",Increases K,C,Catalyst speeds both directions equally,11,6,-,Equilibrium,easy,2018,
+c7,CHEMISTRY,Redox,Oxidation number of Mn in KMnO₄:,+5,+6,+7,+4,C,K(+1)+Mn+4(−2)=0,11,7,-,Redox Reactions,easy,,
+c7,CHEMISTRY,Redox,"In reaction Zn + Cu²⁺ → Zn²⁺ + Cu, reducing agent is:",Cu²⁺,Zn,Zn²⁺,Cu,B,Zn loses electrons,11,7,-,Redox Reactions,starter,,
+c8,CHEMISTRY,Organic Basics,Homolytic fission produces:,Carbocation,Carbanion,Free radicals,Ion pair,C,Each atom keeps one electron,11,8,-,Organic Principles,easy,,
+c8,CHEMISTRY,Organic Basics,+I effect is shown by:,−NO₂,−CH₃,−Cl,−CN,B,Alkyl groups donate electrons,11,8,-,Organic Principles,easy,2022,
+c9,CHEMISTRY,Hydrocarbons,Markovnikov addition of HBr to propene gives:,1-bromopropane,2-bromopropane,Propane,Cyclopropane,B,H adds to C with more H,11,9,-,Hydrocarbons,medium,,Peroxide reverses it
+c9,CHEMISTRY,Hydrocarbons,Benzene undergoes mainly:,Addition,Electrophilic substitution,Nucleophilic substitution,Elimination,B,Aromatic ring stability preserved,11,9,-,Hydrocarbons,easy,2019,
+c10,CHEMISTRY,Solutions,Colligative property depends on:,Nature of solute,Number of solute particles,Color,Volume only,B,Definition of colligative,12,1,-,Solutions,easy,,
+c10,CHEMISTRY,Solutions,Van’t Hoff factor for NaCl (complete dissociation):,1,2,3,0.5,B,Na⁺ + Cl⁻ = 2 particles,12,1,-,Solutions,easy,2020,
+c11,CHEMISTRY,Electrochemistry,SI unit of conductivity:,S,S m⁻¹,S m,Ω m,B,kappa in siemens per metre,12,2,-,Electrochemistry,easy,,
+c11,CHEMISTRY,Electrochemistry,"In electrolysis of molten NaCl, product at cathode:",Cl₂,Na,O₂,H₂,B,Na⁺ reduced at cathode,12,2,-,Electrochemistry,easy,2021,
+c12,CHEMISTRY,Kinetics,Unit of rate constant for first order reaction:,mol L⁻¹s⁻¹,s⁻¹,L mol⁻¹s⁻¹,mol²L⁻²s⁻¹,B,k=rate/[A],12,3,-,Chemical Kinetics,easy,,Zero order: mol L⁻¹ s⁻¹
+c12,CHEMISTRY,Kinetics,Half-life of first order reaction is ___ of initial concentration:,Directly proportional,Inversely proportional,Independent,Square,C,t½=0.693/k,12,3,-,Chemical Kinetics,medium,2019,
+c13,CHEMISTRY,d-Block,Common oxidation state of lanthanoids:,+2,+3,+4,+1,B,Ln³⁺ most stable,12,4,-,d and f Block,easy,,
+c13,CHEMISTRY,d-Block,Transition metals show catalytic property due to:,Large size,Variable oxidation states,Low density,High melting point,B,Plus surface adsorption,12,4,-,d and f Block,easy,2018,
+c14,CHEMISTRY,Coordination,Coordination number of Fe in [Fe(CN)₆]³⁻:,3,4,6,2,C,Six CN⁻ ligands,12,5,-,Coordination Compounds,starter,,
+c14,CHEMISTRY,Coordination,[Ni(CO)₄] geometry:,Square planar,Tetrahedral,Octahedral,Linear,B,"sp³, Ni(0)",12,5,-,Coordination Compounds,medium,2022,
+c15,CHEMISTRY,Haloalkanes,SN1 reaction rate depends on:,Nucleophile conc.,Substrate conc. only,Both,Temperature only,B,Rate=k[RX]; carbocation step,12,6,-,Haloalkanes,medium,,SN2 depends on both
+c16,CHEMISTRY,Alcohols,Lucas test fastest with:,Primary alcohol,Secondary,Tertiary,Methanol,C,3° carbocation most stable,12,7,-,Alcohols Phenols Ethers,easy,2020,
+c16,CHEMISTRY,Alcohols,Phenol is ___ than ethanol:,Less acidic,More acidic,Equally acidic,Non-acidic,B,Phenoxide resonance stabilized,12,7,-,Alcohols Phenols Ethers,easy,,
+c17,CHEMISTRY,Aldehydes Ketones,Tollens reagent gives silver mirror with:,Ketones,Aldehydes,Ethers,Esters,B,Aldehydes oxidized to acid,12,8,-,Aldehydes Ketones Acids,easy,2019,
+c17,CHEMISTRY,Aldehydes Ketones,Cannizzaro reaction is given by aldehydes:,With α-H,Without α-H,All,Aromatic only,B,"HCHO, benzaldehyde etc.",12,8,-,Aldehydes Ketones Acids,medium,,
+c18,CHEMISTRY,Amines,Strongest base in aqueous solution:,NH₃,CH₃NH₂,(CH₃)₂NH,C₆H₅NH₂,C,2° amine: +I plus solvation balance,12,9,-,Amines,medium,2021,Aniline weakest
+c19,CHEMISTRY,Biomolecules,Glucose and fructose are:,Chain isomers,Functional isomers,Position isomers,Same compound,B,Aldose vs ketose C₆H₁₂O₆,12,10,-,Biomolecules,easy,,
+c19,CHEMISTRY,Biomolecules,Peptide bond is between:,Two sugars,Amino acids,Nucleotides,Fatty acids,B,−CO−NH− linkage,12,10,-,Biomolecules,starter,2020,
