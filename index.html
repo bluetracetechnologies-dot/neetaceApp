@@ -346,6 +346,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--mute);margin-top:4px">
       <span>Free</span><span>Simple</span><span>Hard</span><span>V.Hard</span><span>Talent</span>
     </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:11px;padding-top:10px;border-top:1px solid var(--bdr)"><span style="font-size:12px;font-weight:700">⏱️ Time per question</span><span style="font-size:11px;font-weight:700;color:var(--blue)" id="timerSecLabel">60s / question</span></div><input type="range" min="30" max="120" step="15" value="60" style="width:100%" oninput="setTimerSec(this.value)"><div style="display:flex;justify-content:space-between;font-size:9px;color:var(--mute)"><span>30s sprint</span><span>60s NEET</span><span>120s learn</span></div>
     <div id="freePracticeWarn" style="display:none;margin-top:9px;font-size:11px;background:var(--amber-l);color:#7a4800;padding:7px 10px;border-radius:8px"></div>
   </div>
   <div class="chips"><div class="chip active" onclick="filterPractice(this,'ALL')">All</div><div class="chip" onclick="filterPractice(this,'PHYSICS')">⚛️ Physics</div><div class="chip" onclick="filterPractice(this,'CHEMISTRY')">🧪 Chemistry</div><div class="chip" onclick="filterPractice(this,'BIOLOGY')">🧬 Biology</div><div class="chip" onclick="filterPractice(this,'PYQ')">📜 PYQ</div><div class="chip" onclick="filterPractice(this,'MOCK')">🎯 Mock</div></div>
@@ -445,6 +446,10 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 
 <!-- ANALYTICS -->
 <div class="screen" id="screen-analytics">
+  <div class="sec-hd"><i class="ti ti-target-arrow"></i> Score Predictor</div>
+  <div class="card" style="margin-bottom:13px" id="scorePredictor"></div>
+  <div class="sec-hd"><i class="ti ti-dna"></i> Chapter Mastery (Learning DNA)</div>
+  <div class="card" style="margin-bottom:13px" id="masteryDash"></div>
   <div class="quad"><div class="qbox"><div class="qn">3,240</div><div class="ql">Qs Solved</div></div><div class="qbox"><div class="qn" style="color:var(--teal)">68%</div><div class="ql">Accuracy</div></div><div class="qbox"><div class="qn" style="color:var(--red)">12</div><div class="ql">Day Streak</div></div><div class="qbox"><div class="qn" style="color:var(--purple)">47h</div><div class="ql">Study Time</div></div></div>
   <div class="sec-hd"><i class="ti ti-list-check"></i> Chapter Accuracy</div>
   <div class="card">
