@@ -1341,7 +1341,7 @@ function switchTab(tab){
   const bt=document.querySelector(`.nb[data-tab="${tab}"]`);
   if(sc) sc.classList.add('active');
   if(bt) bt.classList.add('active');
-  if(tab==='admin'){ loadAdminUsers(); loadPacksList(); }
+  if(tab==='admin'){ loadAdminUsers(); loadPacksList(); loadFeatureFlags(); loadAcademyList(); loadTrialConfigAdmin(); }
   if(tab==='about'){ initAbout(); loadReferral(); }
   if(tab==='syllabus') renderSyllabus();
   if(tab==='analytics') renderMasteryDash();
@@ -1473,6 +1473,7 @@ function startTopicQuiz(name, subject){
   if(!canAccess() && !S.user){ /* anonymous free tier, limited to easy */ }
   const t=TOPICS.find(x=>x.name===name)||TOPICS.find(x=>x.sub===subject)||TOPICS[0];
   activeTopic=t;
+  if(!checkDailyQuestionCap(t.sub)) return;
   quizList=shuffleArray(QUESTIONS.filter(q=>q.tid===t.id)).map(shuffleQuestion); if(!quizList.length) quizList=shuffleArray(QUESTIONS.filter(q=>q.sub===t.sub)).map(shuffleQuestion); if(!quizList.length) quizList=[...QUESTIONS];
   curQ=0; switchTab('quiz'); renderQuiz();
 }
