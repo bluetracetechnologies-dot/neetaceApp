@@ -1608,7 +1608,7 @@ async function showUserDetail(targetUid){
 }
 
 async function grantDays(targetUid){
-  const days = parseInt(prompt('Add how many days to this user's trial?','7'));
+  const days = parseInt(prompt('Add days to trial (enter number):','7'));
   if(!days||isNaN(days)) return;
   const r = await api('admin',{action:'grant_days',uid:S.user.uid,sessionToken:S.sessionToken,targetUid,days});
   if(r.ok){ toast('Added '+days+' days'); showUserDetail(targetUid); } else toast('Error: '+(r.error||'Failed'));
