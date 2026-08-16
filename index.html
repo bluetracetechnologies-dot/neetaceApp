@@ -288,9 +288,9 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
   </div>
   <div class="sec-hd"><i class="ti ti-atom"></i> Subjects</div>
   <div class="sgrid">
-    <div class="sc phy" onclick="goSubject('PHYSICS')"><div class="si">⚛️</div><div class="sn">Physics</div><div style="font-size:10px;color:var(--mute)">4,200 Qs</div><div class="pbg"><div class="pfill" style="width:62%;background:var(--blue)"></div></div><div style="font-size:10px;color:var(--mute);margin-top:4px">62% done</div></div>
-    <div class="sc chem" onclick="goSubject('CHEMISTRY')"><div class="si">🧪</div><div class="sn">Chemistry</div><div style="font-size:10px;color:var(--mute)">3,800 Qs</div><div class="pbg"><div class="pfill" style="width:48%;background:var(--teal)"></div></div><div style="font-size:10px;color:var(--mute);margin-top:4px">48% done</div></div>
-    <div class="sc bio" onclick="goSubject('BIOLOGY')"><div class="si">🧬</div><div class="sn">Biology</div><div style="font-size:10px;color:var(--mute)">5,600 Qs</div><div class="pbg"><div class="pfill" style="width:75%;background:var(--amber)"></div></div><div style="font-size:10px;color:var(--mute);margin-top:4px">75% done</div></div>
+    <div class="sc phy" onclick="goSubject('PHYSICS')" ondblclick="startAdaptiveQuiz('PHYSICS')" title="Double-tap for Adaptive Mode"><div class="si">⚛️</div><div class="sn">Physics</div><div style="font-size:10px;color:var(--mute)">4,200 Qs</div><div class="pbg"><div class="pfill" style="width:62%;background:var(--blue)"></div></div><div style="font-size:10px;color:var(--mute);margin-top:4px">62% done</div></div>
+    <div class="sc chem" onclick="goSubject('CHEMISTRY')" ondblclick="startAdaptiveQuiz('CHEMISTRY')" title="Double-tap for Adaptive Mode"><div class="si">🧪</div><div class="sn">Chemistry</div><div style="font-size:10px;color:var(--mute)">3,800 Qs</div><div class="pbg"><div class="pfill" style="width:48%;background:var(--teal)"></div></div><div style="font-size:10px;color:var(--mute);margin-top:4px">48% done</div></div>
+    <div class="sc bio" onclick="goSubject('BIOLOGY')" ondblclick="startAdaptiveQuiz('BIOLOGY')" title="Double-tap for Adaptive Mode"><div class="si">🧬</div><div class="sn">Biology</div><div style="font-size:10px;color:var(--mute)">5,600 Qs</div><div class="pbg"><div class="pfill" style="width:75%;background:var(--amber)"></div></div><div style="font-size:10px;color:var(--mute);margin-top:4px">75% done</div></div>
   </div>
   <div class="sec-hd"><i class="ti ti-target"></i> Today's Targets</div>
   <div id="targetsArea">
@@ -1743,6 +1743,129 @@ async function uploadPack(){
     } else toast('Error: '+(r.error||'Upload failed'));
   };
   reader.readAsText(fi.files[0]);
+}
+
+
+// ===== ADAPTIVE ENGINE — client-side integration =====
+let ADAPTIVE_MODE = false;
+let questionStartTime = null;
+let seenQuestionIds = [];
+let currentTid = null;
+
+function startAdaptiveQuiz(subject){
+  if(!S.user){ openAuth(); return; }
+  if(!canAccess()){ openPaywall(); return; }
+  ADAPTIVE_MODE = true;
+  seenQuestionIds = [];
+  currentTid = null;
+  switchTab('quiz');
+  loadNextAdaptiveQuestion(subject);
+}
+
+async function loadNextAdaptiveQuestion(subject){
+  const pool = QUESTIONS.filter(q => !subject || q.sub === subject);
+  if(!pool.length){ toast('No questions available. Load content packs first.'); return; }
+  try{
+    const r = await api('adaptive',{
+      action:'next_question',
+      uid:S.user.uid, sessionToken:S.sessionToken,
+      subject, availableQuestions:pool,
+      seenIds:seenQuestionIds,
+      currentTid
+    });
+    if(r.question){
+      currentTid = r.question.tid;
+      seenQuestionIds.push(r.question.id);
+      // Show theta and expected prob as a small hint in dev mode
+      console.log('Adaptive: θ='+r.studentTheta+' expected='+r.expectedProb+'% tid='+r.chosenTid);
+      renderSingleQuestion(r.question, r.expectedProb);
+    }
+  }catch(e){
+    // Fallback to random if adaptive API unavailable
+    const q = pool[Math.floor(Math.random()*pool.length)];
+    renderSingleQuestion(q, null);
+  }
+}
+
+function renderSingleQuestion(q, expectedProb){
+  answered = false;
+  questionStartTime = Date.now();
+  document.getElementById('quizView').style.display='block';
+  document.getElementById('resultView').style.display='none';
+  const adaptiveBadge = ADAPTIVE_MODE && expectedProb
+    ? '<span style="font-size:10px;background:var(--purple-l);color:var(--purple);padding:2px 8px;border-radius:8px;font-weight:700;margin-left:6px">Adaptive · '+expectedProb+'% expected</span>'
+    : '';
+  document.getElementById('quizView').innerHTML=`
+  <div style="background:linear-gradient(135deg,var(--purple),var(--blue));color:#fff;border-radius:13px;padding:12px 14px;margin-bottom:13px">
+    <div style="font-size:10px;opacity:.75;text-transform:uppercase;letter-spacing:.8px">Adaptive Practice</div>
+    <div style="font-size:15px;font-weight:800;margin-top:2px">${q.sub} — ${q.ch}${adaptiveBadge}</div>
+  </div>
+  <div class="qmeta"><span class="qcnt">${q.sub} · ${q.diff}</span><div class="timer"><i class="ti ti-clock"></i><span id="tVal">3:00</span></div></div>
+  <div class="qpbg"><div class="qpfill" id="qProg" style="width:50%"></div></div>
+  <div class="qcard">
+    <div class="qtag">${q.ch}${q.pyq?' · PYQ '+q.pyqYr:''}</div>
+    <div class="qtext">${q.text}</div>
+    <div class="opts" id="optList">${['A','B','C','D'].map((l,i)=>q.opts[i]?
+      '<div class="opt" data-i="'+i+'" onclick="handleAdaptiveAns(this,'+i+','+JSON.stringify(q).replace(/"/g,"'")+')"><div class="oltr">'+l+'</div>'+q.opts[i]+'</div>':''
+    ).join('')}</div>
+    <div class="expl" id="explBox">
+      <b>Explanation:</b><br><span id="explTxt">${q.explanation}</span>
+      <div style="margin-top:10px;background:var(--surf2);border-radius:8px;padding:10px;font-size:12px;line-height:1.6">
+        <b>NCERT:</b> Class ${q.ncertCl}, Chapter ${q.ncertCh}, Page ${q.ncertPg}<br>
+        <b>Unit:</b> ${q.unit}
+        ${q.trick ? '<br><b>Trick:</b> '+q.trick : ''}
+      </div>
+    </div>
+  </div>
+  <div class="qactions">
+    <button class="btn btn-ghost" onclick="showHint()" style="padding:9px 13px"><i class="ti ti-lightbulb"></i> Hint</button>
+    <button class="btn btn-blue" style="flex:1" id="nextAdaptiveBtn" disabled onclick="loadNextAdaptiveQuestion('${q.sub}')">Next <i class="ti ti-arrow-right"></i></button>
+  </div>`;
+  if(!timerInt) startTimer();
+}
+
+async function handleAdaptiveAns(el, idx, q){
+  if(answered) return;
+  answered = true;
+  const timeTakenMs = questionStartTime ? Date.now() - questionStartTime : 30000;
+  document.querySelectorAll('.opt').forEach(o=>o.classList.add('locked'));
+
+  const isCorrect = idx === q.correct;
+  if(isCorrect){
+    el.classList.add('correct'); el.querySelector('.oltr').style.cssText='background:var(--green);color:#fff';
+    toast('✅ Correct!');
+  } else {
+    el.classList.add('wrong'); el.querySelector('.oltr').style.cssText='background:var(--red);color:#fff';
+    const cEl=document.querySelectorAll('.opt')[q.correct];
+    if(cEl){ cEl.classList.add('correct'); cEl.querySelector('.oltr').style.cssText='background:var(--green);color:#fff'; }
+    addMistake(q, idx);
+    toast('❌ Wrong — see explanation');
+  }
+
+  document.getElementById('explBox')?.classList.add('show');
+  const nextBtn = document.getElementById('nextAdaptiveBtn');
+  if(nextBtn) nextBtn.disabled = false;
+
+  // Record answer to adaptive engine
+  if(S.user && S.sessionToken){
+    try{
+      const r = await api('adaptive',{
+        action:'record_answer',
+        uid:S.user.uid, sessionToken:S.sessionToken,
+        tid:q.tid,
+        qDifficulty:({starter:150,easy:300,medium:500,hard:700,exam:850}[q.diff]||500),
+        correct:isCorrect,
+        timeTakenMs,
+        expectedTimeMs:30000
+      });
+      if(r.streakMilestone){
+        toast('🔥 '+r.streakMilestone+' in a row! Moving you up.');
+      }
+      if(r.nextAction==='level_up'){
+        toast('⭐ Mastery detected! Advancing to harder questions.');
+      }
+    }catch(e){}
+  }
 }
 
 // ===== INIT =====
