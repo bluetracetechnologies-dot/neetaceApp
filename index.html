@@ -1225,7 +1225,17 @@ async function doGoogleSignIn(){
     const idToken = await result.user.getIdToken();
     const name = result.user.displayName || result.user.email.split('@')[0];
     // Try login first, if user doesn't exist register them automatically
-    let r = await api('auth', {action:'login', idToken: idToken});
+    let deviceInfo = navigator.userAgent.slice(0, 60);
+    let r = await api('auth', {action:'login', idToken: idToken, deviceInfo: deviceInfo});
+    if(r.error === 'DEVICE_CONFLICT'){
+      const confirmed = await handleDeviceConflict();
+      if(confirmed){
+        r = await api('auth', {action:'login', idToken: idToken, deviceInfo: deviceInfo, forceLogin: true});
+      } else {
+        showAuthErr('Cancelled. Other device stays active.');
+        btn.disabled = false; btn.textContent = 'Continue with Google'; return;
+      }
+    }
     if(r.error === 'User profile not found. Please register.'){
       // Auto-register Google user
       const reg = await api('auth', {action:'register',
