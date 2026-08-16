@@ -556,7 +556,61 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     <div style="font-size:11px;padding:9px;background:var(--surf2);border-radius:8px;border:1px solid var(--bdr)" id="killLog">Kill switch: Not activated</div>
   </div>
   <div class="sec-hd"><i class="ti ti-users"></i> User Management</div>
-  <div class="dtw"><table class="dt"><thead><tr><th>Email</th><th>Role</th><th>Status</th><th>Expires</th><th>Actions</th></tr></thead><tbody id="userTable"><tr><td colspan="5" style="text-align:center;color:var(--mute);padding:20px">Loading users...</td></tr></tbody></table></div>
+
+  <!-- Stats strip -->
+  <div class="quad" style="margin-bottom:13px">
+    <div class="qbox"><div class="qn" id="statTotal">—</div><div class="ql">Total</div></div>
+    <div class="qbox"><div class="qn" style="color:var(--green)" id="statPaid">—</div><div class="ql">Paid</div></div>
+    <div class="qbox"><div class="qn" style="color:var(--amber)" id="statTrial">—</div><div class="ql">Trial</div></div>
+    <div class="qbox"><div class="qn" style="color:var(--red)" id="statExp">—</div><div class="ql">Expired</div></div>
+  </div>
+
+  <!-- Search + Filter bar -->
+  <div style="display:flex;gap:8px;margin-bottom:11px;flex-wrap:wrap">
+    <div style="position:relative;flex:1;min-width:180px">
+      <i class="ti ti-search" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--mute);font-size:15px;pointer-events:none"></i>
+      <input id="userSearch" class="fin" style="padding-left:36px;margin-top:0"
+        placeholder="Search by email or name..."
+        oninput="debounceSearch(this.value)">
+    </div>
+    <select id="userFilter" style="padding:9px 12px;border:1.5px solid var(--bdr);border-radius:9px;font-size:12px;background:var(--surf);color:var(--txt)" onchange="loadAdminUsers(1)">
+      <option value="all">All users</option>
+      <option value="paid">Paid</option>
+      <option value="trial">Trial</option>
+      <option value="expired">Expired</option>
+      <option value="disabled">Disabled</option>
+      <option value="admin">Admin</option>
+    </select>
+    <button class="btn btn-ghost" style="padding:9px 12px;font-size:12px" onclick="loadAdminUsers(1)">
+      <i class="ti ti-refresh"></i>
+    </button>
+  </div>
+
+  <!-- User table -->
+  <div class="dtw">
+    <table class="dt">
+      <thead><tr>
+        <th>User</th><th>Status</th><th>Plan / Expiry</th><th>Score</th><th>Actions</th>
+      </tr></thead>
+      <tbody id="userTable">
+        <tr><td colspan="5" style="text-align:center;color:var(--mute);padding:20px">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination controls -->
+  <div id="paginationBar" style="display:none;display:flex;justify-content:space-between;align-items:center;padding:10px 4px">
+    <button class="btn btn-ghost" id="prevPageBtn" style="font-size:12px;padding:7px 13px" onclick="changePage(-1)" disabled>
+      <i class="ti ti-arrow-left"></i> Prev
+    </button>
+    <span id="pageInfo" style="font-size:12px;color:var(--mute)">Page 1</span>
+    <button class="btn btn-ghost" id="nextPageBtn" style="font-size:12px;padding:7px 13px" onclick="changePage(1)" disabled>
+      Next <i class="ti ti-arrow-right"></i>
+    </button>
+  </div>
+
+  <!-- User detail drawer -->
+  <div id="userDrawer" style="display:none;background:var(--surf2);border:1px solid var(--bdr);border-radius:12px;padding:16px;margin-top:11px"></div>
 </div>
 
 
@@ -1388,27 +1442,192 @@ function buildStreak(){
 }
 
 // ===== ADMIN =====
-async function loadAdminUsers(){
+// ── ADMIN USER MANAGEMENT — paginated + searchable ──
+let adminPage = 1;
+let adminNextToken = null;
+let adminPrevTokens = [null]; // stack for back navigation
+let adminSearchTimer = null;
+let adminCurrentView = 'list'; // list | search
+
+async function loadAdminUsers(page){
   if(!S.user||S.user.role!=='admin') return;
-  const tbody=document.getElementById('userTable'); if(!tbody) return;
+  const tbody = document.getElementById('userTable'); if(!tbody) return;
+  if(page === 1){ adminPrevTokens = [null]; adminNextToken = null; adminPage = 1; }
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--mute);padding:16px"><div class="spinner" style="width:22px;height:22px;margin:0 auto"></div></td></tr>';
+
   try{
-    const r=await api('admin',{action:'list_users',uid:S.user.uid,sessionToken:S.sessionToken});
-    if(r.error){ tbody.innerHTML=`<tr><td colspan="5" style="color:var(--red);text-align:center;padding:20px">${r.error}</td></tr>`; return; }
-    document.getElementById('admU').textContent=r.users.length;
-    document.getElementById('admA').textContent=r.users.filter(u=>u.status==='paid'||u.status==='trial'||u.status==='admin').length;
-    tbody.innerHTML=r.users.map(u=>`<tr>
-      <td><b>${u.email}</b></td>
-      <td><span class="sp ${u.role==='admin'?'sp-admin':'sp-active'}">${u.role.toUpperCase()}</span></td>
-      <td><span class="sp ${u.status==='paid'||u.status==='admin'?'sp-active':u.status==='trial'?'sp-trial':'sp-expired'}">${u.status.toUpperCase()}</span></td>
-      <td style="font-size:11px;color:var(--mute)">${u.paidUntil?new Date(u.paidUntil).toLocaleDateString('en-IN'):u.trialEnd?'Trial: '+new Date(u.trialEnd).toLocaleDateString('en-IN'):'—'}</td>
-      <td style="display:flex;gap:5px;flex-wrap:wrap">${u.role!=='admin'?`<button class="ab ab-k" onclick="adminUserAction('disable','${u.uid}')">Kill</button><button class="ab ab-t" onclick="adminUserAction('enable','${u.uid}')">Enable</button><button class="ab ab-g" onclick="adminUserAction('grant_pro','${u.uid}')">Grant Pro</button>`:'<span style="font-size:11px;color:var(--mute)">Protected</span>'}</td>
-    </tr>`).join('');
-  }catch(e){ tbody.innerHTML='<tr><td colspan="5" style="color:var(--mute);text-align:center;padding:20px">Could not load users</td></tr>'; }
+    // Load stats in parallel
+    loadAdminStats();
+
+    const filter = document.getElementById('userFilter')?.value || 'all';
+    const r = await api('admin',{
+      action:'list_users', uid:S.user.uid, sessionToken:S.sessionToken,
+      status:filter, page:adminPage,
+      pageToken: adminPrevTokens[adminPrevTokens.length-1],
+    });
+    if(r.error){ tbody.innerHTML=`<tr><td colspan="5" style="color:var(--red);text-align:center;padding:16px">${r.error}</td></tr>`; return; }
+    adminNextToken = r.nextPageToken;
+    renderUserTable(r.users);
+    updatePaginationBar(r.hasMore, r.page);
+    adminCurrentView = 'list';
+  }catch(e){ tbody.innerHTML='<tr><td colspan="5" style="color:var(--mute);text-align:center;padding:16px">Could not load users</td></tr>'; }
+}
+
+async function loadAdminStats(){
+  try{
+    const r = await api('admin',{action:'get_stats',uid:S.user.uid,sessionToken:S.sessionToken});
+    const t = document.getElementById('statTotal');
+    const p = document.getElementById('statPaid');
+    const a = document.getElementById('admA');
+    const u = document.getElementById('admU');
+    if(t) t.textContent = r.total || 0;
+    if(p) p.textContent = r.paid  || 0;
+    if(a) a.textContent = r.paid  || 0;
+    if(u) u.textContent = r.total || 0;
+    // Trial/expired are computed client-side from the page data
+  }catch(e){}
+}
+
+function renderUserTable(users){
+  const tbody = document.getElementById('userTable'); if(!tbody) return;
+  if(!users.length){
+    tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--mute);padding:20px">No users found</td></tr>';
+    return;
+  }
+  // Update trial/expired counts from current page
+  let trial=0, expired=0;
+  users.forEach(u=>{ if(u.status==='trial') trial++; if(u.status==='expired') expired++; });
+  const te=document.getElementById('statTrial'); if(te) te.textContent=trial+'';
+  const ee=document.getElementById('statExp');  if(ee) ee.textContent=expired+'';
+
+  tbody.innerHTML = users.map(u=>{
+    const statusCls = u.status==='paid'||u.status==='admin'?'sp-active':u.status==='trial'?'sp-trial':u.status==='disabled'?'sp-expired':'sp-expired';
+    const expiry = u.paidUntil
+      ? new Date(u.paidUntil).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'2-digit'})
+      : u.trialEnd
+        ? 'Trial '+new Date(u.trialEnd).toLocaleDateString('en-IN',{day:'2-digit',month:'short'})
+        : '—';
+    const score = u.scores?.globalWeighted ? Math.round(u.scores.globalWeighted) : '—';
+    const actions = u.role !== 'admin'
+      ? `<div style="display:flex;gap:4px;flex-wrap:wrap">
+          <button class="ab ${u.disabled?'ab-t':'ab-k'}" onclick="adminUserAction('${u.disabled?'enable':'disable'}','${u.uid}')">${u.disabled?'Enable':'Kill'}</button>
+          <button class="ab ab-g" onclick="adminUserAction('grant_pro','${u.uid}')">Pro</button>
+          <button class="ab" style="border-color:var(--blue);color:var(--blue)" onclick="showUserDetail('${u.uid}')">View</button>
+        </div>`
+      : '<span style="font-size:10px;color:var(--mute)">Protected</span>';
+    return `<tr>
+      <td><div style="font-size:12px;font-weight:600">${u.name||'—'}</div><div style="font-size:10px;color:var(--mute)">${u.email}</div></td>
+      <td><span class="sp ${statusCls}" style="font-size:10px">${u.status.toUpperCase()}</span></td>
+      <td style="font-size:11px;color:var(--mute)">${expiry}</td>
+      <td style="font-size:12px;font-weight:600">${score}</td>
+      <td>${actions}</td>
+    </tr>`;
+  }).join('');
+}
+
+function updatePaginationBar(hasMore, page){
+  const bar = document.getElementById('paginationBar');
+  const prev = document.getElementById('prevPageBtn');
+  const next = document.getElementById('nextPageBtn');
+  const info = document.getElementById('pageInfo');
+  if(!bar) return;
+  bar.style.display = 'flex';
+  if(prev) prev.disabled = adminPage <= 1;
+  if(next) next.disabled = !hasMore;
+  if(info) info.textContent = 'Page ' + adminPage + (hasMore ? '+' : '');
+}
+
+function changePage(direction){
+  if(direction === 1 && adminNextToken){
+    adminPrevTokens.push(adminNextToken);
+    adminPage++;
+  } else if(direction === -1 && adminPrevTokens.length > 1){
+    adminPrevTokens.pop();
+    adminPage--;
+  }
+  loadAdminUsers(adminPage);
+}
+
+function debounceSearch(val){
+  clearTimeout(adminSearchTimer);
+  if(!val.trim()){ loadAdminUsers(1); return; }
+  adminSearchTimer = setTimeout(()=>searchUsers(val), 400);
+}
+
+async function searchUsers(q){
+  if(!S.user||S.user.role!=='admin') return;
+  const tbody = document.getElementById('userTable'); if(!tbody) return;
+  if(q.length < 2) return;
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--mute);padding:16px">Searching...</td></tr>';
+  try{
+    const r = await api('admin',{action:'search_users',uid:S.user.uid,sessionToken:S.sessionToken,query:q});
+    if(r.error){ tbody.innerHTML=`<tr><td colspan="5" style="color:var(--red);text-align:center">${r.error}</td></tr>`; return; }
+    renderUserTable(r.users);
+    const bar = document.getElementById('paginationBar');
+    if(bar) bar.style.display='none'; // no pagination in search results
+    const info = document.getElementById('pageInfo');
+    if(info) info.textContent = r.total + ' result(s) for "'+q+'"';
+    adminCurrentView = 'search';
+  }catch(e){ tbody.innerHTML='<tr><td colspan="5" style="color:var(--mute);text-align:center">Search failed</td></tr>'; }
+}
+
+async function showUserDetail(targetUid){
+  const drawer = document.getElementById('userDrawer'); if(!drawer) return;
+  drawer.style.display='block';
+  drawer.innerHTML='<div style="text-align:center;padding:20px;color:var(--mute)">Loading...</div>';
+  try{
+    const r = await api('admin',{action:'get_user',uid:S.user.uid,sessionToken:S.sessionToken,targetUid});
+    const u = r.user;
+    const topics = Object.entries(u.mastery||{}).sort((a,b)=>a[1].theta-b[1].theta).slice(0,5);
+    drawer.innerHTML=`
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:13px">
+        <div><div style="font-size:14px;font-weight:700">${u.name}</div><div style="font-size:11px;color:var(--mute)">${u.email}</div></div>
+        <button onclick="document.getElementById('userDrawer').style.display='none'" style="background:none;border:none;cursor:pointer;color:var(--mute);font-size:18px"><i class="ti ti-x"></i></button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:11px">
+        <div class="qbox"><div class="qn" style="font-size:15px">${u.totalQuestionsAttempted||0}</div><div class="ql">Qs done</div></div>
+        <div class="qbox"><div class="qn" style="font-size:15px;color:var(--blue)">${u.scores?.globalWeighted?Math.round(u.scores.globalWeighted):'—'}</div><div class="ql">Score</div></div>
+        <div class="qbox"><div class="qn" style="font-size:15px;color:var(--purple)">${u.referralCount||0}</div><div class="ql">Referrals</div></div>
+      </div>
+      ${topics.length?`<div style="font-size:11px;font-weight:700;color:var(--mute);margin-bottom:6px">WEAKEST TOPICS (θ lowest first)</div>`:''}
+      ${topics.map(([tid,m])=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:11px;border-bottom:1px solid var(--bdr)">
+        <span style="flex:1;color:var(--txt)">${tid}</span>
+        <span style="color:var(--mute)">θ${Math.round(m.theta)}</span>
+        <span style="color:var(--mute)">${m.attempts} attempts</span>
+        <span style="color:${m.theta<400?'var(--red)':m.theta<600?'#7a4800':'var(--green)'}">${Math.round(m.theta)<400?'Weak':Math.round(m.theta)<600?'Medium':'Strong'}</span>
+      </div>`).join('')}
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+        ${u.role!=='admin'?`
+        <button class="btn btn-green" style="font-size:12px;padding:7px 11px" onclick="adminUserAction('grant_pro','${u.uid}')"><i class="ti ti-star"></i> Grant Pro</button>
+        <button class="btn btn-blue" style="font-size:12px;padding:7px 11px" onclick="grantDays('${u.uid}')"><i class="ti ti-calendar-plus"></i> Add Days</button>
+        <button class="btn ${u.disabled?'btn-green':'btn-red'}" style="font-size:12px;padding:7px 11px" onclick="adminUserAction('${u.disabled?'enable':'disable'}','${u.uid}')">
+          <i class="ti ti-${u.disabled?'lock-open':'lock'}"></i> ${u.disabled?'Enable':'Disable'}
+        </button>`:''}
+      </div>`;
+  }catch(e){ drawer.innerHTML='<div style="color:var(--red);font-size:12px">Could not load user detail</div>'; }
+}
+
+async function grantDays(targetUid){
+  const days = parseInt(prompt('Add how many days to this user's trial?','7'));
+  if(!days||isNaN(days)) return;
+  const r = await api('admin',{action:'grant_days',uid:S.user.uid,sessionToken:S.sessionToken,targetUid,days});
+  if(r.ok){ toast('Added '+days+' days'); showUserDetail(targetUid); } else toast('Error: '+(r.error||'Failed'));
 }
 
 async function adminUserAction(action, targetUid){
-  const r=await api('admin',{action,uid:S.user.uid,sessionToken:S.sessionToken,targetUid});
-  if(r.ok){ toast('Done: '+action+' for user'); loadAdminUsers(); } else toast('Error: '+(r.error||'Failed'));
+  const r = await api('admin',{action,uid:S.user.uid,sessionToken:S.sessionToken,targetUid});
+  if(r.ok){
+    toast('Done: '+action);
+    // Refresh current view
+    if(adminCurrentView === 'search'){
+      searchUsers(document.getElementById('userSearch')?.value||'');
+    } else {
+      loadAdminUsers(adminPage);
+    }
+    // Refresh drawer if open
+    const drawer = document.getElementById('userDrawer');
+    if(drawer?.style.display !== 'none') showUserDetail(targetUid);
+  } else toast('Error: '+(r.error||'Failed'));
 }
 
 async function adminAction(action){
