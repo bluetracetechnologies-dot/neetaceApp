@@ -917,7 +917,7 @@ function updateSubCard(){
       daysLeft<=30 ? 'Renews next academic year (June). Your progress is saved.' : 'Valid through the full NEET 2026 preparation cycle.');
     if(acadEl) acadEl.style.display='block';
     featEl.innerHTML = featureList(['All 5 difficulty levels','Adaptive learning engine','Parameterized + unit variant questions','Full AI Tutor','Global leaderboard + batch board','Galti Copy + flashcards + analytics']);
-    actEl.innerHTML = '<button class="btn btn-ghost btn-full" style="font-size:12px" onclick="switchTab('about')"><i class="ti ti-receipt"></i> View receipt / contact support</button>';
+    actEl.innerHTML = '<button class="btn btn-ghost btn-full" style="font-size:12px" onclick="switchTab(\'about\')"><i class="ti ti-receipt"></i> View receipt / contact support</button>';
 
   } else if(s === 'trial'){
     const trialEnd = u.trialEnd ? new Date(u.trialEnd) : new Date();
