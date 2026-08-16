@@ -73,6 +73,10 @@ const STARTER_PACKS = [
   { id: 'pack_physics_expansion',   name: 'Physics Expansion',   subject: 'PHYSICS',   file: 'pack_physics_expansion.csv',   description: 'All 19 Physics units covered - Class 11 and 12' },
   { id: 'pack_chemistry_expansion', name: 'Chemistry Expansion', subject: 'CHEMISTRY', file: 'pack_chemistry_expansion.csv', description: 'All 20 Chemistry units covered' },
   { id: 'pack_biology_expansion',   name: 'Biology Expansion',   subject: 'BIOLOGY',   file: 'pack_biology_expansion.csv',   description: 'All 10 Biology units - high-weightage NCERT facts' },
+  { id: 'pack_bio_human_physiology', name: 'Bio: Human Physiology', subject: 'BIOLOGY', file: 'pack_bio_human_physiology.csv', description: 'Human Physiology - highest NEET weightage (25 Qs)' },
+  { id: 'pack_bio_genetics',         name: 'Bio: Genetics',         subject: 'BIOLOGY', file: 'pack_bio_genetics.csv',         description: 'Genetics and Evolution - Mendel to Hardy-Weinberg (25 Qs)' },
+  { id: 'pack_phy_mechanics',        name: 'Phy: Core Chapters',    subject: 'PHYSICS', file: 'pack_phy_mechanics.csv',        description: 'Mechanics, Electrostatics, Optics, Modern (25 Qs)' },
+  { id: 'pack_chem_organic',         name: 'Chem: Organic',         subject: 'CHEMISTRY', file: 'pack_chem_organic.csv',       description: 'Organic - GOC, hydrocarbons, functional groups (25 Qs)' },
 ];
 
 async function verifyAdmin(uid, sessionToken) {
