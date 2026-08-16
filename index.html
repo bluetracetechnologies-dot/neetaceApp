@@ -518,6 +518,22 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
       <span>Cap: 90 days</span>
     </div>
   </div>
+  <div class="sec-hd" style="margin-top:14px"><i class="ti ti-phone"></i> Contact & Notifications</div>
+  <div class="card">
+    <div style="font-size:11px;color:var(--mute);margin-bottom:11px">We send trial reminders, progress reports, and offers via email and WhatsApp.</div>
+    <div style="display:flex;flex-direction:column;gap:9px">
+      <div><div class="flbl">Your Phone / WhatsApp</div><input class="fin" id="userPhone" placeholder="+91 XXXXXXXXXX" style="margin-top:4px"></div>
+      <div><div class="flbl">Parent / Guardian Name</div><input class="fin" id="parentName" placeholder="Parent name" style="margin-top:4px"></div>
+      <div><div class="flbl">Parent WhatsApp Number</div><input class="fin" id="parentPhone" placeholder="+91 XXXXXXXXXX" style="margin-top:4px"></div>
+      <div><div class="flbl">Parent Email (optional)</div><input class="fin" id="parentEmail" placeholder="parent@gmail.com" style="margin-top:4px"></div>
+      <div style="display:flex;flex-direction:column;gap:7px;padding:10px;background:var(--surf2);border-radius:9px">
+        <div class="srow" style="padding:5px 0;border:none"><span style="font-size:12px">Email notifications</span><button class="tsw on" id="notifEmail" onclick="this.classList.toggle('on')"></button></div>
+        <div class="srow" style="padding:5px 0;border:none"><span style="font-size:12px">WhatsApp notifications</span><button class="tsw on" id="notifWa" onclick="this.classList.toggle('on')"></button></div>
+        <div class="srow" style="padding:5px 0;border:none"><span style="font-size:12px">Parent notifications</span><button class="tsw on" id="notifParent" onclick="this.classList.toggle('on')"></button></div>
+      </div>
+      <button class="btn btn-blue btn-full" onclick="saveContacts()"><i class="ti ti-device-floppy"></i> Save Contact Details</button>
+    </div>
+  </div>
   <button class="btn btn-ghost btn-full" style="margin-top:4px;color:var(--red);border-color:var(--red)" onclick="signOut()"><i class="ti ti-logout"></i> Sign Out</button>
 </div>
 
@@ -546,6 +562,29 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     </div>
   </div>
   <div id="packsList"><div style="text-align:center;padding:16px;color:var(--mute);font-size:12px">Loading packs...</div></div>
+  <div class="sec-hd"><i class="ti ti-bell"></i> Notifications</div>
+  <div class="card" style="margin-bottom:14px">
+    <div style="font-size:12px;font-weight:700;margin-bottom:9px">Send to a user</div>
+    <input id="notifTargetUid" class="fin" placeholder="User UID (from user table)" style="margin-bottom:8px">
+    <select id="notifEvent" style="width:100%;padding:9px 12px;border:1.5px solid var(--bdr);border-radius:9px;font-size:12px;background:var(--surf);color:var(--txt);margin-bottom:8px">
+      <option value="trial_started">Trial Started</option>
+      <option value="trial_warning">Trial Warning (2 days left)</option>
+      <option value="trial_last_day">Trial Last Day</option>
+      <option value="payment_success">Payment Confirmed</option>
+      <option value="weekly_progress">Weekly Progress Report</option>
+      <option value="offer_alert">Festival Offer Alert</option>
+    </select>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-blue" style="flex:1" onclick="sendAdminNotif(false)"><i class="ti ti-send"></i> Send to User</button>
+      <button class="btn btn-ghost" onclick="getWaLinks()"><i class="ti ti-brand-whatsapp" style="color:#25d366"></i> Get WA Links</button>
+    </div>
+    <div id="waLinksBox" style="display:none;margin-top:10px;padding:10px;background:var(--surf2);border-radius:8px;font-size:12px"></div>
+  </div>
+  <div class="card" style="margin-bottom:14px;border-color:var(--amber)">
+    <div style="font-size:12px;font-weight:700;margin-bottom:6px;color:#7a4800">⚠️ Broadcast to ALL users</div>
+    <div style="font-size:11px;color:var(--mute);margin-bottom:8px">Sends to first 50 users. Use carefully.</div>
+    <button class="btn btn-ghost btn-full" style="border-color:var(--amber);color:#7a4800" onclick="if(confirm('Send to ALL users?'))sendAdminNotif(true)"><i class="ti ti-broadcast"></i> Broadcast Notification</button>
+  </div>
   <div class="sec-hd"><i class="ti ti-lock"></i> Kill Switch</div>
   <div class="card" style="border-color:var(--red)">
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
@@ -1140,6 +1179,7 @@ function switchTab(tab){
   if(bt) bt.classList.add('active');
   if(tab==='admin'){ loadAdminUsers(); loadPacksList(); }
   if(tab==='about'){ initAbout(); loadReferral(); }
+  if(tab==='profile') loadProfileContacts();
   if(tab==='flash') renderFlash();
   if(tab==='practice') renderPracticeTopics('ALL');
   if(tab==='search') renderAllTopics('ALL');
