@@ -50,6 +50,8 @@ module.exports = async function handler(req, res) {
         uid: userUid, email, name,
         role: isAdmin ? 'admin' : 'user',
         trialStart: now.toISOString(), trialEnd: trialEnd.toISOString(),
+        trialDays: trialDays, trialQuestionCap: trialQuestionCap, trialFeatures: trialFeatures,
+        dailyQuestionsUsed: 0, dailyQuestionsDate: now.toISOString().slice(0,10),
         paid: isAdmin, paidUntil: null, disabled: false, sessionToken: null,
         createdAt: now.toISOString(), authProvider: uid ? 'google' : 'email',
         phone: '', parentPhone: '', parentName: '', parentEmail: '',
