@@ -70,6 +70,9 @@ const STARTER_PACKS = [
   { id: 'pack_chemistry_core', name: 'Chemistry Core', subject: 'CHEMISTRY', file: 'pack_chemistry_core.csv', description: 'Physical, Organic, and Inorganic Chemistry fundamentals' },
   { id: 'pack_biology_core',   name: 'Biology Core',   subject: 'BIOLOGY',   file: 'pack_biology_core.csv',   description: 'Cell Biology, Genetics, Physiology, Ecology fundamentals' },
   { id: 'pack_pyq_highlights', name: 'PYQ Highlights', subject: 'ALL',       file: 'pack_pyq_highlights.csv', description: 'Previous Year Questions across all subjects, 2019-2024' },
+  { id: 'pack_physics_expansion',   name: 'Physics Expansion',   subject: 'PHYSICS',   file: 'pack_physics_expansion.csv',   description: 'All 19 Physics units covered — Class 11 and 12' },
+  { id: 'pack_chemistry_expansion', name: 'Chemistry Expansion', subject: 'CHEMISTRY', file: 'pack_chemistry_expansion.csv', description: 'All 20 Chemistry units covered' },
+  { id: 'pack_biology_expansion',   name: 'Biology Expansion',   subject: 'BIOLOGY',   file: 'pack_biology_expansion.csv',   description: 'All 10 Biology units — high-weightage NCERT facts' },
 ];
 
 async function verifyAdmin(uid, sessionToken) {
