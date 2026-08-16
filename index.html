@@ -810,7 +810,16 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 
   <!-- Credentials -->
   <div class="card" style="border-color:#c4b5fd;background:var(--purple-l)">
-    <div class="sec-hd" style="margin-bottom:9px"><i class="ti ti-certificate"></i> Company Credentials</div>
+    <div class="sec-hd" style="margin-top:14px"><i class="ti ti-scale"></i> Legal</div>
+  <div class="card" style="padding:6px 14px">
+    <div style="display:flex;flex-direction:column">
+      <button class="srow" style="background:none;border:none;cursor:pointer;text-align:left" onclick="openLegal('terms')"><span style="font-size:12.5px">Terms & Conditions</span><i class="ti ti-chevron-right" style="color:var(--mute)"></i></button>
+      <button class="srow" style="background:none;border:none;cursor:pointer;text-align:left" onclick="openLegal('privacy')"><span style="font-size:12.5px">Privacy Policy</span><i class="ti ti-chevron-right" style="color:var(--mute)"></i></button>
+      <button class="srow" style="background:none;border:none;cursor:pointer;text-align:left" onclick="openLegal('refund')"><span style="font-size:12.5px">Refund & Cancellation Policy</span><i class="ti ti-chevron-right" style="color:var(--mute)"></i></button>
+      <button class="srow" style="background:none;border:none;cursor:pointer;text-align:left;border-bottom:none" onclick="openLegal('disclaimer')"><span style="font-size:12.5px">Disclaimer</span><i class="ti ti-chevron-right" style="color:var(--mute)"></i></button>
+    </div>
+  </div>
+  <div class="sec-hd" style="margin-bottom:9px"><i class="ti ti-certificate"></i> Company Credentials</div>
     <div style="display:flex;flex-direction:column;gap:7px;font-size:12px">
       <div style="display:flex;justify-content:space-between"><span style="color:var(--mute)">Company</span><b>Bluetrace Technologies Pvt. Ltd.</b></div>
       <div style="display:flex;justify-content:space-between"><span style="color:var(--mute)">CIN</span><span style="font-family:monospace;font-size:11px">U62099MH2026PTC474717</span></div>
@@ -937,6 +946,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
       <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
       Continue with Google
     </button>
+  <div style="font-size:10px;color:var(--mute);text-align:center;margin-top:9px">By continuing you agree to our <a href="#" onclick="openLegal('terms');return false" style="color:var(--blue)">Terms</a> & <a href="#" onclick="openLegal('privacy');return false" style="color:var(--blue)">Privacy Policy</a>. Under 18? Parental consent required.</div>
 
     <div class="dvdr"><span>or use email</span></div>
 
@@ -3383,7 +3393,7 @@ function submitExam(){
   '<div style="background:linear-gradient(135deg,#0a2342,var(--blue));color:#fff;border-radius:16px;padding:24px;text-align:center;margin-bottom:14px">'+
     '<div style="font-size:12px;opacity:.75">NEET SIMULATION RESULT</div>'+
     '<div style="font-size:42px;font-weight:900;margin:6px 0">'+score720+'<span style="font-size:18px;opacity:.6">/720</span></div>'+
-    '<div style="font-size:13px;opacity:.85">Estimated AIR: <b>'+air+'</b></div></div>'+
+    '<div style="font-size:13px;opacity:.85">Estimated AIR: <b>'+air+'</b> \u00b7 estimate only</div></div>'+
   '<div class="quad" style="margin-bottom:13px">'+
     '<div class="qbox"><div class="qn" style="color:var(--green)">'+correct+'</div><div class="ql">Correct (+4)</div></div>'+
     '<div class="qbox"><div class="qn" style="color:var(--red)">'+wrong+'</div><div class="ql">Wrong (-1)</div></div>'+
@@ -3491,7 +3501,7 @@ function renderScorePredictor(r){
   const gain=Math.round((720/49)*0.6); // approx marks recoverable per weak unit fixed
   el.innerHTML='<div style="text-align:center;margin-bottom:9px"><div style="font-size:11px;color:var(--mute)">PREDICTED NEET SCORE</div>'+
     '<div style="font-size:34px;font-weight:900;color:var(--blue)">'+mid+'<span style="font-size:15px;color:var(--mute)">/720</span></div>'+
-    '<div style="font-size:11px;color:var(--mute)">Confidence range: '+lo+' \u2013 '+hi+' &middot; based on '+g.attempted+' answers</div></div>'+
+    '<div style="font-size:11px;color:var(--mute)">Confidence range: '+lo+' \u2013 '+hi+' &middot; based on '+g.attempted+' answers \u00b7 estimate only, not a guarantee</div></div>'+
     '<div style="background:var(--amber-l);border-radius:9px;padding:10px;font-size:11.5px;color:#7a4800;line-height:1.6"><b>\uD83C\uDFAF Highest-gain move:</b> Fix <b>'+wu.name+'</b> (your weakest) — worth roughly +'+gain+' marks. Tap it in Chapter Mastery above to practice now.</div>';
 }
 
@@ -3625,6 +3635,68 @@ function doctorOnAnswer(correct){
   }, 1600);
   return true;
 }
+
+
+// ===== LEGAL: T&C, Privacy, Refund, Disclaimer =====
+const LEGAL_DOCS = {
+  disclaimer: { title: "Disclaimer", body: `
+<b>Not affiliated with NTA.</b> NEETAce is an independent preparation tool by Bluetrace Technologies Pvt. Ltd. We are not associated with, endorsed by, or connected to the National Testing Agency (NTA), NMC, or any government body conducting NEET.<br><br>
+<b>No score or rank guarantee.</b> Predicted scores, AIR estimates, mastery levels and analytics are statistical estimates based on your practice data. They are for guidance only and do not guarantee any actual NEET result, rank, or admission.<br><br>
+<b>Educational references.</b> NCERT class/chapter references are provided for study guidance. Syllabus details may change; always verify with the official NTA information bulletin for the current year.<br><br>
+<b>Content accuracy.</b> Questions and explanations are prepared with care but may contain errors. Some content may be AI-assisted. If you spot a mistake, report it via Feedback — we correct and version content promptly. NEETAce is a practice supplement, not a replacement for NCERT textbooks or classroom teaching.` },
+
+  terms: { title: "Terms & Conditions", body: `
+<b>1. Service.</b> NEETAce (neet.bluetrace.tech) is an online NEET practice platform operated by Bluetrace Technologies Pvt. Ltd., Parbhani, Maharashtra, India (CIN U62099MH2026PTC474717).<br><br>
+<b>2. Account.</b> You must provide accurate information. One account per person. Accounts are non-transferable. <b>Single-device policy:</b> one active session per account; signing in on a new device ends the previous session. Credential sharing may lead to suspension without refund.<br><br>
+<b>3. Plans and access.</b> Paid plans grant access until the stated expiry (annual plans expire 31 May of the academic cycle; monthly plans renew monthly). The 7-day free trial converts to limited access unless upgraded. Academy access is governed by the sponsoring academy agreement and its seat limits.<br><br>
+<b>4. Acceptable use.</b> No scraping, redistribution, resale, or public posting of questions/content; no reverse engineering; no attempts to bypass access controls or device limits.<br><br>
+<b>5. Intellectual property.</b> All platform content, question banks, code and branding are property of Bluetrace Technologies Pvt. Ltd. or licensed to it. Teacher-uploaded packs remain the teacher/academy responsibility for accuracy and rights.<br><br>
+<b>6. Minors.</b> Users under 18 must use NEETAce with consent of a parent/guardian, who accepts these terms on their behalf.<br><br>
+<b>7. Liability.</b> Service is provided "as is". To the maximum extent permitted by law, our total liability is limited to the amount you paid in the preceding 12 months. We are not liable for exam outcomes, data loss from your device, or downtime beyond our control.<br><br>
+<b>8. Termination.</b> We may suspend accounts violating these terms. You may stop using the service anytime; fees already paid are governed by the Refund Policy.<br><br>
+<b>9. Changes.</b> We may update these terms; continued use means acceptance. Material changes will be notified in-app or by email.<br><br>
+<b>10. Governing law.</b> These terms are governed by the laws of India; courts at Parbhani, Maharashtra have exclusive jurisdiction.<br><br>
+Contact: support@bluetrace.tech · +91 94622 25303` },
+
+  privacy: { title: "Privacy Policy", body: `
+<b>What we collect.</b> Name, email (via Google Sign-In or registration), optional phone, optional parent name/phone/email, and learning data (questions attempted, accuracy, mastery scores, mistakes, streaks, device session token).<br><br>
+<b>Why.</b> To provide the service (auth, progress, adaptive difficulty), send service notifications (trial, payment, progress — controllable in Profile), process payments, and prevent account sharing.<br><br>
+<b>Processors.</b> Google Firebase (authentication and database), Razorpay (payments — we never store your card/UPI details), Vercel (hosting), Gmail SMTP (emails). Data is stored on these providers\u2019 servers which may be located outside India.<br><br>
+<b>Parents and minors.</b> For users under 18, parent/guardian consent is required. Parent contact details are used only for the notifications you enable and are never sold.<br><br>
+<b>Your rights (DPDP Act 2023).</b> You may access, correct, or request deletion of your data by emailing support@bluetrace.tech from your registered email. Deletion removes your account and learning data within 30 days, except records we must retain for tax/legal compliance (e.g., payment invoices).<br><br>
+<b>No selling of data.</b> We do not sell or rent personal data. Aggregated, anonymised statistics (e.g., \u201caverage accuracy in Optics\u201d) may be used to improve the product.<br><br>
+<b>Security.</b> Transport encryption (HTTPS), server-verified sessions, role-based admin access. No system is 100% secure; report concerns to support@bluetrace.tech.<br><br>
+Grievance Officer: A.R. Ansari, Bluetrace Technologies Pvt. Ltd., Parbhani, Maharashtra · support@bluetrace.tech` },
+
+  refund: { title: "Refund & Cancellation", body: `
+<b>7-day free trial first.</b> Every new account gets a full-featured 7-day trial before paying — please evaluate during this period.<br><br>
+<b>Digital-goods policy.</b> Because plans unlock digital content immediately, fees are generally <b>non-refundable</b> once access is granted, except as below.<br><br>
+<b>Eligible refunds.</b> (a) Duplicate/double payment — full refund of the duplicate. (b) Payment charged but access not activated within 48 hours despite contacting support — full refund. (c) Within 48 hours of first annual-plan purchase with fewer than 20 questions attempted — full refund on request.<br><br>
+<b>Monthly plans</b> can be cancelled anytime; access continues until the end of the paid month; no pro-rata refunds.<br><br>
+<b>Academy plans</b> are governed by the academy invoice; seat additions are non-refundable once activated.<br><br>
+<b>How to claim.</b> Email support@bluetrace.tech from your registered email with the Razorpay payment ID within the eligible window. Approved refunds are processed to the original payment method within 7\u201310 working days via Razorpay.<br><br>
+Promotional/festival prices, personal offers, and add-ons are non-refundable unless clause (a) or (b) applies.` },
+};
+
+function openLegal(key){
+  const doc = LEGAL_DOCS[key]; if(!doc) return;
+  const el = document.createElement("div");
+  el.id = "legalModal";
+  el.style.cssText = "position:fixed;inset:0;background:rgba(10,35,66,.85);z-index:700;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(3px)";
+  el.innerHTML = '<div style="background:var(--surf);border-radius:20px 20px 0 0;width:100%;max-width:520px;max-height:86vh;display:flex;flex-direction:column">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid var(--bdr)">' +
+    '<b style="font-size:15px">'+doc.title+'</b>' +
+    '<button onclick="document.getElementById(\'legalModal\').remove()" style="background:none;border:none;font-size:18px;color:var(--mute);cursor:pointer"><i class="ti ti-x"></i></button></div>' +
+    '<div style="padding:16px 18px;overflow-y:auto;font-size:12px;line-height:1.75;color:var(--txt)">'+doc.body+
+    '<div style="margin-top:14px;font-size:10px;color:var(--mute)">Last updated: Aug 2026 \u00b7 Bluetrace Technologies Pvt. Ltd. \u00b7 This document is provided for transparency; for specific legal questions consult a professional.</div></div></div>';
+  el.addEventListener("click", function(e){ if(e.target===el) el.remove(); });
+  document.body.appendChild(el);
+}
+// Deep links for Razorpay review: neet.bluetrace.tech/#terms etc.
+(function(){
+  const h = (location.hash||"").replace("#","");
+  if(["terms","privacy","refund","disclaimer"].indexOf(h)>=0) setTimeout(function(){ openLegal(h); }, 600);
+})();
 
 // ===== INIT =====
 window.addEventListener('load', async ()=>{
