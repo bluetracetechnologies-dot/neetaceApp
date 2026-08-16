@@ -3812,6 +3812,104 @@ async function toggleTrialFeatures(){
   toast(all ? "Trial: all features enabled" : "Trial: limited features"); loadTrialConfigAdmin();
 }
 
+
+// ===== SESSION CONFLICT MODAL =====
+function showSessionConflict(existingInfo, onConfirm){
+  const el = document.createElement("div");
+  el.id = "sessionConflictModal";
+  el.style.cssText = "position:fixed;inset:0;background:rgba(10,35,66,.85);z-index:700;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)";
+  el.innerHTML = '<div style="background:var(--surf);border-radius:16px;width:90%;max-width:400px;padding:24px;text-align:center">'+
+    '<div style="font-size:36px;margin-bottom:12px">\uD83D\uDD12</div>'+
+    '<div style="font-size:16px;font-weight:800;margin-bottom:8px">Already signed in elsewhere</div>'+
+    '<div style="font-size:12px;color:var(--mute);margin-bottom:16px;line-height:1.6">'+
+      'Your account is active on another device.<br>'+
+      '<span style="font-size:11px">'+existingInfo+'</span></div>'+
+    '<div style="font-size:12px;color:var(--txt);margin-bottom:16px;background:var(--amber-l);padding:10px;border-radius:9px;color:#7a4800">'+
+      'Signing in here will <b>log you out</b> from that device immediately.</div>'+
+    '<button id="confirmTakeoverBtn" style="width:100%;padding:12px;border-radius:10px;font-size:14px;font-weight:700;background:var(--blue);color:#fff;border:none;cursor:pointer;margin-bottom:8px">'+
+      'Sign in here (log out other device)</button>'+
+    '<button id="cancelTakeoverBtn" style="width:100%;padding:10px;border-radius:10px;font-size:13px;background:none;border:1.5px solid var(--bdr);color:var(--mute);cursor:pointer">'+
+      'Cancel — keep other device active</button></div>';
+  document.body.appendChild(el);
+  document.getElementById("confirmTakeoverBtn").onclick = function(){
+    el.remove(); onConfirm();
+  };
+  document.getElementById("cancelTakeoverBtn").onclick = function(){
+    el.remove(); toast("Sign-in cancelled. Other device stays active.");
+  };
+}
+
+// ===== DAILY QUESTION CAP (trial users) =====
+let dailyQUsed = 0;
+let dailyQDate = "";
+function checkDailyQuestionCap(){
+  if(!S.user) return true; // anonymous = handled by free practice cap
+  if(S.user.role === "admin") return true;
+  if(S.user.accessStatus === "paid") return true;
+  // Trial or expired users — check daily cap
+  const today = new Date().toISOString().slice(0,10);
+  if(dailyQDate !== today){ dailyQUsed = 0; dailyQDate = today; }
+  const cap = S.user.trialQuestionCap || window._TRIAL_CONFIG?.dailyCapAmount || null;
+  if(!cap) return true; // no cap configured
+  if(dailyQUsed >= cap){
+    showDailyCapModal(dailyQUsed, cap);
+    return false;
+  }
+  dailyQUsed++;
+  return true;
+}
+function showDailyCapModal(used, cap){
+  const el = document.createElement("div");
+  el.id = "capModal";
+  el.style.cssText = "position:fixed;inset:0;background:rgba(10,35,66,.85);z-index:700;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)";
+  el.innerHTML = '<div style="background:var(--surf);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:24px 20px;text-align:center">'+
+    '<div style="font-size:36px;margin-bottom:8px">\uD83D\uDCCA</div>'+
+    '<div style="font-size:17px;font-weight:800">Daily limit reached</div>'+
+    '<div style="font-size:12px;color:var(--mute);margin:8px 0 16px">You have practiced <b>'+cap+'</b> questions today. Upgrade for unlimited daily practice.</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">'+
+      '<div style="background:var(--surf2);border-radius:9px;padding:12px"><div style="font-size:20px;font-weight:800;color:var(--blue)">'+cap+'</div><div style="font-size:10px;color:var(--mute)">Today\'s limit</div></div>'+
+      '<div style="background:var(--surf2);border-radius:9px;padding:12px"><div style="font-size:20px;font-weight:800;color:var(--green)">\u221E</div><div style="font-size:10px;color:var(--mute)">With Pro plan</div></div></div>'+
+    '<button onclick="document.getElementById(\'capModal\').remove();openPricingModal()" style="width:100%;padding:13px;border-radius:10px;font-size:14px;font-weight:700;background:var(--blue);color:#fff;border:none;cursor:pointer">Upgrade from \u20B9299</button>'+
+    '<button onclick="document.getElementById(\'capModal\').remove()" style="width:100%;background:none;border:none;color:var(--mute);font-size:12px;margin-top:10px;cursor:pointer">Come back tomorrow</button></div>';
+  el.addEventListener("click", function(e){ if(e.target===el) el.remove(); });
+  document.body.appendChild(el);
+}
+
+// Load trial config on init
+async function loadTrialConfig(){
+  try{
+    const r = await api("features", {action:"get_trial_config"});
+    window._TRIAL_CONFIG = r.trial || {};
+  }catch(e){}
+}
+
+// ===== ADMIN: TRIAL CONFIG UI =====
+async function loadTrialConfigAdmin(){
+  const el = document.getElementById("trialConfigPanel"); if(!el) return;
+  try{
+    const r = await api("features", {action:"get_trial_config", uid:S.user.uid, sessionToken:S.sessionToken});
+    const t = r.trial || {};
+    el.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:11px">'+
+      '<div><label style="font-size:11px;color:var(--mute)">Trial days</label><input class="fin" id="tcDays" type="number" value="'+(t.trialDays||7)+'" style="margin-top:3px"></div>'+
+      '<div><label style="font-size:11px;color:var(--mute)">Full-access days (then cap)</label><input class="fin" id="tcFullDays" type="number" value="'+(t.fullAccessDays||3)+'" style="margin-top:3px"></div>'+
+      '<div><label style="font-size:11px;color:var(--mute)">Daily Q cap (after full-access)</label><input class="fin" id="tcDailyCap" type="number" value="'+(t.dailyCapAmount||10)+'" placeholder="0 = unlimited" style="margin-top:3px"></div>'+
+      '<div><label style="font-size:11px;color:var(--mute)">Feature access</label><select id="tcFeatures" style="width:100%;padding:9px;border:1.5px solid var(--bdr);border-radius:9px;font-size:12px;background:var(--surf);color:var(--txt);margin-top:3px">'+
+        '<option value="all" '+(t.featureAccess==="all"?"selected":"")+'>All features</option>'+
+        '<option value="basic" '+(t.featureAccess==="basic"?"selected":"")+'>Basic only (no AI Tutor, no adaptive)</option>'+
+        '<option value="questions_only" '+(t.featureAccess==="questions_only"?"selected":"")+'>Questions only</option></select></div></div>'+
+      '<button class="btn btn-blue btn-full" onclick="saveTrialConfig()"><i class="ti ti-device-floppy"></i> Save Trial Config</button>';
+  }catch(e){ el.innerHTML='<div style="color:var(--mute);font-size:12px">Could not load trial config</div>'; }
+}
+async function saveTrialConfig(){
+  const r = await api("features", {action:"update_trial_config", uid:S.user.uid, sessionToken:S.sessionToken,
+    trialDays: parseInt(document.getElementById("tcDays")?.value)||7,
+    fullAccessDays: parseInt(document.getElementById("tcFullDays")?.value)||3,
+    dailyCapAmount: parseInt(document.getElementById("tcDailyCap")?.value)||10,
+    featureAccess: document.getElementById("tcFeatures")?.value||"all",
+  });
+  if(r.ok) toast("Trial config saved!"); else toast("Error: "+(r.error||"Failed"));
+}
+
 // ===== INIT =====
 window.addEventListener('load', async ()=>{
   loadPricing(); loadFestival(); loadLevels(); loadContentPacks();
