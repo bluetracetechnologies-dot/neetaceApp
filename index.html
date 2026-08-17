@@ -261,6 +261,8 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 
 <!-- HOME -->
 <div class="screen active" id="screen-home">
+  <div class="sec-hd" style="margin-top:4px"><i class="ti ti-target"></i> Daily Mission <span style="font-size:10px;font-weight:400;color:var(--mute)">personalized for today</span></div>
+  <div class="card" style="margin-bottom:13px" id="dailyMissionCard"></div>
   <div class="hero">
     <div style="font-size:12px;opacity:.75;margin-bottom:3px">Good morning, <span id="welcomeName">Student</span> 👋</div>
     <div style="font-size:18px;font-weight:800">NEET 2026 - <span id="daysLeft">0</span> days left</div>
@@ -4141,6 +4143,210 @@ function showManualPayment(planLabel, amount){
   document.body.appendChild(el);
 }
 function closeManualPay(){ var m=document.getElementById('manualPayModal'); if(m) m.remove(); }
+
+
+// ===== NEET WEIGHTAGE (marks per unit, historical average) =====
+// Used by Daily Mission and Score Predictor to prioritize high-yield topics.
+const NEET_WEIGHTAGE = {
+  // Biology (~360 marks total): high-weight units get priority
+  BI05: 48, BI07: 30, BI04: 24, BI10: 20, BI03: 20, BI06: 18, BI09: 16, BI08: 12, BI02: 10, BI01: 8,
+  // Physics (~180 marks total)
+  PH12: 18, PH13: 14, PH17: 14, PH18: 12, PH15: 12, PH03: 10, PH04: 10, PH14: 10, PH10: 8, PH11: 8,
+  PH02: 8, PH07: 8, PH08: 8, PH05: 6, PH06: 6, PH16: 4, PH19: 4, PH09: 4, PH01: 4,
+  // Chemistry (~180 marks total)
+  CH04: 12, CH14: 10, CH11: 10, CH12: 8, CH17: 10, CH15: 8, CH16: 8, CH19: 8, CH18: 8,
+  CH02: 8, CH09: 8, CH10: 8, CH03: 6, CH05: 6, CH06: 8, CH07: 6, CH08: 6, CH13: 8, CH01: 6, CH20: 4,
+};
+function getWeightage(unitId){ return NEET_WEIGHTAGE[unitId] || 4; }
+
+
+// ═════════ DAILY MISSION (Phase 7) ═════════
+// Composes today's practice from FOUR existing data sources:
+//   1. Galti Copy (due mistakes)   -> Revision block
+//   2. Mastery map (weakest units) -> Weak-concept block
+//   3. NEET weightage table         -> High-yield block
+//   4. Adaptive engine (unseen Qs) -> Fresh challenge block
+// Total: 20 Qs per day (admin-configurable via feature flag "daily_mission").
+
+let DAILY_MISSION = null;
+let DAILY_MISSION_DATE = "";
+
+async function generateDailyMission(){
+  if(!S.user) return null;
+  const today = new Date().toISOString().slice(0,10);
+
+  // Return cached if same day
+  if(DAILY_MISSION && DAILY_MISSION_DATE === today) return DAILY_MISSION;
+
+  const now = new Date();
+  const mission = { date: today, blocks: [], totalQ: 0, completedQ: 0 };
+
+  // Block 1: Revision — due Galti items (max 6)
+  const dueMistakes = (mistakes||[]).filter(function(m){
+    return !m.recovered && (!m.nextReview || new Date(m.nextReview) <= now);
+  }).slice(0, 6);
+  if(dueMistakes.length){
+    mission.blocks.push({
+      key: "revision",
+      title: "Revision (Galti Due)",
+      subtitle: dueMistakes.length + " questions due for spaced review",
+      emoji: "\ud83d\udd01",
+      color: "var(--amber)",
+      questionIds: dueMistakes.map(function(m){return m.id}),
+      count: dueMistakes.length,
+    });
+    mission.totalQ += dueMistakes.length;
+  }
+
+  // Block 2: Weak concepts — pull mastery, pick weakest 2 units, 3 Qs each (max 6)
+  let weakUnits = [];
+  try{
+    const r = await api("adaptive", {action:"get_mastery", uid:S.user.uid, sessionToken:S.sessionToken});
+    if(r.mastery && r.mastery.length){
+      weakUnits = r.mastery.filter(function(m){return m.theta < 500}).slice(0, 2);
+    }
+  }catch(e){}
+  if(weakUnits.length){
+    let weakQs = [];
+    weakUnits.forEach(function(w){
+      const pool = QUESTIONS.filter(function(q){return q.tid===w.tid});
+      weakQs = weakQs.concat(shuffleArray(pool).slice(0, 3));
+    });
+    if(weakQs.length){
+      mission.blocks.push({
+        key: "weak",
+        title: "Fix Weak Concepts",
+        subtitle: weakUnits.map(function(w){var u=tidToUnitName(w.tid);return u?u.name:w.tid}).join(", "),
+        emoji: "\ud83c\udfaf",
+        color: "var(--red)",
+        questionIds: weakQs.map(function(q){return q.id}),
+        count: weakQs.length,
+      });
+      mission.totalQ += weakQs.length;
+    }
+  }
+
+  // Block 3: High-yield — one high-weightage unit from each subject student has NOT mastered yet
+  const seen = new Set(mission.blocks.flatMap(function(b){return b.questionIds}));
+  const highYield = [];
+  ["BIOLOGY","PHYSICS","CHEMISTRY"].forEach(function(sub){
+    const units = (NEET_SYLLABUS[sub]||{units:[]}).units;
+    // Sort by weightage desc, pick first unit with questions not already in mission
+    const sorted = units.slice().sort(function(a,b){return getWeightage(b.id) - getWeightage(a.id)});
+    for(let i=0; i<sorted.length; i++){
+      const u = sorted[i];
+      const pool = QUESTIONS.filter(function(q){return q.sub===sub && u.tids.indexOf(q.tid)>=0 && !seen.has(q.id)});
+      if(pool.length){
+        const picks = shuffleArray(pool).slice(0, 2);
+        picks.forEach(function(q){ seen.add(q.id); highYield.push(q); });
+        break;
+      }
+    }
+  });
+  if(highYield.length){
+    mission.blocks.push({
+      key: "high_yield",
+      title: "High-Yield NEET Marks",
+      subtitle: "From the chapters that score most marks",
+      emoji: "\ud83d\udcaf",
+      color: "var(--blue)",
+      questionIds: highYield.map(function(q){return q.id}),
+      count: highYield.length,
+    });
+    mission.totalQ += highYield.length;
+  }
+
+  // Block 4: Fresh challenge — unseen questions from adaptive pool
+  const attemptedIds = new Set((S.user.attemptedIds||[]).concat(Array.from(seen)));
+  const fresh = shuffleArray(QUESTIONS.filter(function(q){return !attemptedIds.has(q.id)})).slice(0, 4);
+  if(fresh.length){
+    mission.blocks.push({
+      key: "fresh",
+      title: "Fresh Challenge",
+      subtitle: "New questions you have not seen before",
+      emoji: "\ud83c\udd95",
+      color: "var(--purple)",
+      questionIds: fresh.map(function(q){return q.id}),
+      count: fresh.length,
+    });
+    mission.totalQ += fresh.length;
+  }
+
+  // Load completed count from localStorage
+  try{
+    const saved = JSON.parse(localStorage.getItem("na_mission_"+today)||"{}");
+    mission.completedQ = saved.completedQ || 0;
+    mission.completedBlocks = saved.completedBlocks || [];
+  }catch(e){ mission.completedBlocks = []; }
+
+  DAILY_MISSION = mission;
+  DAILY_MISSION_DATE = today;
+  return mission;
+}
+
+function renderDailyMission(){
+  const el = document.getElementById("dailyMissionCard");
+  if(!el) return;
+  if(!S.user){
+    el.innerHTML = '<div style="text-align:center;padding:14px;color:var(--mute);font-size:12px">Sign in to get your personalized Daily Mission.</div>';
+    return;
+  }
+  el.innerHTML = '<div style="text-align:center;padding:14px;color:var(--mute);font-size:12px">Building today\'s mission...</div>';
+  generateDailyMission().then(function(m){
+    if(!m || !m.blocks.length){
+      el.innerHTML = '<div style="text-align:center;padding:14px;color:var(--mute);font-size:12px">Complete a few questions in Practice, then your Daily Mission will personalize automatically.</div>';
+      return;
+    }
+    const pct = m.totalQ ? Math.round((m.completedQ/m.totalQ)*100) : 0;
+    let h = '<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-size:12px;font-weight:700">Today\'s progress</span><span style="font-size:12px;font-weight:800;color:var(--blue)">'+m.completedQ+'/'+m.totalQ+'</span></div>';
+    h += '<div style="height:8px;background:var(--bdr);border-radius:4px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:linear-gradient(90deg,var(--blue),var(--purple));border-radius:4px;transition:width .4s"></div></div></div>';
+    m.blocks.forEach(function(b){
+      const done = (m.completedBlocks||[]).indexOf(b.key) >= 0;
+      h += '<div style="display:flex;align-items:center;gap:11px;padding:11px;margin-bottom:8px;background:var(--surf2);border-radius:11px;border-left:3px solid '+b.color+';cursor:'+(done?'default':'pointer')+';opacity:'+(done?0.55:1)+'" '+(done?'':'onclick="startMissionBlock(\''+b.key+'\')"')+'>';
+      h += '<div style="font-size:24px">'+b.emoji+'</div>';
+      h += '<div style="flex:1"><div style="font-size:13px;font-weight:700">'+b.title+(done?' \u2713':'')+'</div>';
+      h += '<div style="font-size:11px;color:var(--mute)">'+b.subtitle+' \u00b7 '+b.count+' Q</div></div>';
+      h += done ? '<span style="font-size:10px;font-weight:700;color:var(--green)">DONE</span>' : '<i class="ti ti-chevron-right" style="color:var(--mute)"></i>';
+      h += '</div>';
+    });
+    if(m.completedQ >= m.totalQ && m.totalQ > 0){
+      h += '<div style="background:var(--green-l);color:var(--green);border-radius:11px;padding:14px;text-align:center;margin-top:8px"><div style="font-size:22px">\ud83c\udf89</div><b>Daily Mission complete!</b><div style="font-size:11px;margin-top:4px">Come back tomorrow for a fresh set.</div></div>';
+    }
+    el.innerHTML = h;
+  });
+}
+
+function startMissionBlock(key){
+  if(!DAILY_MISSION) return;
+  const block = DAILY_MISSION.blocks.find(function(b){return b.key===key});
+  if(!block) return;
+  const qs = block.questionIds.map(function(id){return QUESTIONS.find(function(q){return q.id===id})}).filter(Boolean);
+  if(!qs.length){ toast("Questions not loaded yet - try again in a moment"); return; }
+  quizList = shuffleArray(qs).map(shuffleQuestion);
+  activeTopic = {name: block.title, sub:"MIXED", id:"mission_"+key};
+  qIdx = 0; qCorrect = 0; qWrong = 0;
+  switchTab("quiz");
+  if(typeof renderQuestion === "function") renderQuestion();
+  // Mark block as started; will mark complete when quiz finishes
+  DAILY_MISSION._activeBlock = key;
+  toast("Starting: " + block.title);
+}
+
+function markMissionBlockComplete(key){
+  if(!DAILY_MISSION) return;
+  DAILY_MISSION.completedBlocks = DAILY_MISSION.completedBlocks || [];
+  if(DAILY_MISSION.completedBlocks.indexOf(key) < 0){
+    DAILY_MISSION.completedBlocks.push(key);
+    const block = DAILY_MISSION.blocks.find(function(b){return b.key===key});
+    if(block) DAILY_MISSION.completedQ = Math.min(DAILY_MISSION.totalQ, (DAILY_MISSION.completedQ||0) + block.count);
+    try{
+      localStorage.setItem("na_mission_"+DAILY_MISSION.date, JSON.stringify({
+        completedQ: DAILY_MISSION.completedQ,
+        completedBlocks: DAILY_MISSION.completedBlocks,
+      }));
+    }catch(e){}
+  }
+}
 
 // ===== INIT =====
 window.addEventListener('load', async ()=>{
