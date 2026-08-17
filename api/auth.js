@@ -139,7 +139,16 @@ module.exports = async function handler(req, res) {
       if (profile.role !== 'admin') {
         if (profile.paid && profile.paidUntil && now <= new Date(profile.paidUntil)) accessStatus = 'paid';
         else if (profile.trialEnd && now <= new Date(profile.trialEnd)) { accessStatus = 'trial'; trialDaysLeft = Math.max(0, Math.ceil((new Date(profile.trialEnd) - now) / 86400000)); }
-        else accessStatus = 'expired';
+        else {
+          accessStatus = 'expired';
+          // Fire trial_expired exactly once per expiry (guarded by a flag on the user
+          // doc, not a new collection), not on every verify call (~every 2 minutes
+          // while the app is open). Was built but never wired anywhere before this.
+          if (!profile.trialExpiredNotifSent) {
+            db.collection('users').doc(vUid).update({ trialExpiredNotifSent: true }).catch(function(){});
+            try { const { dispatch } = require('./notifications'); dispatch(vUid, 'trial_expired').catch(function(){}); } catch (e) {}
+          }
+        }
       }
       const freeLevel = await getFreeLevel();
       let freePractice = { enabled: freeLevel?.enabled !== false, daysLeft: null, expired: false };
