@@ -420,6 +420,13 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     <div class="qbox"><div class="qn" id="galtiConceptErr" style="color:var(--purple)">0</div><div class="ql">Concept Err</div></div>
   </div>
 
+  <!-- Recovery Queue (Phase 3 - server-ranked priority: unit > formula > concept > calc > careless > time) -->
+  <div class="card" style="margin-bottom:12px;border-color:#a78bfa">
+    <div style="font-size:12px;font-weight:800;margin-bottom:2px">🩺 Recovery Queue</div>
+    <div style="font-size:10px;color:var(--mute);margin-bottom:9px">Priority-ranked from your mistake patterns. Fix the highest-impact ones first.</div>
+    <div id="recoveryQueueList"><div style="font-size:11px;color:var(--mute);padding:8px 0">Loading...</div></div>
+  </div>
+
   <!-- Error type tabs -->
   <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;scrollbar-width:none">
     <button class="galtitab active" onclick="setGaltiFilter('all',this)">All</button>
@@ -4097,7 +4104,7 @@ async function teacherRegister(){
     S.user.academyName = r.academy.name;
     saveSession(S.user, S.sessionToken);
     renderAcademyStatus();
-    loadMyAcademy();
+    loadMyAcademy(); loadGaltiFromServer(); bulkSyncExistingMistakes();
   } else toast("Error: " + (r.error||"Failed"));
 }
 
