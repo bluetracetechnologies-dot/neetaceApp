@@ -94,6 +94,7 @@ module.exports = async function handler(req, res) {
           avgTimeMs: c.avgTimeMs, masteryBand: c.masteryBand, errorTypes: c.errorTypes || {},
           lastSeen: c.lastSeen,
           theta: m.theta !== undefined ? Math.round(m.theta) : null, // null = adaptive hasn't touched this tid yet
+          correctStreak: m.correctStreak || 0, // reused as-is for "improving" signal - zero new storage
         };
       });
 
