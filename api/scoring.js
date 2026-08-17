@@ -122,23 +122,37 @@ module.exports = async function handler(req, res) {
     // Each question carries tid (topic id), chapter, and optionally errorType.
     // Concept stats power weak-topic analysis and next-question selection.
     const conceptStats = user.conceptStats || {};
+    // Bloat protection: keep only top 60 tids (NEET has 49, room for teacher-added).
+    // Never let this dict exceed 100 entries. Oldest-untouched are evicted first.
+    const MAX_CONCEPT_TIDS = 60;
+    const ALLOWED_ERROR_TYPES = ['concept','formula','unit','calc','careless','time'];
     for (const r of results) {
       const tid = r.tid || r.topicId;
-      if (!tid) continue;
+      if (!tid || typeof tid !== 'string' || tid.length > 40) continue; // guard bad data
       const cs = conceptStats[tid] || { attempted: 0, correct: 0, wrong: 0, totalTimeMs: 0, lastSeen: null, errorTypes: {} };
       cs.attempted++;
       if (r.correct === true) cs.correct++;
       else if (r.correct === false) {
         cs.wrong++;
-        if (r.errorType) cs.errorTypes[r.errorType] = (cs.errorTypes[r.errorType] || 0) + 1;
+        if (r.errorType && ALLOWED_ERROR_TYPES.indexOf(r.errorType) >= 0) {
+          cs.errorTypes[r.errorType] = (cs.errorTypes[r.errorType] || 0) + 1;
+        }
       }
-      cs.totalTimeMs += (r.timeTaken || 0);
+      // Cap totalTimeMs to prevent overflow on years of use (max 10 hours per tid)
+      cs.totalTimeMs = Math.min(36000000, cs.totalTimeMs + (r.timeTaken || 0));
       cs.lastSeen = new Date().toISOString();
       cs.accuracy = cs.attempted > 0 ? Math.round((cs.correct / cs.attempted) * 1000) / 10 : 0;
       cs.avgTimeMs = cs.attempted > 0 ? Math.round(cs.totalTimeMs / cs.attempted) : 0;
-      // Mastery band: 0-40 weak, 40-70 developing, 70-100 mastered
       cs.masteryBand = cs.accuracy >= 70 ? 'mastered' : cs.accuracy >= 40 ? 'developing' : 'weak';
       conceptStats[tid] = cs;
+    }
+    // Evict least-recently-touched if over cap (guards against unbounded growth)
+    const tidCount = Object.keys(conceptStats).length;
+    if (tidCount > MAX_CONCEPT_TIDS) {
+      const sortedTids = Object.entries(conceptStats)
+        .sort(function(a,b){ return new Date(a[1].lastSeen||0) - new Date(b[1].lastSeen||0); });
+      const toRemove = tidCount - MAX_CONCEPT_TIDS;
+      for (let i = 0; i < toRemove; i++) delete conceptStats[sortedTids[i][0]];
     }
 
     // ── CONSISTENCY & MASTERY-ADJUSTED RANK SCORE ──
@@ -174,6 +188,23 @@ module.exports = async function handler(req, res) {
       expiresAt: nextMay31().toISOString(),
     });
 
+    // Session pruning (safety valve): if user has >200 sessions, delete oldest.
+    // Runs 1-in-20 chance per write to spread load (Firestore rate limits).
+    if (Math.random() < 0.05) {
+      try {
+        const oldSessions = await db.collection('sessions')
+          .where('uid','==',uid).orderBy('playedAt','asc').limit(50).get();
+        if (oldSessions.size >= 50) {
+          const countSnap = await db.collection('sessions').where('uid','==',uid).count().get();
+          if ((countSnap.data().count || 0) > 200) {
+            const batch = db.batch();
+            oldSessions.docs.slice(0, 50).forEach(function(d){ batch.delete(d.ref); });
+            await batch.commit();
+          }
+        }
+      } catch(e) {}
+    }
+
     // Compute global rank estimate (fast approximate)
     let rank = null;
     const totalAttempted = newGlobal.attempted || 0;
@@ -195,6 +226,40 @@ module.exports = async function handler(req, res) {
       qualifiesForLeaderboard: totalAttempted >= MIN_FOR_RANK,
       minQuestionsNeeded: Math.max(0, MIN_FOR_RANK - totalAttempted),
     });
+  // Full dashboard payload - one call for future admin/student dashboard.
+  // Returns: subject scores, top 5 weak topics, top 3 mastered, error breakdown,
+  //          7-day session count, consistency, rank score, GALTI summary.
+  if (req.body.action === 'get_dashboard') {
+    const cs = user.conceptStats || {};
+    const list = Object.entries(cs).map(function(e){
+      return { tid: e[0], attempted: e[1].attempted, correct: e[1].correct, accuracy: e[1].accuracy,
+               avgTimeMs: e[1].avgTimeMs, masteryBand: e[1].masteryBand, errorTypes: e[1].errorTypes,
+               lastSeen: e[1].lastSeen };
+    });
+    // Weak (bottom 5 by accuracy, min 3 attempts)
+    const weak = list.filter(function(x){ return x.attempted >= 3 && x.masteryBand === 'weak' })
+                     .sort(function(a,b){ return a.accuracy - b.accuracy }).slice(0, 5);
+    // Mastered (top 3 by accuracy)
+    const mastered = list.filter(function(x){ return x.masteryBand === 'mastered' })
+                         .sort(function(a,b){ return b.accuracy - a.accuracy }).slice(0, 3);
+    // Aggregate error type counts across all tids
+    const errorTotals = {};
+    list.forEach(function(x){ Object.entries(x.errorTypes||{}).forEach(function(e){ errorTotals[e[0]] = (errorTotals[e[0]]||0) + e[1]; }); });
+    return res.status(200).json({
+      ok: true,
+      scores: user.scores || {},
+      conceptStats: list,
+      weakTopics: weak,
+      masteredTopics: mastered,
+      errorBreakdown: errorTotals,
+      totalConceptsTouched: list.length,
+      rankScore: (user.scores && user.scores.global && user.scores.global.rankScore) || 0,
+      consistency7d: (user.scores && user.scores.global && user.scores.global.consistency7d) || 0,
+      totalAttempted: user.totalQuestionsAttempted || 0,
+      lastSessionAt: user.lastSessionAt || null,
+    });
+  }
+
   // Return concept stats + weak topics
   if (req.body.action === 'get_concept_stats') {
     const cs = user.conceptStats || {};
