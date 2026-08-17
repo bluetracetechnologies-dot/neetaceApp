@@ -3590,20 +3590,84 @@ function tidToUnitName(tid){
 }
 async function renderMasteryDash(){
   const el=document.getElementById("masteryDash"); if(!el||!S.user) return;
-  el.innerHTML='<div style="text-align:center;padding:14px;color:var(--mute);font-size:12px">Loading your Learning DNA...</div>';
-  try{
-    const r=await api("adaptive",{action:"get_mastery",uid:S.user.uid,sessionToken:S.sessionToken});
-    const list=r.mastery||[];
-    if(!list.length){ el.innerHTML='<div style="text-align:center;padding:14px;color:var(--mute);font-size:12px">Attempt adaptive practice to build your mastery map.</div>'; renderScorePredictor(null); return; }
-    el.innerHTML=list.slice(0,12).map(function(m){
-      const u=tidToUnitName(m.tid)||{name:m.tid,sub:""};
-      const pct=Math.round((m.theta-100)/800*100);
-      const col=m.theta<400?"var(--red)":m.theta<580?"var(--amber)":"var(--green)";
-      return '<div style="margin-bottom:9px"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span style="font-weight:600">'+u.name+'</span><span style="color:'+col+';font-weight:700">'+m.level+' &middot; '+m.accuracy+'%</span></div>'+
-        '<div style="height:6px;background:var(--bdr);border-radius:3px;overflow:hidden"><div style="height:100%;width:'+Math.max(3,pct)+'%;background:'+col+';border-radius:3px"></div></div></div>';
-    }).join("");
-    renderScorePredictor(r);
-  }catch(e){ el.innerHTML='<div style="color:var(--mute);font-size:12px;padding:10px">Mastery data unavailable.</div>'; }
+  el.innerHTML='<div style="text-align:center;padding:14px;color:var(--mute);font-size:12px">Loading Chapter Mastery...</div>';
+
+  // Reuse the same cached dashboard call Daily Mission / GALTI already populate - no duplicate read.
+  let dash = window._DASHBOARD;
+  if(!dash){
+    try{ dash = await api("scoring",{action:"get_dashboard",uid:S.user.uid,sessionToken:S.sessionToken}); window._DASHBOARD = dash; }
+    catch(e){ dash = null; }
+  }
+  const list = (dash && dash.conceptStats) || [];
+  if(!list.length){
+    el.innerHTML='<div style="text-align:center;padding:14px;color:var(--mute);font-size:12px">Attempt some practice questions to build your Chapter Mastery map.</div>';
+    renderScorePredictor(null);
+    return;
+  }
+
+  // Feed Score Predictor from this SAME response (adapter shape) - removes the last duplicate adaptive.js call.
+  renderScorePredictor({ mastery: list.filter(function(x){return x.theta!==null}).map(function(x){return {tid:x.tid, theta:x.theta};}) });
+
+  // Group by subject using QUESTIONS metadata (client already holds sub/ch per question) - per architecture:
+  // server (conceptStats/mastery) owns the numbers, client owns the question-bank join. No duplicate mapping table.
+  const bySubject = { PHYSICS: [], CHEMISTRY: [], BIOLOGY: [] };
+  list.forEach(function(cs){
+    if(cs.attempted < 1) return;
+    const matches = QUESTIONS.filter(function(q){ return q.tid === cs.tid; });
+    if(!matches.length) return; // tid has stats but no currently-loaded question (disabled pack) - skip gracefully
+    const sub = matches[0].sub;
+    if(!bySubject[sub]) bySubject[sub] = [];
+    // Most common chapter text among this tid's questions (uses metadata.ch directly, per instruction)
+    const chCounts = {};
+    matches.forEach(function(q){ chCounts[q.ch] = (chCounts[q.ch]||0) + 1; });
+    const chapter = Object.keys(chCounts).sort(function(a,b){ return chCounts[b]-chCounts[a]; })[0];
+    const theta = cs.theta !== null ? cs.theta : 500; // neutral prior if adaptive engine hasn't touched this tid
+    // Same blend Score Predictor uses (theta 60% + accuracy 40%) - one canonical mastery formula, reused.
+    const pct = Math.max(0, Math.min(100, Math.round((((theta-100)/800)*0.6 + (cs.accuracy/100)*0.4) * 100)));
+    bySubject[sub].push({
+      tid: cs.tid, chapter: chapter, pct: pct, accuracy: cs.accuracy, attempted: cs.attempted,
+      masteryBand: cs.masteryBand, // reused as-is - weak/developing/mastered, computed server-side already
+      improving: (cs.correctStreak || 0) >= 3, // reused field, zero new storage
+    });
+  });
+
+  const weak = [], strong = [], improving = [];
+  Object.values(bySubject).forEach(function(arr){
+    arr.forEach(function(c){
+      if(c.attempted >= 3 && c.masteryBand === 'weak') weak.push(c);
+      if(c.masteryBand === 'mastered') strong.push(c);
+      if(c.improving) improving.push(c);
+    });
+  });
+
+  function chapterRow(c){
+    const col = c.masteryBand==='weak' ? 'var(--red)' : c.masteryBand==='developing' ? 'var(--amber)' : 'var(--green)';
+    const badges = (c.improving ? '<span style="font-size:9px;background:var(--green-l);color:var(--green);padding:1px 6px;border-radius:8px;font-weight:700;margin-left:5px">\u2191 Improving</span>' : '');
+    return '<div style="margin-bottom:9px"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">'+
+      '<span style="font-weight:600">'+c.chapter+badges+'</span>'+
+      '<span style="color:'+col+';font-weight:700">'+c.pct+'%</span></div>'+
+      '<div style="height:6px;background:var(--bdr);border-radius:3px;overflow:hidden"><div style="height:100%;width:'+Math.max(3,c.pct)+'%;background:'+col+';border-radius:3px"></div></div></div>';
+  }
+
+  let out = '';
+
+  // Highlight strip: Weak / Strong / Improving counts (uses existing categorization, no new logic)
+  out += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:13px">'+
+    '<div style="background:var(--red-l);border-radius:9px;padding:9px;text-align:center"><div style="font-size:17px;font-weight:800;color:var(--red)">'+weak.length+'</div><div style="font-size:9px;color:var(--mute)">WEAK CHAPTERS</div></div>'+
+    '<div style="background:var(--green-l);border-radius:9px;padding:9px;text-align:center"><div style="font-size:17px;font-weight:800;color:var(--green)">'+strong.length+'</div><div style="font-size:9px;color:var(--mute)">STRONG CHAPTERS</div></div>'+
+    '<div style="background:var(--blue-l);border-radius:9px;padding:9px;text-align:center"><div style="font-size:17px;font-weight:800;color:var(--blue)">'+improving.length+'</div><div style="font-size:9px;color:var(--mute)">IMPROVING</div></div>'+
+    '</div>';
+
+  // Grouped by subject, chapters sorted weakest-first within each (surfaces what needs work)
+  ['PHYSICS','CHEMISTRY','BIOLOGY'].forEach(function(sub){
+    const chapters = bySubject[sub] || [];
+    if(!chapters.length) return;
+    chapters.sort(function(a,b){ return a.pct - b.pct; });
+    out += '<div style="font-size:12px;font-weight:800;margin:11px 0 7px;text-transform:capitalize">'+sub.charAt(0)+sub.slice(1).toLowerCase()+'</div>';
+    out += chapters.map(chapterRow).join('');
+  });
+
+  el.innerHTML = out;
 }
 
 // ===== SCORE PREDICTOR (ongoing, from mastery + accuracy) =====
