@@ -37,10 +37,11 @@ function parseCSV(text) {
 
 function csvRowToQuestion(row, packId, idx) {
   const correctMap = { A: 0, B: 1, C: 2, D: 3 };
+  const chapter = row.chapter || row.ch || 'General';
   return {
     id: `${packId}_${idx}`,
     sub: (row.subject || row.sub || 'BIOLOGY').toUpperCase(),
-    ch: row.chapter || row.ch || 'General',
+    ch: chapter,
     tid: row.tid || packId,
     text: row.question || row.text || '',
     opts: [row.opt_a || '', row.opt_b || '', row.opt_c || '', row.opt_d || ''],
@@ -54,6 +55,16 @@ function csvRowToQuestion(row, packId, idx) {
     pyq: !!(row.pyq_year),
     pyqYr: row.pyq_year ? parseInt(row.pyq_year) : undefined,
     trick: row.trick || '',
+    // ── Phase 1 metadata (all optional, graceful fallback for old/missing CSV columns) ──
+    concept:      row.concept || chapter,           // falls back to chapter if not authored yet
+    subconcept:   row.subconcept || '',              // '' = not yet tagged, never null/undefined crash
+    formula:      row.formula || '',
+    unitType:     row.unit_type || row.unitType || 'standard', // standard|parameterized|unit_variant
+    variantGroup: row.variant_group || row.variantGroup || `${packId}_${idx}`, // self if not part of a family
+    estimatedTime: parseInt(row.estimated_time || row.estimatedTime) || (
+      (row.difficulty || row.diff) === 'hard' || (row.difficulty || row.diff) === 'exam' ? 90 :
+      (row.difficulty || row.diff) === 'medium' ? 60 : 45
+    ), // sensible default by difficulty if not authored
   };
 }
 
