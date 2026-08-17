@@ -7,6 +7,11 @@ module.exports = {
   // real Firebase Admin is never initialized during any test run, by construction.
   moduleNameMapper: {
     '^\\./_firebase$': '<rootDir>/tests/mocks/_firebase.mock.js',
+    // auth.js and admin.js both do require('./notifications') to fire real
+    // dispatch()/sendEmail() calls. Mapped to a jest.fn()-based mock so tests
+    // can assert on exactly what was called, with what arguments - this is
+    // how "the email fires" gets PROVEN, not just traced by reading code.
+    '^\\./notifications$': '<rootDir>/tests/mocks/notifications.mock.js',
   },
   collectCoverage: false, // enabled via --coverage flag (npm run test:coverage), not by default
   collectCoverageFrom: [
