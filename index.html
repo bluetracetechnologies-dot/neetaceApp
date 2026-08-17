@@ -2483,7 +2483,7 @@ async function handleAdaptiveAns(el, idx, q){
     el.classList.add('wrong'); el.querySelector('.oltr').style.cssText='background:var(--red);color:#fff';
     const cEl=document.querySelectorAll('.opt')[q.correct];
     if(cEl){ cEl.classList.add('correct'); cEl.querySelector('.oltr').style.cssText='background:var(--green);color:#fff'; }
-    const diagnosis = diagnoseWrongAnswer(q, idx, window._lastAnswerTimeMs||null);
+    const diagnosis = diagnoseWrongAnswer(q, idx, timeTakenMs);
     addMistake(q, idx);
     celebrate(false, el);
     toast('❌ Wrong - see explanation');
