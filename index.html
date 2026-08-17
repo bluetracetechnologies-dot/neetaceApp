@@ -4196,110 +4196,55 @@ let DAILY_MISSION_DATE = "";
 async function generateDailyMission(){
   if(!S.user) return null;
   const today = new Date().toISOString().slice(0,10);
-
-  // Return cached if same day
   if(DAILY_MISSION && DAILY_MISSION_DATE === today) return DAILY_MISSION;
 
-  const now = new Date();
-  const mission = { date: today, blocks: [], totalQ: 0, completedQ: 0 };
-
-  // Block 1: Revision — due Galti items (max 6)
-  const dueMistakes = (mistakes||[]).filter(function(m){
-    return !m.recovered && (!m.nextReview || new Date(m.nextReview) <= now);
-  }).slice(0, 6);
-  if(dueMistakes.length){
-    mission.blocks.push({
-      key: "revision",
-      title: "Revision (Galti Due)",
-      subtitle: dueMistakes.length + " questions due for spaced review",
-      emoji: "\ud83d\udd01",
-      color: "var(--amber)",
-      questionIds: dueMistakes.map(function(m){return m.id}),
-      count: dueMistakes.length,
-    });
-    mission.totalQ += dueMistakes.length;
+  // Reuse the already-cached dashboard result (window._DASHBOARD, set by loadGaltiFromServer)
+  // instead of firing a second get_dashboard call - same request already happens on login/tab-switch.
+  let dash = window._DASHBOARD;
+  if(!dash || !dash.dailyMission || dash.dailyMission.date !== today){
+    try{ dash = await api("scoring", {action:"get_dashboard", uid:S.user.uid, sessionToken:S.sessionToken}); window._DASHBOARD = dash; }
+    catch(e){ dash = null; }
   }
+  if(!dash || !dash.dailyMission){ return null; }
 
-  // Block 2: Weak concepts — pull mastery, pick weakest 2 units, 3 Qs each (max 6)
-  let weakUnits = [];
-  try{
-    const r = await api("adaptive", {action:"get_mastery", uid:S.user.uid, sessionToken:S.sessionToken});
-    if(r.mastery && r.mastery.length){
-      weakUnits = r.mastery.filter(function(m){return m.theta < 500}).slice(0, 2);
-    }
-  }catch(e){}
-  if(weakUnits.length){
-    let weakQs = [];
-    weakUnits.forEach(function(w){
-      const pool = QUESTIONS.filter(function(q){return q.tid===w.tid});
-      weakQs = weakQs.concat(shuffleArray(pool).slice(0, 3));
-    });
-    if(weakQs.length){
-      mission.blocks.push({
-        key: "weak",
-        title: "Fix Weak Concepts",
-        subtitle: weakUnits.map(function(w){var u=tidToUnitName(w.tid);return u?u.name:w.tid}).join(", "),
-        emoji: "\ud83c\udfaf",
-        color: "var(--red)",
-        questionIds: weakQs.map(function(q){return q.id}),
-        count: weakQs.length,
+  const plan = dash.dailyMission;
+  const mission = { date: today, blocks: [], totalQ: 0, completedQ: 0, completedBlocks: [] };
+  const seen = new Set();
+
+  plan.blocks.forEach(function(b){
+    let qs = [];
+    if(b.questionIds && b.questionIds.length){
+      // Revision block: server gave exact question ids (from synced GALTI)
+      qs = b.questionIds.map(function(id){return QUESTIONS.find(function(q){return String(q.id)===String(id)})}).filter(Boolean);
+    } else if(b.tids && b.tids.length){
+      // Recovery / Weak: server gave priority tids, client pulls+shuffles from its own pool (existing pattern)
+      b.tids.forEach(function(tid){
+        const pool = QUESTIONS.filter(function(q){return q.tid===tid && !seen.has(q.id)});
+        const picks = shuffleArray(pool).slice(0, Math.ceil(b.targetCount / b.tids.length));
+        picks.forEach(function(q){ seen.add(q.id); qs.push(q); });
       });
-      mission.totalQ += weakQs.length;
+    } else if(b.key === 'challenge'){
+      // Fresh challenge: unattempted questions across the board (existing fallback logic)
+      const attemptedIds = new Set(Array.from(seen));
+      qs = shuffleArray(QUESTIONS.filter(function(q){return !attemptedIds.has(q.id)})).slice(0, b.targetCount);
+      qs.forEach(function(q){ seen.add(q.id); });
     }
-  }
-
-  // Block 3: High-yield — one high-weightage unit from each subject student has NOT mastered yet
-  const seen = new Set(mission.blocks.flatMap(function(b){return b.questionIds}));
-  const highYield = [];
-  ["BIOLOGY","PHYSICS","CHEMISTRY"].forEach(function(sub){
-    const units = (NEET_SYLLABUS[sub]||{units:[]}).units;
-    // Sort by weightage desc, pick first unit with questions not already in mission
-    const sorted = units.slice().sort(function(a,b){return getWeightage(b.id) - getWeightage(a.id)});
-    for(let i=0; i<sorted.length; i++){
-      const u = sorted[i];
-      const pool = QUESTIONS.filter(function(q){return q.sub===sub && u.tids.indexOf(q.tid)>=0 && !seen.has(q.id)});
-      if(pool.length){
-        const picks = shuffleArray(pool).slice(0, 2);
-        picks.forEach(function(q){ seen.add(q.id); highYield.push(q); });
-        break;
-      }
+    if(qs.length){
+      mission.blocks.push({
+        key: b.key, title: b.title, subtitle: b.reason || (b.type + ' \u00b7 ' + qs.length + ' questions'),
+        emoji: b.emoji, color: b.color, questionIds: qs.map(function(q){return q.id}), count: qs.length,
+      });
+      mission.totalQ += qs.length;
     }
   });
-  if(highYield.length){
-    mission.blocks.push({
-      key: "high_yield",
-      title: "High-Yield NEET Marks",
-      subtitle: "From the chapters that score most marks",
-      emoji: "\ud83d\udcaf",
-      color: "var(--blue)",
-      questionIds: highYield.map(function(q){return q.id}),
-      count: highYield.length,
-    });
-    mission.totalQ += highYield.length;
-  }
 
-  // Block 4: Fresh challenge — unseen questions from adaptive pool
-  const attemptedIds = new Set((S.user.attemptedIds||[]).concat(Array.from(seen)));
-  const fresh = shuffleArray(QUESTIONS.filter(function(q){return !attemptedIds.has(q.id)})).slice(0, 4);
-  if(fresh.length){
-    mission.blocks.push({
-      key: "fresh",
-      title: "Fresh Challenge",
-      subtitle: "New questions you have not seen before",
-      emoji: "\ud83c\udd95",
-      color: "var(--purple)",
-      questionIds: fresh.map(function(q){return q.id}),
-      count: fresh.length,
-    });
-    mission.totalQ += fresh.length;
-  }
-
-  // Load completed count from localStorage
-  try{
-    const saved = JSON.parse(localStorage.getItem("na_mission_"+today)||"{}");
-    mission.completedQ = saved.completedQ || 0;
-    mission.completedBlocks = saved.completedBlocks || [];
-  }catch(e){ mission.completedBlocks = []; }
+  // Progress from server (persisted in user doc, not localStorage)
+  const progress = dash.missionProgress || {};
+  mission.completedQ = Object.values(progress).reduce(function(s,b){return s + (b.questionsCompleted||0)}, 0);
+  mission.completedBlocks = Object.keys(progress).filter(function(k){
+    const block = mission.blocks.find(function(b){return b.key===k});
+    return block && progress[k].questionsCompleted >= block.count;
+  });
 
   DAILY_MISSION = mission;
   DAILY_MISSION_DATE = today;
