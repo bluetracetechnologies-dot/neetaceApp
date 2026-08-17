@@ -260,6 +260,44 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ ok: true, expiresAt: exp.toISOString(), affected: snap.docs.length });
     }
 
+    // ── PER-USER FEATURE OVERRIDES (use sparingly - plans should be default) ──
+    if (action === 'set_user_feature_override') {
+      const { targetUid, featureKey, enabled, reason, expiresAt } = req.body;
+      if (!targetUid || !featureKey) return res.status(400).json({ error: 'targetUid and featureKey required' });
+      if (!reason || reason.trim().length < 5) return res.status(400).json({ error: 'Reason required (why this override) - min 5 chars' });
+      const targetSnap = await db.collection('users').doc(targetUid).get();
+      if (!targetSnap.exists) return res.status(404).json({ error: 'User not found' });
+      const overrides = targetSnap.data().featureOverrides || {};
+      if (enabled === null || enabled === undefined) {
+        // Remove the override
+        delete overrides[featureKey];
+      } else {
+        overrides[featureKey] = {
+          enabled: !!enabled, reason: reason, setBy: uid,
+          setAt: new Date().toISOString(),
+          expiresAt: expiresAt || null,
+        };
+      }
+      await db.collection('users').doc(targetUid).update({ featureOverrides: overrides });
+      return res.status(200).json({ ok: true, message: enabled === null ? 'Override removed' : 'Override saved for ' + featureKey });
+    }
+
+    if (action === 'list_user_overrides') {
+      // Show all users who have any feature overrides
+      const snap2 = await db.collection('users').where('featureOverrides', '!=', null).limit(50).get();
+      const users = [];
+      snap2.forEach(function(doc){
+        const d = doc.data();
+        if (d.featureOverrides && Object.keys(d.featureOverrides).length > 0) {
+          users.push({
+            uid: d.uid, email: d.email, name: d.name,
+            overrides: d.featureOverrides,
+          });
+        }
+      });
+      return res.status(200).json({ users });
+    }
+
     // ── PER-STUDENT CUSTOM PRICING ────────────────────
     // Admin sets a personal price for one student — overrides all plan pricing.
     if (action === 'set_custom_price') {
