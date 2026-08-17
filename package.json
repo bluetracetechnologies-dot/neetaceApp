@@ -2,9 +2,18 @@
   "name": "neetace",
   "version": "2.1.0",
   "private": true,
+  "scripts": {
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "test:ci": "jest --coverage --ci",
+    "test:watch": "jest --watch"
+  },
   "dependencies": {
     "firebase-admin": "^12.0.0",
-    "razorpay": "^2.9.4",
-    "nodemailer": "^6.9.13"
+    "nodemailer": "^6.9.13",
+    "razorpay": "^2.9.4"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
   }
 }
