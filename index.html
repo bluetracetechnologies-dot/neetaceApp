@@ -3248,6 +3248,7 @@ const BRAIN_QUESTIONS = [
 let brainIdx = 0, brainSet = [];
 function startBrainBoost(){
   if(!S.user){ openAuth(); return; }
+  if(!hasFeatureAccess('brain_boost')){ toast('Brain Boost is not available in your plan'); return; }
   ADAPTIVE_MODE=false;
   switchTab('quiz');
   brainSet=[...BRAIN_QUESTIONS].sort(function(){return Math.random()-.5});
@@ -3409,6 +3410,7 @@ function startSyllabusUnitQuiz(sub, unitId){
 let EXAM = null;
 function startExamMode(){
   if(!S.user){ openAuth(); return; }
+  if(!hasFeatureAccess('exam_mode')){ toast('Exam Mode requires Medium plan or higher'); openPricingModal(); return; }
   if(!canAccess()){ openPaywall(); return; }
   const pool = shuffleArray(QUESTIONS);
   if(pool.length < 10){ toast('Need more questions - load content packs first.'); return; }
@@ -3525,6 +3527,7 @@ function submitExam(){
 // ---- REVISION MODE: rapid-fire due items + weak topics ----
 function startRevisionMode(){
   if(!S.user){ openAuth(); return; }
+  if(!hasFeatureAccess('revision_mode')){ toast('Revision Mode not available in your plan'); return; }
   const now = new Date();
   const due = mistakes.filter(function(m){ return !m.recovered && (!m.nextReview || new Date(m.nextReview)<=now); });
   let pool = due.length ? due : mistakes.filter(function(m){return !m.recovered});
@@ -3558,6 +3561,7 @@ function buildProgressText(){
 }
 function shareMyProgress(){
   if(!S.user){ openAuth(); return; }
+  if(!hasFeatureAccess('progress_share')){ toast('Progress sharing not enabled'); return; }
   window.open("https://wa.me/?text="+encodeURIComponent(buildProgressText()),"_blank");
 }
 function shareProgressToParent(){
@@ -3682,6 +3686,7 @@ function doctorPick(tid, sub, maxRank, excludeIds){
 }
 
 function startConceptDoctor(origQ){
+  if(!hasFeatureAccess('concept_doctor')) return false;
   const rank = DIFF_RANK[origQ.diff]||2;
   if(rank < 2) return false; // only for medium+ wrongs
   const diag = doctorPick(origQ.tid, origQ.sub, 1, [origQ.id]);
@@ -4514,6 +4519,45 @@ function openNcertEbookMenu(){
   el.innerHTML = h;
   el.addEventListener('click', function(e){ if(e.target===el) el.remove(); });
   document.body.appendChild(el);
+}
+
+
+// ===== BUDGET MONITOR =====
+async function renderBudgetMonitor(){
+  const el = document.getElementById('budgetMonitor'); if(!el) return;
+  // Estimate cost from user counts + feature usage
+  try{
+    const r = await api('admin', {action:'stats', uid:S.user.uid, sessionToken:S.sessionToken});
+    const users = r.stats && r.stats.totalUsers || 0;
+    const paid = r.stats && r.stats.paidUsers || 0;
+    const trial = users - paid;
+    // Cost model (Firestore + Vercel + estimated AI Tutor usage)
+    const firestoreCost = Math.round(users * 30 * 0.036 / 100); // ~30 doc reads/user/day at cheap rate
+    const aiTutorCost = Math.round(paid * 5 * 0.5); // ~5 AI queries/month/paid at Rs 0.5
+    const emailCost = Math.round(users * 4 * 0.01); // ~4 emails/month at Rs 0.01
+    const totalMonthly = firestoreCost + aiTutorCost + emailCost;
+    // Revenue estimate
+    const revEstimate = paid * 500; // avg Rs 500/paid user/year -> Rs 42/month
+    const revMonthly = Math.round(paid * 42);
+    const profit = revMonthly - totalMonthly;
+
+    el.innerHTML = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:10px">' +
+      '<div style="background:var(--surf2);border-radius:9px;padding:11px;text-align:center"><div style="font-size:19px;font-weight:800;color:var(--red)">Rs '+totalMonthly+'</div><div style="font-size:10px;color:var(--mute)">Est monthly cost</div></div>' +
+      '<div style="background:var(--surf2);border-radius:9px;padding:11px;text-align:center"><div style="font-size:19px;font-weight:800;color:var(--green)">Rs '+revMonthly+'</div><div style="font-size:10px;color:var(--mute)">Est monthly revenue</div></div>' +
+      '<div style="background:var(--surf2);border-radius:9px;padding:11px;text-align:center"><div style="font-size:19px;font-weight:800;color:'+(profit>=0?'var(--green)':'var(--red)')+'">Rs '+profit+'</div><div style="font-size:10px;color:var(--mute)">Est monthly profit</div></div>' +
+      '</div>' +
+      '<div style="font-size:11px;line-height:1.7;color:var(--mute);background:var(--surf2);padding:11px;border-radius:9px">' +
+      '<b>Cost breakdown (estimated):</b><br>' +
+      '&bull; Firestore (' + users + ' users x 30 reads/day): Rs ' + firestoreCost + '<br>' +
+      '&bull; AI Tutor (' + paid + ' paid x ~5 queries): Rs ' + aiTutorCost + '<br>' +
+      '&bull; Email (' + users + ' users x ~4 emails): Rs ' + emailCost + '<br>' +
+      '&bull; Vercel Hobby: Free (until you cross bandwidth limit)<br>' +
+      '&bull; Firebase Auth + Hosting: Free tier<br><br>' +
+      '<b>Alerts:</b> ' +
+      (totalMonthly > 500 ? '<span style="color:var(--amber)">Cost above Rs 500/mo - consider capping AI Tutor daily use per plan.</span>' : '<span style="color:var(--green)">Under Rs 500/mo. Safe.</span>') +
+      '</div>' +
+      '<div style="margin-top:10px;font-size:11px;text-align:center;color:var(--mute)">Numbers are estimates. Check actual bills at console.firebase.google.com and vercel.com/billing.</div>';
+  }catch(e){ el.innerHTML = '<div style="color:var(--mute);font-size:12px;padding:10px">Stats unavailable</div>'; }
 }
 
 // ===== INIT =====
