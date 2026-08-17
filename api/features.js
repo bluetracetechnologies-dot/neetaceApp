@@ -320,6 +320,22 @@ const DEFAULT_FEATURES = {
     enabled: true, free: false, plans: [],
     hasCost: false, chargeable: false, adminOnly: true,
   },
+
+  paper_generator: { label:'Paper Generator', category:'quiz', description:'Type any topic. Printable + WhatsApp share.', enabled:true, plans:['medium','pro','monthly','academy'], costTag:'FREE', upsell:true, tip:'Star retention feature.' },
+  ncert_ebook: { label:'NCERT eBook Links', category:'quiz', description:'Free official NCERT textbooks', enabled:true, plans:['starter','medium','pro','monthly','academy'], costTag:'FREE' },
+  brain_boost: { label:'Brain Boost (IQ)', category:'quiz', description:'5-min IQ warm-up', enabled:true, plans:['starter','medium','pro','monthly','academy'], costTag:'FREE' },
+  concept_doctor: { label:'Concept Doctor (staged recovery)', category:'analytics', description:'Wrong to diagnostic to confirm to retry to recovered', enabled:true, plans:['medium','pro','monthly','academy'], costTag:'FREE', upsell:true, tip:'Key reason to buy Medium+.' },
+  exam_mode: { label:'Exam Mode (NEET simulator)', category:'quiz', description:'+4/-1 marking, OMR palette, 720 score', enabled:true, plans:['medium','pro','monthly','academy'], costTag:'FREE' },
+  revision_mode: { label:'Revision Mode (due Galti)', category:'quiz', description:'Rapid-fire spaced-rep items', enabled:true, plans:['starter','medium','pro','monthly','academy'], costTag:'FREE' },
+  score_predictor: { label:'NEET Score Predictor', category:'analytics', description:'Predicted /720 + AIR range', enabled:true, plans:['medium','pro','monthly','academy'], costTag:'FREE', upsell:true },
+  chapter_mastery: { label:'Chapter Mastery Dashboard', category:'analytics', description:'Learning DNA per unit', enabled:true, plans:['medium','pro','monthly','academy'], costTag:'FREE' },
+  syllabus_browser: { label:'NEET 2026 Syllabus (49 units)', category:'quiz', description:'Tap unit to practice + coverage map', enabled:true, plans:['starter','medium','pro','monthly','academy'], costTag:'FREE' },
+  academy_join: { label:'Academy Join (batch code)', category:'social', description:'Students join coaching batches', enabled:true, plans:['starter','medium','pro','monthly','academy'], costTag:'FREE' },
+  teacher_upload: { label:'Teacher DPP Upload', category:'admin', description:'Academy teachers upload scoped packs', enabled:true, plans:['academy'], costTag:'FREE', tip:'Academy-exclusive.' },
+  progress_share: { label:'WhatsApp Progress Share', category:'social', description:'Share stats + referral code', enabled:true, plans:['starter','medium','pro','monthly','academy'], costTag:'FREE' },
+  manual_payment: { label:'Manual Payment (UPI/NEFT)', category:'notifications', description:'Backup when Razorpay fails', enabled:true, plans:['starter','medium','pro','monthly','academy'], costTag:'FREE' },
+  festival_offers: { label:'Festival Discount Banners', category:'notifications', description:'Auto Diwali/Eid/Holi offers', enabled:true, plans:['starter','medium','pro','monthly'], costTag:'FREE' },
+  session_confirm: { label:'Session Conflict Confirmation', category:'admin', description:'Confirm device takeover on new login', enabled:true, plans:['starter','medium','pro','monthly','academy'], costTag:'FREE' },
 };
 
 // ── API Handler ──────────────────────────────────────────
