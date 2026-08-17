@@ -4580,6 +4580,74 @@ async function renderBudgetMonitor(){
   }catch(e){ el.innerHTML = '<div style="color:var(--mute);font-size:12px;padding:10px">Stats unavailable</div>'; }
 }
 
+
+// ===== PER-USER FEATURE OVERRIDES (admin) =====
+async function editUserFeatures(targetUid, targetName){
+  const fList = Object.entries(window._FEATURES || {});
+  if(!fList.length){ toast('Load feature flags first'); return; }
+  const el = document.createElement('div');
+  el.id = 'userOvModal';
+  el.style.cssText = 'position:fixed;inset:0;background:rgba(10,35,66,.85);z-index:700;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)';
+  let h = '<div style="background:var(--surf);border-radius:20px 20px 0 0;width:100%;max-width:520px;padding:20px;max-height:92vh;overflow-y:auto">';
+  h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
+  h += '<div><b style="font-size:15px">Custom Features</b><div style="font-size:11px;color:var(--mute)">'+targetName+'</div></div>';
+  h += '<button onclick="document.getElementById(\'userOvModal\').remove()" style="background:none;border:none;font-size:18px;color:var(--mute);cursor:pointer">x</button></div>';
+  h += '<div style="background:var(--amber-l);color:#7a4800;padding:9px 11px;border-radius:9px;font-size:11px;margin-bottom:12px;line-height:1.5"><b>Use sparingly.</b> Overrides bypass plan defaults. Best for VIP students, payment issues, or gifts. For batches, use Academy features.</div>';
+  h += '<div style="margin-bottom:10px"><label style="font-size:11px;color:var(--mute)">Reason (required, min 5 chars)</label>';
+  h += '<input class="fin" id="ovReason" placeholder="e.g. Compensation for payment delay" style="margin-top:3px"></div>';
+  h += '<div style="max-height:50vh;overflow-y:auto;border:1px solid var(--bdr);border-radius:9px">';
+  fList.forEach(function(entry){
+    const key = entry[0], cfg = entry[1];
+    if(!cfg.label) return;
+    h += '<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 12px;border-bottom:1px solid var(--bdr);font-size:12px">';
+    h += '<div style="flex:1"><b>'+cfg.label+'</b><div style="font-size:10px;color:var(--mute)">Plans: '+((cfg.plans||[]).join(', ')||'all')+'</div></div>';
+    h += '<div style="display:flex;gap:4px">';
+    h += '<button onclick="setUserOverride(\''+targetUid+'\',\''+key+'\',true)" style="background:var(--green);color:#fff;border:none;border-radius:6px;padding:4px 8px;font-size:10px;cursor:pointer">GRANT</button>';
+    h += '<button onclick="setUserOverride(\''+targetUid+'\',\''+key+'\',false)" style="background:var(--red);color:#fff;border:none;border-radius:6px;padding:4px 8px;font-size:10px;cursor:pointer">BLOCK</button>';
+    h += '<button onclick="setUserOverride(\''+targetUid+'\',\''+key+'\',null)" style="background:none;border:1px solid var(--bdr);border-radius:6px;padding:4px 8px;font-size:10px;color:var(--mute);cursor:pointer">RESET</button>';
+    h += '</div></div>';
+  });
+  h += '</div></div>';
+  el.innerHTML = h;
+  el.addEventListener('click', function(e){ if(e.target===el) el.remove(); });
+  document.body.appendChild(el);
+}
+
+async function setUserOverride(targetUid, featureKey, enabled){
+  const reasonEl = document.getElementById('ovReason');
+  const reason = reasonEl ? reasonEl.value : '';
+  if(enabled !== null && reason.trim().length < 5){
+    toast('Enter a reason (minimum 5 characters) first');
+    if(reasonEl) reasonEl.focus();
+    return;
+  }
+  const r = await api('admin', {action:'set_user_feature_override', uid:S.user.uid, sessionToken:S.sessionToken,
+    targetUid: targetUid, featureKey: featureKey, enabled: enabled, reason: reason || '(cleared)'});
+  if(r.ok){ toast(r.message); loadUserOverridesAudit(); }
+  else toast('Error: ' + (r.error||'Failed'));
+}
+
+async function loadUserOverridesAudit(){
+  const el = document.getElementById('userOverridesAudit'); if(!el) return;
+  try{
+    const r = await api('admin', {action:'list_user_overrides', uid:S.user.uid, sessionToken:S.sessionToken});
+    const users = r.users || [];
+    if(!users.length){
+      el.innerHTML = '<div style="font-size:11px;color:var(--mute);text-align:center;padding:10px">No user overrides active. Plans are the default for everyone.</div>';
+      return;
+    }
+    el.innerHTML = users.map(function(u){
+      const items = Object.entries(u.overrides).map(function(e){
+        const k = e[0], ov = e[1];
+        const color = ov.enabled ? 'var(--green)' : 'var(--red)';
+        const tag = ov.enabled ? 'GRANTED' : 'BLOCKED';
+        return '<div style="font-size:10px;color:'+color+';margin-top:2px"><b>'+tag+'</b> '+k+' - "'+ov.reason+'"</div>';
+      }).join('');
+      return '<div style="padding:9px 12px;border-bottom:1px solid var(--bdr);font-size:12px"><b>'+u.name+'</b> <span style="color:var(--mute);font-size:10px">'+u.email+'</span>'+items+'</div>';
+    }).join('');
+  }catch(e){ el.innerHTML = '<div style="color:var(--mute);font-size:11px;padding:10px">Could not load overrides</div>'; }
+}
+
 // ===== INIT =====
 window.addEventListener('load', async ()=>{
   loadPricing(); loadFestival(); loadLevels(); loadContentPacks();
