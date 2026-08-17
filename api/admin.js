@@ -83,6 +83,43 @@ module.exports = async function handler(req, res) {
     }
   }
 
+  // log_feedback is deliberately public-to-authenticated-users, not admin-only:
+  // any real student needs to be able to submit feedback, not just admins.
+  // REAL BUG FIXED HERE: this action previously sat behind the blanket admin
+  // gate below, so a regular student calling it always got 403 - the entire
+  // "Not ready? Tell us why" feedback flow could never have worked in
+  // production. Found via an actual executed test with a non-admin user
+  // (tests/integration/notification-flows.test.js), not by reading the code.
+  if (action === 'log_feedback') {
+    if (!uid || !sessionToken) return res.status(400).json({ error: 'uid, sessionToken required' });
+    const fbUserSnap = await db.collection('users').doc(uid).get();
+    if (!fbUserSnap.exists) return res.status(404).json({ error: 'User not found' });
+    if (fbUserSnap.data().sessionToken !== sessionToken) return res.status(401).json({ error: 'Invalid session' });
+
+    const { feedback } = req.body;
+    if (!feedback) return res.status(400).json({ error: 'feedback required' });
+    await db.collection('feedback').add({ ...feedback, uid, submittedAt: new Date().toISOString() });
+
+    try {
+      const { sendEmail } = require('./notifications');
+      if (sendEmail) {
+        await sendEmail('rahim@bluetrace.tech',
+          (fb, fromUid) => ({
+            subject: `NEETAce feedback from ${fb.email || fromUid || 'a user'}`,
+            html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:20px">
+              <h2 style="color:#0a2342">New feedback received</h2>
+              <p style="color:#444"><b>From:</b> ${fb.email || fromUid}</p>
+              <p style="color:#444"><b>Context:</b> ${fb.context || 'not specified'}</p>
+              <div style="background:#f0f7ff;border-radius:9px;padding:14px;margin:14px 0;white-space:pre-wrap">${fb.message || JSON.stringify(fb)}</div>
+              <p style="color:#888;font-size:12px">Also saved in Firestore feedback collection.</p>
+            </div>`,
+          }), feedback, uid);
+      }
+    } catch (e) { /* feedback is already durably saved above; email is best-effort */ }
+
+    return res.status(200).json({ ok: true });
+  }
+
   if (!uid || !sessionToken)
     return res.status(400).json({ error: 'uid, sessionToken required' });
 
@@ -352,34 +389,6 @@ module.exports = async function handler(req, res) {
         academyRole: 'academy_admin', academyId,
       });
       return res.status(200).json({ ok: true, message: 'Academy admin role granted' });
-    }
-
-    if (action === 'log_feedback') {
-      const { feedback } = req.body;
-      if (!feedback) return res.status(400).json({ error: 'feedback required' });
-      await db.collection('feedback').add({ ...feedback, uid, submittedAt: new Date().toISOString() });
-
-      // Route directly to the founder, not a generic support queue - at this stage,
-      // every piece of non-conversion feedback needs a human to see it fast.
-      // Reuses notifications.js's already-tested mail transport, no duplicate setup.
-      try {
-        const { sendEmail } = require('./notifications');
-        if (sendEmail) {
-          await sendEmail('rahim@bluetrace.tech',
-            (fb, fromUid) => ({
-              subject: `NEETAce feedback from ${fb.email || fromUid || 'a user'}`,
-              html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:20px">
-                <h2 style="color:#0a2342">New feedback received</h2>
-                <p style="color:#444"><b>From:</b> ${fb.email || fromUid}</p>
-                <p style="color:#444"><b>Context:</b> ${fb.context || 'not specified'}</p>
-                <div style="background:#f0f7ff;border-radius:9px;padding:14px;margin:14px 0;white-space:pre-wrap">${fb.message || JSON.stringify(fb)}</div>
-                <p style="color:#888;font-size:12px">Also saved in Firestore feedback collection.</p>
-              </div>`,
-            }), feedback, uid);
-        }
-      } catch (e) { /* feedback is already durably saved above; email is best-effort */ }
-
-      return res.status(200).json({ ok: true });
     }
 
     return res.status(400).json({ error: 'Unknown action: ' + action });
