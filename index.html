@@ -4878,6 +4878,140 @@ function renderLearningDNA(){
   el.innerHTML = out;
 }
 
+
+// ===== MISTAKE DIAGNOSIS (confidence-scored cause classifier) =====
+// Upgrades classifyError from a single cascading if/else into an evidence-weighted classifier.
+// This is the ONE place cause-detection logic lives - GALTI tagging and the on-screen diagnosis
+// both read from this, so they can never disagree (avoids duplicate classification logic).
+// Feeds INTO the existing Concept Doctor (startConceptDoctor) as a gate, and into GALTI/Recovery
+// Queue/Daily Mission as pointers - does not launch any new recovery flow of its own.
+const CAUSE_LABELS = {
+  concept:  { label:'Concept Error',         emoji:'\uD83D\uDCA1' },
+  formula:  { label:'Formula Error',         emoji:'\uD83D\uDCD0' },
+  unit:     { label:'Unit Conversion Error', emoji:'\uD83D\uDCCF' },
+  calc:     { label:'Calculation Error',     emoji:'\uD83E\uDDEE' },
+  careless: { label:'Careless Error',        emoji:'\uD83E\uDD26' },
+  time:     { label:'Time Pressure Error',   emoji:'\u23F0' },
+};
+
+function diagnoseWrongAnswer(q, selectedIdx, timeTakenMs){
+  // Each signal casts weighted votes for one or more causes. Multiple independent signals
+  // agreeing = higher confidence. Capped below 100% - this is heuristic, not a trained model,
+  // and should never claim false certainty (same honesty pattern as Score Predictor).
+  const votes = { concept:0, formula:0, unit:0, calc:0, careless:0, time:0 };
+  const evidence = [];
+
+  const estSec = q.estimatedTime || (q.diff==='hard'||q.diff==='exam'?90:q.diff==='medium'?60:45);
+  const actualSec = timeTakenMs ? Math.round(timeTakenMs/1000) : null;
+
+  // Signal 1: Timing vs question metadata estimatedTime (Phase 1 metadata, real use)
+  if(actualSec !== null){
+    const ratio = actualSec/estSec;
+    if(ratio > 1.6){
+      votes.time += 3;
+      evidence.push('Took '+actualSec+'s vs an expected '+estSec+'s ('+Math.round((ratio-1)*100)+'% over)');
+    } else if(ratio < 0.4){
+      votes.careless += 2;
+      evidence.push('Answered in just '+actualSec+'s - unusually fast for this question');
+    }
+  }
+
+  // Signal 2: Question metadata - unitType (Phase 1 metadata, real use)
+  if(q.unitType === 'unit_variant'){
+    votes.unit += 2;
+    evidence.push('This question specifically tests unit conversion');
+  }
+
+  // Signal 3: Question metadata - formula field present (Phase 1 metadata, real use)
+  if(q.formula){
+    votes.formula += 2;
+    evidence.push('Question involves a formula: '+q.formula);
+  }
+
+  // Signal 4: trick field keyword scan (existing content field, now one signal among several)
+  if(q.trick){
+    const t = q.trick.toLowerCase();
+    if(t.indexOf('formula')>=0){ votes.formula += 1; evidence.push('Common trap: '+q.trick); }
+    else if(t.indexOf('unit')>=0 || t.indexOf('convert')>=0){ votes.unit += 1; evidence.push('Common trap: '+q.trick); }
+    else evidence.push('Watch for: '+q.trick);
+  }
+
+  // Signal 5: difficulty - wrong on an easy/starter question leans careless
+  if(q.diff === 'starter' || q.diff === 'easy'){
+    votes.careless += 1;
+    evidence.push('This is a '+q.diff+' question - wrong answers here are often slips, not gaps');
+  }
+
+  // Signal 6: HISTORICAL PRIOR - this student's own past error pattern on this exact topic
+  // (reuses conceptStats.errorTypes from the cached dashboard - real history, not a new store)
+  const dash = window._DASHBOARD;
+  if(dash && dash.conceptStats){
+    const cs = dash.conceptStats.find(function(c){return c.tid===q.tid});
+    if(cs && cs.errorTypes){
+      const total = Object.values(cs.errorTypes).reduce(function(a,b){return a+b},0);
+      if(total >= 2){
+        Object.entries(cs.errorTypes).forEach(function(e){
+          const share = e[1]/total;
+          if(share >= 0.4 && votes[e[0]] !== undefined){
+            votes[e[0]] += 2;
+            evidence.push('You have made '+e[1]+' '+(CAUSE_LABELS[e[0]]?CAUSE_LABELS[e[0]].label.toLowerCase():e[0])+' mistakes on this topic before');
+          }
+        });
+      }
+    }
+  }
+
+  // Default fallback if nothing fired
+  if(Object.values(votes).every(function(v){return v===0})){
+    votes.concept = 1;
+    evidence.push('No strong signal detected - defaulting to concept gap as the most common cause');
+  }
+
+  const totalVotes = Object.values(votes).reduce(function(a,b){return a+b},0);
+  const sorted = Object.entries(votes).sort(function(a,b){return b[1]-a[1]});
+  const primaryCause = sorted[0][0];
+  const primaryVotes = sorted[0][1];
+  // Confidence: share of total signal weight held by the winning cause, capped at 90% (never claim certainty)
+  const confidence = Math.min(90, Math.max(35, Math.round((primaryVotes/Math.max(1,totalVotes))*100)));
+
+  // Recommended recovery - REUSES existing systems, launches nothing new here.
+  const inAdaptive = typeof ADAPTIVE_MODE !== 'undefined' && ADAPTIVE_MODE;
+  const rank = (typeof DIFF_RANK !== 'undefined' ? DIFF_RANK[q.diff] : 2) || 2;
+  const doctorEligible = inAdaptive && rank >= 2 && ['concept','formula','unit','calc'].indexOf(primaryCause) >= 0;
+  let recommendation;
+  if(doctorEligible){
+    recommendation = 'Starting Concept Doctor - a guided step-by-step rebuild for this.';
+  } else if(primaryCause === 'careless'){
+    recommendation = 'Logged in Galti Copy for spaced review - no need to relearn, just slow down next time.';
+  } else if(primaryCause === 'time'){
+    recommendation = 'Logged in Galti Copy. Try the timer slider in Practice to build speed on this topic.';
+  } else {
+    recommendation = 'Added to your Recovery Queue and tomorrow\'s Daily Mission.';
+  }
+
+  return { primaryCause:primaryCause, confidence:confidence, evidence:evidence.slice(0,3), recommendation:recommendation, doctorEligible:doctorEligible };
+}
+
+// classifyError now delegates to the same diagnosis - GALTI tagging and the visible
+// diagnosis box always agree, since there is only one classifier.
+function classifyError(q, idx, timeTakenMs, expectedTimeMs){
+  return diagnoseWrongAnswer(q, idx, timeTakenMs).primaryCause;
+}
+
+function renderDiagnosisBox(d){
+  const c = CAUSE_LABELS[d.primaryCause] || {label:d.primaryCause, emoji:'\u2753'};
+  let out = '<div style="background:var(--surf2);border-left:3px solid var(--purple);border-radius:0 9px 9px 0;padding:11px 12px;margin-top:9px">';
+  out += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">';
+  out += '<span style="font-size:12px;font-weight:800">'+c.emoji+' '+c.label+'</span>';
+  out += '<span style="font-size:10px;font-weight:700;color:var(--purple);background:var(--purple-l);padding:2px 8px;border-radius:8px">'+d.confidence+'% confidence</span></div>';
+  if(d.evidence.length){
+    out += '<div style="font-size:10.5px;color:var(--mute);line-height:1.6;margin-bottom:7px">'+d.evidence.map(function(e){return '&bull; '+e;}).join('<br>')+'</div>';
+  }
+  out += '<div style="font-size:11px;font-weight:600;color:var(--blue)">\u2192 '+d.recommendation+'</div>';
+  out += '</div>';
+  return out;
+}
+
 // ===== INIT =====
 window.addEventListener('load', async ()=>{
   loadPricing(); loadFestival(); loadLevels(); loadContentPacks();
