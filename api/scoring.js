@@ -1,8 +1,9 @@
 // api/scoring.js
-// POST { uid, sessionToken, results[] }
-// results: [{ questionId, correct, timeTaken, difficulty, type }]
-// Computes weighted score and writes to Firestore users/{uid}/scores
-// Called at end of every quiz session
+// Actions: 'record' (default/legacy - no action field needed for backward compat),
+//          'get_dashboard', 'get_concept_stats' (alias, kept for compatibility), 'sync_galti'
+// Reuses: users/{uid}.mastery (written by adaptive.js), users/{uid}.conceptStats (this file),
+//         users/{uid}.galtiMistakes (this file, new field - NOT a new collection).
+// No new Firestore collections created.
 
 const { db } = require('./_firebase');
 
@@ -12,7 +13,7 @@ const WEIGHTS = { starter:1, easy:2, medium:4, hard:7, exam:10 };
 // Question type bonuses
 const TYPE_BONUS = { standard:1.0, parameterized:1.15, unit_variant:1.10 };
 
-// NEET negative marking: wrong = -0.25 × weight
+// NEET negative marking: wrong = -0.25 x weight
 const NEGATIVE_MARK = 0.25;
 
 // Minimum questions to appear on leaderboard
@@ -20,6 +21,14 @@ const MIN_FOR_RANK = 20;
 
 // Level decay if student drops difficulty
 const LEVEL_DECAY = [1.0, 0.85, 0.65, 0.40]; // [same, -1, -2, -3+]
+
+// Bloat guards (same pattern applied to conceptStats and galtiMistakes)
+const MAX_CONCEPT_TIDS = 60;
+const MAX_GALTI_ENTRIES = 150;
+const ALLOWED_ERROR_TYPES = ['concept','formula','unit','calc','careless','time'];
+
+// Recovery priority order (Phase 3 requirement): unit > formula > concept > calc > careless > time
+const ERROR_PRIORITY = { unit: 1, formula: 2, concept: 3, calc: 4, careless: 5, time: 6 };
 
 function nextMay31() {
   const now = new Date();
@@ -33,26 +42,195 @@ function speedBonus(timeTaken, totalTime, isCorrect) {
   if (!isCorrect) return 1.0;
   if (!timeTaken || !totalTime) return 1.0;
   const ratio = timeTaken / totalTime;
-  if (ratio < 0.30) return 1.2;   // Fast AND correct: real skill
+  if (ratio < 0.30) return 1.2;
   if (ratio < 0.60) return 1.1;
   return 1.0;
+}
+
+function evictOldest(map, maxSize, dateField) {
+  const count = Object.keys(map).length;
+  if (count <= maxSize) return map;
+  const sorted = Object.entries(map).sort(function(a, b) {
+    return new Date(a[1][dateField] || 0) - new Date(b[1][dateField] || 0);
+  });
+  const toRemove = count - maxSize;
+  for (let i = 0; i < toRemove; i++) delete map[sorted[i][0]];
+  return map;
 }
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { uid, sessionToken, results, subject, sessionTimeSec } = req.body || {};
-  if (!uid || !sessionToken || !results?.length)
-    return res.status(400).json({ error: 'uid, sessionToken, results required' });
+  const body = req.body || {};
+  const { uid, sessionToken } = body;
+  const action = body.action || 'record'; // backward compatible: no action = session recording (legacy callers)
 
-  // Verify session
+  if (!uid || !sessionToken) return res.status(400).json({ error: 'uid and sessionToken required' });
+
+  // Verify session ONCE, reuse the same doc read for every action below (zero duplicate reads).
   const uSnap = await db.collection('users').doc(uid).get();
   if (!uSnap.exists) return res.status(404).json({ error: 'User not found' });
   const user = uSnap.data();
   if (user.sessionToken !== sessionToken) return res.status(401).json({ error: 'Invalid session' });
 
   try {
-    // Compute session score
+    // ══════════════════════════════════════════════════════════════
+    // ACTION: get_dashboard / get_concept_stats (alias)
+    // Merges conceptStats + mastery (adaptive.js's field, same doc) + galtiMistakes.
+    // ONE Firestore read total (uSnap above). No extra queries except sessions count.
+    // ══════════════════════════════════════════════════════════════
+    if (action === 'get_dashboard' || action === 'get_concept_stats') {
+      const cs = user.conceptStats || {};
+      const mastery = user.mastery || {};       // reused from adaptive.js, not duplicated
+      const galti = user.galtiMistakes || {};   // reused/new field, not a new collection
+
+      // Merge conceptStats (accuracy) with mastery (theta) per tid - same key space.
+      const list = Object.keys(cs).map(function(tid) {
+        const c = cs[tid];
+        const m = mastery[tid] || {};
+        return {
+          tid: tid,
+          attempted: c.attempted, correct: c.correct, accuracy: c.accuracy,
+          avgTimeMs: c.avgTimeMs, masteryBand: c.masteryBand, errorTypes: c.errorTypes || {},
+          lastSeen: c.lastSeen,
+          theta: m.theta !== undefined ? Math.round(m.theta) : null, // null = adaptive hasn't touched this tid yet
+        };
+      });
+
+      const weakTopics = list.filter(function(x) { return x.attempted >= 3 && x.masteryBand === 'weak'; })
+        .sort(function(a, b) { return a.accuracy - b.accuracy; }).slice(0, 5);
+      const strongTopics = list.filter(function(x) { return x.masteryBand === 'mastered'; })
+        .sort(function(a, b) { return b.accuracy - a.accuracy; }).slice(0, 3);
+
+      const errorBreakdown = {};
+      list.forEach(function(x) {
+        Object.entries(x.errorTypes || {}).forEach(function(e) {
+          errorBreakdown[e[0]] = (errorBreakdown[e[0]] || 0) + e[1];
+        });
+      });
+
+      // ── PHASE 3: RECOVERY QUEUE ──
+      // Priority: unit errors > formula errors > concept errors > calc > careless > time.
+      // Built from conceptStats.errorTypes (what kinds of mistakes) + galtiMistakes (recency).
+      // Server returns a RANKED LIST of {tid, errorType, priority, reason} - NOT actual question
+      // objects. The client already has the question bank (QUESTIONS array, loaded from packs)
+      // and its own shuffle/selection logic (shuffleQuestion, shuffleArray) - reusing that instead
+      // of duplicating question-selection logic here.
+      const recoveryCandidates = [];
+      list.forEach(function(x) {
+        Object.entries(x.errorTypes || {}).forEach(function(e) {
+          const errorType = e[0], errCount = e[1];
+          if (ERROR_PRIORITY[errorType] === undefined) return;
+          recoveryCandidates.push({
+            tid: x.tid, errorType: errorType, priority: ERROR_PRIORITY[errorType],
+            errorCount: errCount, accuracy: x.accuracy,
+            reason: errorType + ' error x' + errCount + ' in this topic (accuracy ' + x.accuracy + '%)',
+          });
+        });
+      });
+      // Sort by priority (unit=1 first), then by error count (more errors = more urgent)
+      recoveryCandidates.sort(function(a, b) {
+        if (a.priority !== b.priority) return a.priority - b.priority;
+        return b.errorCount - a.errorCount;
+      });
+      const recoveryQueue = recoveryCandidates.slice(0, 10);
+
+      // ── REVISION DUE TODAY ──
+      // From galtiMistakes where nextReview <= now and not recovered.
+      // Scheduling (Day 1/3/7/15/30) stays client-computed at mistake-add time (existing logic,
+      // not duplicated here) - server just reads back what was synced.
+      const now = new Date();
+      const revisionDue = Object.entries(galti)
+        .filter(function(e) {
+          const m = e[1];
+          return !m.recovered && (!m.nextReview || new Date(m.nextReview) <= now);
+        })
+        .map(function(e) { return { questionId: e[0], tid: e[1].tid, errorType: e[1].errorType, count: e[1].count }; })
+        .slice(0, 30);
+
+      return res.status(200).json({
+        ok: true,
+        scores: user.scores || {},
+        conceptStats: list,
+        weakTopics: weakTopics,
+        strongTopics: strongTopics,
+        errorBreakdown: errorBreakdown,
+        recoveryQueue: recoveryQueue,
+        revisionDue: revisionDue,
+        revisionDueCount: revisionDue.length,
+        totalConceptsTouched: list.length,
+        rankScore: (user.scores && user.scores.global && user.scores.global.rankScore) || 0,
+        consistency7d: (user.scores && user.scores.global && user.scores.global.consistency7d) || 0,
+        totalAttempted: user.totalQuestionsAttempted || 0,
+        lastSessionAt: user.lastSessionAt || null,
+      });
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // ACTION: sync_galti
+    // Persists GALTI mistakes to the user doc (fixes pre-existing bug: mistakes were
+    // never persisted anywhere - client-memory only, lost on reload/re-login).
+    // Client sends the full current mistake object; server upserts by questionId key.
+    // Scheduling logic (nextReview dates) stays client-owned; server just stores it.
+    // ══════════════════════════════════════════════════════════════
+    if (action === 'sync_galti') {
+      const { mistake, questionId } = body;
+      if (!questionId || !mistake) return res.status(400).json({ error: 'questionId and mistake required' });
+      if (typeof questionId !== 'string' || questionId.length > 60)
+        return res.status(400).json({ error: 'invalid questionId' });
+
+      const galti = user.galtiMistakes || {};
+      galti[questionId] = {
+        tid: (mistake.tid || '').slice(0, 40),
+        sub: (mistake.sub || '').slice(0, 20),
+        errorType: ALLOWED_ERROR_TYPES.indexOf(mistake.errorType) >= 0 ? mistake.errorType : 'unknown',
+        count: Math.min(999, parseInt(mistake.count) || 1),
+        recovered: !!mistake.recovered,
+        recoveryStep: Math.min(3, parseInt(mistake.recoveryStep) || 0),
+        addedAt: mistake.addedAt || new Date().toISOString(),
+        lastWrong: mistake.lastWrong || new Date().toISOString(),
+        nextReview: mistake.nextReview || null,
+        recoveredAt: mistake.recoveredAt || null,
+      };
+
+      const capped = evictOldest(galti, MAX_GALTI_ENTRIES, 'lastWrong');
+      await db.collection('users').doc(uid).update({ galtiMistakes: capped });
+      return res.status(200).json({ ok: true });
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // ACTION: sync_galti_bulk
+    // One-shot upload of the entire local mistakes[] array - used once on first login
+    // after this fix ships, so existing in-session (not-yet-lost) mistakes aren't wasted.
+    // ══════════════════════════════════════════════════════════════
+    if (action === 'sync_galti_bulk') {
+      const { mistakes } = body;
+      if (!Array.isArray(mistakes)) return res.status(400).json({ error: 'mistakes array required' });
+      const galti = user.galtiMistakes || {};
+      mistakes.slice(0, MAX_GALTI_ENTRIES).forEach(function(m) {
+        if (!m.id) return;
+        galti[String(m.id)] = {
+          tid: (m.tid || '').slice(0, 40), sub: (m.sub || '').slice(0, 20),
+          errorType: ALLOWED_ERROR_TYPES.indexOf(m.errorType) >= 0 ? m.errorType : 'unknown',
+          count: Math.min(999, parseInt(m.count) || 1),
+          recovered: !!m.recovered, recoveryStep: Math.min(3, parseInt(m.recoveryStep) || 0),
+          addedAt: m.addedAt || new Date().toISOString(), lastWrong: m.lastWrong || new Date().toISOString(),
+          nextReview: m.nextReview || null, recoveredAt: m.recoveredAt || null,
+        };
+      });
+      const capped = evictOldest(galti, MAX_GALTI_ENTRIES, 'lastWrong');
+      await db.collection('users').doc(uid).update({ galtiMistakes: capped });
+      return res.status(200).json({ ok: true, synced: mistakes.length });
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // DEFAULT ACTION: record (session scoring) - legacy callers send no `action` field,
+    // so this must stay the default. Behavior is UNCHANGED from before this refactor.
+    // ══════════════════════════════════════════════════════════════
+    const { results, subject, sessionTimeSec } = body;
+    if (!results || !results.length)
+      return res.status(400).json({ error: 'results required for recording a session' });
+
     let sessionScore = 0;
     let correct = 0, wrong = 0, skipped = 0;
     const timePerQ = sessionTimeSec ? sessionTimeSec / results.length : 30;
@@ -74,23 +252,19 @@ module.exports = async function handler(req, res) {
     }
     sessionScore = Math.max(0, Math.round(sessionScore * 100) / 100);
 
-    // Determine subject key
     const subKey = (subject || 'global').toLowerCase();
     const validSubs = ['physics', 'chemistry', 'biology', 'global'];
     const key = validSubs.includes(subKey) ? subKey : 'global';
 
-    // Load existing scores
     const existing = user.scores || {};
     const prev     = existing[key] || { weighted: 0, attempted: 0, correct: 0, wrong: 0, currentLevel: 0 };
 
-    // Detect level drop for decay
     const currentLevel = results[0]?.levelIndex ?? prev.currentLevel ?? 0;
     const drop = Math.max(0, (prev.currentLevel || 0) - currentLevel);
     const decayIdx = Math.min(drop, LEVEL_DECAY.length - 1);
     const decayFactor = LEVEL_DECAY[decayIdx];
     const decayedScore = Math.round(sessionScore * decayFactor * 100) / 100;
 
-    // Update subject scores
     const newSubScore = {
       weighted:     Math.round((prev.weighted + decayedScore) * 100) / 100,
       attempted:    prev.attempted + results.length,
@@ -102,7 +276,6 @@ module.exports = async function handler(req, res) {
       lastUpdated:  new Date().toISOString(),
     };
 
-    // Also update global if not already global
     const prevGlobal = existing.global || { weighted: 0, attempted: 0, correct: 0, wrong: 0 };
     const newGlobal  = key !== 'global' ? {
       weighted:    Math.round((prevGlobal.weighted + decayedScore) * 100) / 100,
@@ -114,21 +287,14 @@ module.exports = async function handler(req, res) {
       lastUpdated:  new Date().toISOString(),
     } : newSubScore;
 
-    // Build update
     const scoresUpdate = { ...existing, [key]: newSubScore };
     if (key !== 'global') scoresUpdate.global = newGlobal;
 
-    // ── AGGREGATE PER-TOPIC CONCEPT STATS (Learning DNA foundation) ──
-    // Each question carries tid (topic id), chapter, and optionally errorType.
-    // Concept stats power weak-topic analysis and next-question selection.
+    // Aggregate per-topic concept stats (unchanged from prior session)
     const conceptStats = user.conceptStats || {};
-    // Bloat protection: keep only top 60 tids (NEET has 49, room for teacher-added).
-    // Never let this dict exceed 100 entries. Oldest-untouched are evicted first.
-    const MAX_CONCEPT_TIDS = 60;
-    const ALLOWED_ERROR_TYPES = ['concept','formula','unit','calc','careless','time'];
     for (const r of results) {
       const tid = r.tid || r.topicId;
-      if (!tid || typeof tid !== 'string' || tid.length > 40) continue; // guard bad data
+      if (!tid || typeof tid !== 'string' || tid.length > 40) continue;
       const cs = conceptStats[tid] || { attempted: 0, correct: 0, wrong: 0, totalTimeMs: 0, lastSeen: null, errorTypes: {} };
       cs.attempted++;
       if (r.correct === true) cs.correct++;
@@ -138,7 +304,6 @@ module.exports = async function handler(req, res) {
           cs.errorTypes[r.errorType] = (cs.errorTypes[r.errorType] || 0) + 1;
         }
       }
-      // Cap totalTimeMs to prevent overflow on years of use (max 10 hours per tid)
       cs.totalTimeMs = Math.min(36000000, cs.totalTimeMs + (r.timeTaken || 0));
       cs.lastSeen = new Date().toISOString();
       cs.accuracy = cs.attempted > 0 ? Math.round((cs.correct / cs.attempted) * 1000) / 10 : 0;
@@ -146,38 +311,26 @@ module.exports = async function handler(req, res) {
       cs.masteryBand = cs.accuracy >= 70 ? 'mastered' : cs.accuracy >= 40 ? 'developing' : 'weak';
       conceptStats[tid] = cs;
     }
-    // Evict least-recently-touched if over cap (guards against unbounded growth)
-    const tidCount = Object.keys(conceptStats).length;
-    if (tidCount > MAX_CONCEPT_TIDS) {
-      const sortedTids = Object.entries(conceptStats)
-        .sort(function(a,b){ return new Date(a[1].lastSeen||0) - new Date(b[1].lastSeen||0); });
-      const toRemove = tidCount - MAX_CONCEPT_TIDS;
-      for (let i = 0; i < toRemove; i++) delete conceptStats[sortedTids[i][0]];
-    }
+    const cappedConceptStats = evictOldest(conceptStats, MAX_CONCEPT_TIDS, 'lastSeen');
 
-    // ── CONSISTENCY & MASTERY-ADJUSTED RANK SCORE ──
-    // Prevents "grind easy questions forever" gaming. Rank uses composite:
-    // weightedScore * accuracyMultiplier * consistencyMultiplier
     const accMultiplier = Math.max(0.5, Math.min(1.2, (newGlobal.accuracy || 50) / 60));
-    // Consistency: sessions in last 7 days
     const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const recentSessions = await db.collection('sessions').where('uid','==',uid)
-      .where('playedAt','>=',sevenDaysAgo.toISOString()).count().get().catch(function(){return {data:function(){return{count:1}}}});
+    const recentSessions = await db.collection('sessions').where('uid', '==', uid)
+      .where('playedAt', '>=', sevenDaysAgo.toISOString()).count().get()
+      .catch(function() { return { data: function() { return { count: 1 }; } }; });
     const daysActive = Math.min(7, recentSessions.data().count || 1);
-    const consistencyMultiplier = 0.7 + (daysActive / 7) * 0.4; // 0.7 to 1.1
+    const consistencyMultiplier = 0.7 + (daysActive / 7) * 0.4;
     const rankScore = Math.round(newGlobal.weighted * accMultiplier * consistencyMultiplier * 100) / 100;
     newGlobal.rankScore = rankScore;
     newGlobal.consistency7d = daysActive;
 
-    // Write to Firestore (with concept stats + rank score)
     await db.collection('users').doc(uid).update({
       scores: scoresUpdate,
-      conceptStats: conceptStats,
+      conceptStats: cappedConceptStats,
       totalQuestionsAttempted: (user.totalQuestionsAttempted || 0) + results.length,
       lastSessionAt: new Date().toISOString(),
     });
 
-    // Log session for history
     await db.collection('sessions').add({
       uid, subject: key, sessionScore, decayedScore,
       correct, wrong, skipped,
@@ -188,29 +341,24 @@ module.exports = async function handler(req, res) {
       expiresAt: nextMay31().toISOString(),
     });
 
-    // Session pruning (safety valve): if user has >200 sessions, delete oldest.
-    // Runs 1-in-20 chance per write to spread load (Firestore rate limits).
     if (Math.random() < 0.05) {
       try {
         const oldSessions = await db.collection('sessions')
-          .where('uid','==',uid).orderBy('playedAt','asc').limit(50).get();
+          .where('uid', '==', uid).orderBy('playedAt', 'asc').limit(50).get();
         if (oldSessions.size >= 50) {
-          const countSnap = await db.collection('sessions').where('uid','==',uid).count().get();
+          const countSnap = await db.collection('sessions').where('uid', '==', uid).count().get();
           if ((countSnap.data().count || 0) > 200) {
             const batch = db.batch();
-            oldSessions.docs.slice(0, 50).forEach(function(d){ batch.delete(d.ref); });
+            oldSessions.docs.slice(0, 50).forEach(function(d) { batch.delete(d.ref); });
             await batch.commit();
           }
         }
-      } catch(e) {}
+      } catch (e) {}
     }
 
-    // Compute global rank estimate (fast approximate)
     let rank = null;
     const totalAttempted = newGlobal.attempted || 0;
     if (totalAttempted >= MIN_FOR_RANK) {
-      // Rank uses composite rankScore (weighted x accuracy x consistency), not raw weighted.
-      // This prevents grinders farming easy questions from dominating leaderboard.
       const aboveCount = await db.collection('users')
         .where('scores.global.rankScore', '>', rankScore)
         .count().get();
@@ -226,49 +374,6 @@ module.exports = async function handler(req, res) {
       qualifiesForLeaderboard: totalAttempted >= MIN_FOR_RANK,
       minQuestionsNeeded: Math.max(0, MIN_FOR_RANK - totalAttempted),
     });
-  // Full dashboard payload - one call for future admin/student dashboard.
-  // Returns: subject scores, top 5 weak topics, top 3 mastered, error breakdown,
-  //          7-day session count, consistency, rank score, GALTI summary.
-  if (req.body.action === 'get_dashboard') {
-    const cs = user.conceptStats || {};
-    const list = Object.entries(cs).map(function(e){
-      return { tid: e[0], attempted: e[1].attempted, correct: e[1].correct, accuracy: e[1].accuracy,
-               avgTimeMs: e[1].avgTimeMs, masteryBand: e[1].masteryBand, errorTypes: e[1].errorTypes,
-               lastSeen: e[1].lastSeen };
-    });
-    // Weak (bottom 5 by accuracy, min 3 attempts)
-    const weak = list.filter(function(x){ return x.attempted >= 3 && x.masteryBand === 'weak' })
-                     .sort(function(a,b){ return a.accuracy - b.accuracy }).slice(0, 5);
-    // Mastered (top 3 by accuracy)
-    const mastered = list.filter(function(x){ return x.masteryBand === 'mastered' })
-                         .sort(function(a,b){ return b.accuracy - a.accuracy }).slice(0, 3);
-    // Aggregate error type counts across all tids
-    const errorTotals = {};
-    list.forEach(function(x){ Object.entries(x.errorTypes||{}).forEach(function(e){ errorTotals[e[0]] = (errorTotals[e[0]]||0) + e[1]; }); });
-    return res.status(200).json({
-      ok: true,
-      scores: user.scores || {},
-      conceptStats: list,
-      weakTopics: weak,
-      masteredTopics: mastered,
-      errorBreakdown: errorTotals,
-      totalConceptsTouched: list.length,
-      rankScore: (user.scores && user.scores.global && user.scores.global.rankScore) || 0,
-      consistency7d: (user.scores && user.scores.global && user.scores.global.consistency7d) || 0,
-      totalAttempted: user.totalQuestionsAttempted || 0,
-      lastSessionAt: user.lastSessionAt || null,
-    });
-  }
-
-  // Return concept stats + weak topics
-  if (req.body.action === 'get_concept_stats') {
-    const cs = user.conceptStats || {};
-    const list = Object.entries(cs).map(function(e){
-      return { tid: e[0], attempted: e[1].attempted, correct: e[1].correct, accuracy: e[1].accuracy,
-               avgTimeMs: e[1].avgTimeMs, masteryBand: e[1].masteryBand, errorTypes: e[1].errorTypes };
-    }).sort(function(a,b){ return a.accuracy - b.accuracy; }); // weak first
-    return res.status(200).json({ conceptStats: list, weakTopics: list.filter(function(x){return x.masteryBand==='weak'}).slice(0,5) });
-  }
 
   } catch (err) {
     console.error('scoring error', err);
