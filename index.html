@@ -3597,11 +3597,33 @@ function tidToUnitName(tid){
   });
   return found;
 }
+function buildChapterMasteryList(list){
+  // Shared helper - the exact grouping logic Chapter Mastery uses, now reusable by
+  // Score Predictor V2 too. No duplicate grouping logic in two places.
+  const bySubject = { PHYSICS: [], CHEMISTRY: [], BIOLOGY: [] };
+  list.forEach(function(cs){
+    if(cs.attempted < 1) return;
+    const matches = QUESTIONS.filter(function(q){ return q.tid === cs.tid; });
+    if(!matches.length) return;
+    const sub = matches[0].sub;
+    if(!bySubject[sub]) bySubject[sub] = [];
+    const chCounts = {};
+    matches.forEach(function(q){ chCounts[q.ch] = (chCounts[q.ch]||0) + 1; });
+    const chapter = Object.keys(chCounts).sort(function(a,b){ return chCounts[b]-chCounts[a]; })[0];
+    const theta = cs.theta !== null ? cs.theta : 500;
+    const pct = Math.max(0, Math.min(100, Math.round((((theta-100)/800)*0.6 + (cs.accuracy/100)*0.4) * 100)));
+    bySubject[sub].push({
+      tid: cs.tid, chapter: chapter, sub: sub, pct: pct, accuracy: cs.accuracy, attempted: cs.attempted,
+      masteryBand: cs.masteryBand, improving: (cs.correctStreak || 0) >= 3, errorTypes: cs.errorTypes||{},
+    });
+  });
+  return bySubject;
+}
+
 async function renderMasteryDash(){
   const el=document.getElementById("masteryDash"); if(!el||!S.user) return;
   el.innerHTML='<div style="text-align:center;padding:14px;color:var(--mute);font-size:12px">Loading Chapter Mastery...</div>';
 
-  // Reuse the same cached dashboard call Daily Mission / GALTI already populate - no duplicate read.
   let dash = window._DASHBOARD;
   if(!dash){
     try{ dash = await api("scoring",{action:"get_dashboard",uid:S.user.uid,sessionToken:S.sessionToken}); window._DASHBOARD = dash; }
@@ -3614,31 +3636,9 @@ async function renderMasteryDash(){
     return;
   }
 
-  // Feed Score Predictor from this SAME response (adapter shape) - removes the last duplicate adaptive.js call.
-  renderScorePredictor({ mastery: list.filter(function(x){return x.theta!==null}).map(function(x){return {tid:x.tid, theta:x.theta};}) });
+  renderScorePredictor(dash);
 
-  // Group by subject using QUESTIONS metadata (client already holds sub/ch per question) - per architecture:
-  // server (conceptStats/mastery) owns the numbers, client owns the question-bank join. No duplicate mapping table.
-  const bySubject = { PHYSICS: [], CHEMISTRY: [], BIOLOGY: [] };
-  list.forEach(function(cs){
-    if(cs.attempted < 1) return;
-    const matches = QUESTIONS.filter(function(q){ return q.tid === cs.tid; });
-    if(!matches.length) return; // tid has stats but no currently-loaded question (disabled pack) - skip gracefully
-    const sub = matches[0].sub;
-    if(!bySubject[sub]) bySubject[sub] = [];
-    // Most common chapter text among this tid's questions (uses metadata.ch directly, per instruction)
-    const chCounts = {};
-    matches.forEach(function(q){ chCounts[q.ch] = (chCounts[q.ch]||0) + 1; });
-    const chapter = Object.keys(chCounts).sort(function(a,b){ return chCounts[b]-chCounts[a]; })[0];
-    const theta = cs.theta !== null ? cs.theta : 500; // neutral prior if adaptive engine hasn't touched this tid
-    // Same blend Score Predictor uses (theta 60% + accuracy 40%) - one canonical mastery formula, reused.
-    const pct = Math.max(0, Math.min(100, Math.round((((theta-100)/800)*0.6 + (cs.accuracy/100)*0.4) * 100)));
-    bySubject[sub].push({
-      tid: cs.tid, chapter: chapter, pct: pct, accuracy: cs.accuracy, attempted: cs.attempted,
-      masteryBand: cs.masteryBand, // reused as-is - weak/developing/mastered, computed server-side already
-      improving: (cs.correctStreak || 0) >= 3, // reused field, zero new storage
-    });
-  });
+  const bySubject = buildChapterMasteryList(list);
 
   const weak = [], strong = [], improving = [];
   Object.values(bySubject).forEach(function(arr){
@@ -3659,15 +3659,12 @@ async function renderMasteryDash(){
   }
 
   let out = '';
-
-  // Highlight strip: Weak / Strong / Improving counts (uses existing categorization, no new logic)
   out += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:13px">'+
     '<div style="background:var(--red-l);border-radius:9px;padding:9px;text-align:center"><div style="font-size:17px;font-weight:800;color:var(--red)">'+weak.length+'</div><div style="font-size:9px;color:var(--mute)">WEAK CHAPTERS</div></div>'+
     '<div style="background:var(--green-l);border-radius:9px;padding:9px;text-align:center"><div style="font-size:17px;font-weight:800;color:var(--green)">'+strong.length+'</div><div style="font-size:9px;color:var(--mute)">STRONG CHAPTERS</div></div>'+
     '<div style="background:var(--blue-l);border-radius:9px;padding:9px;text-align:center"><div style="font-size:17px;font-weight:800;color:var(--blue)">'+improving.length+'</div><div style="font-size:9px;color:var(--mute)">IMPROVING</div></div>'+
     '</div>';
 
-  // Grouped by subject, chapters sorted weakest-first within each (surfaces what needs work)
   ['PHYSICS','CHEMISTRY','BIOLOGY'].forEach(function(sub){
     const chapters = bySubject[sub] || [];
     if(!chapters.length) return;
