@@ -3677,25 +3677,119 @@ async function renderMasteryDash(){
 }
 
 // ===== SCORE PREDICTOR (ongoing, from mastery + accuracy) =====
-function renderScorePredictor(r){
+function renderScorePredictor(dash){
   const el=document.getElementById("scorePredictor"); if(!el) return;
   const g=(S.user&&S.user.scores&&S.user.scores.global)||{};
-  if(!r||!r.mastery||!r.mastery.length||!g.attempted){
+  const list = (dash && dash.conceptStats) || [];
+  if(!list.length || !g.attempted){
+    el.innerHTML='<div style="font-size:12px;color:var(--mute)">Solve 20+ questions to unlock your NEET score prediction.</div>'; return;
+  }
+  const withTheta = list.filter(function(x){return x.theta!==null});
+  if(!withTheta.length){
     el.innerHTML='<div style="font-size:12px;color:var(--mute)">Solve 20+ adaptive questions to unlock your NEET score prediction.</div>'; return;
   }
-  const avgTheta = r.mastery.reduce(function(s,m){return s+m.theta},0)/r.mastery.length;
-  const acc=(g.accuracy||50)/100;
-  // Honest blend: theta ability (100-900 scale) + demonstrated accuracy, mapped to 720
-  const base = ((avgTheta-100)/800)*0.6 + acc*0.4;
-  const mid = Math.round(base*720);
-  const conf = Math.max(30, 90 - Math.min(60, g.attempted/5)); // range narrows with more attempts
-  const lo=Math.max(0,mid-conf), hi=Math.min(720,mid+conf);
-  const weakest=r.mastery[0]; const wu=tidToUnitName(weakest.tid)||{name:weakest.tid};
-  const gain=Math.round((720/49)*0.6); // approx marks recoverable per weak unit fixed
-  el.innerHTML='<div style="text-align:center;margin-bottom:9px"><div style="font-size:11px;color:var(--mute)">PREDICTED NEET SCORE</div>'+
-    '<div style="font-size:34px;font-weight:900;color:var(--blue)">'+mid+'<span style="font-size:15px;color:var(--mute)">/720</span></div>'+
-    '<div style="font-size:11px;color:var(--mute)">Confidence range: '+lo+' \u2013 '+hi+' &middot; based on '+g.attempted+' answers \u00b7 estimate only, not a guarantee</div></div>'+
-    '<div style="background:var(--amber-l);border-radius:9px;padding:10px;font-size:11.5px;color:#7a4800;line-height:1.6"><b>\uD83C\uDFAF Highest-gain move:</b> Fix <b>'+wu.name+'</b> (your weakest) - worth roughly +'+gain+' marks. Tap it in Chapter Mastery above to practice now.</div>';
+
+  // ── CURRENT SCORE: the exact same formula V1 always used - not a new one. ──
+  const avgTheta = withTheta.reduce(function(s,m){return s+m.theta},0)/withTheta.length;
+  const acc = (g.accuracy||50)/100;
+  const currentBase = ((avgTheta-100)/800)*0.6 + acc*0.4;
+  const currentScore = Math.round(currentBase*720);
+
+  // ── CONFIDENCE: V1's exact attempt-based width, now also modulated by REAL evidence of
+  // follow-through (recovery success + consistency) - not a new confidence system, the same
+  // width mechanic reading two more existing signals. ──
+  const baseConf = Math.max(30, 90 - Math.min(60, g.attempted/5));
+  const galtiSummary = dash.galtiSummary || [];
+  const recoveryRate = galtiSummary.length>=3 ? galtiSummary.filter(function(x){return x.recovered}).length/galtiSummary.length : 0.5;
+  const consistency7d = dash.consistency7d||0;
+  const consistencyNorm = Math.min(1, consistency7d/7);
+  const reliabilityFactor = 0.75 + (recoveryRate*0.5 + consistencyNorm*0.5)*0.25; // 0.75-1.0, narrows for demonstrated follow-through
+  const conf = Math.round(baseConf*reliabilityFactor);
+  const lo=Math.max(0,currentScore-conf), hi=Math.min(720,currentScore+conf);
+  const confidencePct = Math.max(35, Math.min(90, Math.round(100-(conf/90)*60)));
+
+  // ── CHAPTER MASTERY (shared helper, zero new grouping logic) ──
+  const bySubject = buildChapterMasteryList(list);
+  const allChapters = [].concat(bySubject.PHYSICS||[], bySubject.CHEMISTRY||[], bySubject.BIOLOGY||[]);
+
+  // Top 5 Chapters To Improve - weakest by existing mastery %, min 3 attempts (same gate used elsewhere)
+  const top5Chapters = allChapters.filter(function(c){return c.attempted>=3})
+    .sort(function(a,b){return a.pct-b.pct}).slice(0,5);
+
+  // Top 5 Concepts To Improve - chapter x dominant-errorType pairs. NOTE: question metadata's
+  // 'concept' field currently equals chapter for every loaded pack (none has been authored with
+  // finer concept tags yet), so grouping by that field alone would just duplicate the chapter list.
+  // This instead combines chapter (Chapter Mastery) with dominant error type (Learning DNA/errorTypes)
+  // for a genuinely finer cut - e.g. "Electrostatics - Unit Conversion", not just "Electrostatics".
+  const concepts = allChapters.filter(function(c){return c.attempted>=3}).map(function(c){
+    const errs = Object.entries(c.errorTypes||{});
+    const dominant = errs.length ? errs.sort(function(a,b){return b[1]-a[1]})[0] : null;
+    const labels={concept:'Concept',formula:'Formula Recall',unit:'Unit Conversion',calc:'Calculation',careless:'Careless',time:'Time Pressure'};
+    return { chapter:c.chapter, sub:c.sub, pct:c.pct, cause: dominant?labels[dominant[0]]||dominant[0]:null, causeCount: dominant?dominant[1]:0 };
+  }).filter(function(c){return c.cause}).sort(function(a,b){return a.pct-b.pct}).slice(0,5);
+
+  // Top 5 Recovery Opportunities - DIRECT reuse of the existing recoveryQueue, already ranked
+  // unit>formula>concept>calc>careless>time with its own evidence/reason string. No new logic.
+  const top5Recovery = (dash.recoveryQueue||[]).slice(0,5);
+
+  // Fastest Improvement Areas - reuses the EXISTING getWeightage() function. High NEET marks
+  // value x moderate weakness (40-65%, not catastrophic - catastrophic gaps take longer to close).
+  const fastestAreas = allChapters.filter(function(c){return c.attempted>=3 && c.pct>=35 && c.pct<=65})
+    .map(function(c){
+      const unit = (function(){ for(var s in NEET_SYLLABUS){ var u=NEET_SYLLABUS[s].units.find(function(u){return u.name===c.chapter||u.tids.indexOf(c.tid)>=0}); if(u) return u; } return null; })();
+      const weight = unit ? getWeightage(unit.id) : 4;
+      return Object.assign({}, c, { weight: weight, score: weight*(65-Math.abs(c.pct-50)) });
+    }).sort(function(a,b){return b.score-a.score}).slice(0,3);
+
+  // ── POTENTIAL SCORE: same formula, hypothetical inputs if top-5 recovery + weakest chapters
+  // were fixed to a solid 'developing->mastered' boundary. What-if projection, not a new model. ──
+  const targetTids = {};
+  top5Chapters.forEach(function(c){targetTids[c.tid]=true});
+  top5Recovery.forEach(function(r){targetTids[r.tid]=true});
+  const simulated = withTheta.map(function(m){
+    if(targetTids[m.tid]) return Object.assign({},m,{theta:Math.min(750,m.theta+120)});
+    return m;
+  });
+  const potentialTheta = simulated.reduce(function(s,m){return s+m.theta},0)/simulated.length;
+  const fixedCount = Object.keys(targetTids).length;
+  const potentialAccBoost = Math.min(0.15, fixedCount*0.02); // modest, honest - fixing N weak topics nudges overall accuracy up, not transforms it
+  const potentialAcc = Math.min(0.95, acc+potentialAccBoost);
+  const potentialBase = ((potentialTheta-100)/800)*0.6 + potentialAcc*0.4;
+  const potentialScore = Math.max(currentScore, Math.round(potentialBase*720));
+
+  // ── RENDER ──
+  const subColor={PHYSICS:'var(--blue)',CHEMISTRY:'var(--teal)',BIOLOGY:'var(--green)'};
+  function listItem(title, sub, evidence){
+    return '<div style="padding:7px 0;border-bottom:1px solid var(--bdr)"><div style="font-size:11.5px;font-weight:700">'+title+'</div>'+
+      (sub?'<div style="font-size:10px;color:var(--mute);margin-top:1px">'+sub+'</div>':'')+
+      (evidence?'<div style="font-size:9.5px;color:var(--mute);margin-top:2px">'+evidence+'</div>':'')+'</div>';
+  }
+
+  let out = '';
+  out += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:10px">';
+  out += '<div style="text-align:center;background:var(--surf2);border-radius:10px;padding:11px"><div style="font-size:10px;color:var(--mute)">CURRENT SCORE</div><div style="font-size:26px;font-weight:900;color:var(--blue)">'+currentScore+'<span style="font-size:12px;color:var(--mute)">/720</span></div></div>';
+  out += '<div style="text-align:center;background:var(--green-l);border-radius:10px;padding:11px"><div style="font-size:10px;color:var(--green)">POTENTIAL SCORE*</div><div style="font-size:26px;font-weight:900;color:var(--green)">'+potentialScore+'<span style="font-size:12px;color:var(--mute)">/720</span></div></div>';
+  out += '</div>';
+  out += '<div style="text-align:center;font-size:11px;color:var(--mute);margin-bottom:13px">Confidence: <b style="color:var(--txt)">'+confidencePct+'%</b> &middot; Expected range '+lo+'-'+hi+' &middot; based on '+g.attempted+' answers, '+consistency7d+'/7 active days &middot; estimate only, not a guarantee</div>';
+
+  if(fastestAreas.length){
+    out += '<div style="background:var(--amber-l);border-radius:9px;padding:10px 11px;margin-bottom:11px"><div style="font-size:10px;font-weight:800;color:#7a4800;margin-bottom:5px">\u26A1 FASTEST IMPROVEMENT AREAS</div>';
+    out += fastestAreas.map(function(f){return listItem(f.chapter+' <span style="color:'+(subColor[f.sub]||'var(--mute)')+'">('+f.sub.charAt(0)+f.sub.slice(1).toLowerCase()+')</span>', null, 'Currently '+f.pct+'% &middot; NEET weight '+f.weight+'/10 &middot; close enough to a quick win');}).join('');
+    out += '</div>';
+  }
+
+  out += '<div style="font-size:11px;font-weight:800;margin:10px 0 4px">Top 5 Chapters To Improve</div>';
+  out += top5Chapters.length ? top5Chapters.map(function(c){return listItem(c.chapter+' <span style="color:'+(subColor[c.sub]||'var(--mute)')+'">('+c.sub.charAt(0)+c.sub.slice(1).toLowerCase()+')</span>', c.pct+'% mastery', c.attempted+' questions attempted');}).join('') : '<div style="font-size:11px;color:var(--mute);padding:6px 0">Not enough data yet</div>';
+
+  out += '<div style="font-size:11px;font-weight:800;margin:12px 0 4px">Top 5 Concepts To Improve</div>';
+  out += concepts.length ? concepts.map(function(c){return listItem(c.chapter+' - '+c.cause, c.pct+'% mastery', c.causeCount+' '+c.cause.toLowerCase()+' mistakes recorded here');}).join('') : '<div style="font-size:11px;color:var(--mute);padding:6px 0">Not enough error-pattern data yet</div>';
+
+  out += '<div style="font-size:11px;font-weight:800;margin:12px 0 4px">Top 5 Recovery Opportunities</div>';
+  out += top5Recovery.length ? top5Recovery.map(function(r){return listItem((r.errorType||'').charAt(0).toUpperCase()+(r.errorType||'').slice(1)+' error - '+r.tid, null, r.reason);}).join('') : '<div style="font-size:11px;color:var(--mute);padding:6px 0">Recovery Queue is empty - nothing urgent right now</div>';
+
+  out += '<div style="font-size:9px;color:var(--mute);margin-top:10px;line-height:1.5">*Potential Score is a what-if projection: your current formula re-run assuming the chapters and Recovery Queue items above get fixed. Not a promise - actual improvement depends on you.</div>';
+
+  el.innerHTML = out;
 }
 
 
