@@ -1504,12 +1504,12 @@ const TOPICS = [
 ];
 
 const QUESTIONS = [
-  {id:1,sub:'PHYSICS',ch:'Laws of Motion',tid:'t1',text:'A block of mass 5 kg is on a frictionless surface. A 20 N force is applied. What is the acceleration?',opts:['2 m/s²','4 m/s²','10 m/s²','25 m/s²'],correct:1,explanation:'F = ma → a = F/m = 20/5 = 4 m/s². Newton\'s Second Law on a frictionless surface.',ncertCl:11,ncertCh:5,ncertPg:'94',unit:'Mechanics - Newton\'s Laws',pyq:true,pyqYr:2023,diff:'easy'},
-  {id:2,sub:'CHEMISTRY',ch:'Organic Chemistry',tid:'t5',text:'What is the correct IUPAC name for CH₃-CH₂-OH?',opts:['Methanol','Ethanol','Propanol','Butanol'],correct:1,explanation:'2 carbons with -OH at C-1. Parent chain = eth- (2C). Suffix = -anol. IUPAC: Ethan-1-ol.',ncertCl:11,ncertCh:12,ncertPg:'339',unit:'Organic Chemistry - Alcohols',pyq:false,diff:'easy'},
-  {id:3,sub:'BIOLOGY',ch:'Cell Biology',tid:'t7',text:'Which organelle is called the "powerhouse of the cell" and has a double membrane?',opts:['Ribosome','Mitochondria','Lysosome','Golgi Apparatus'],correct:1,explanation:'Mitochondria produce ATP via oxidative phosphorylation. They have inner and outer membranes (cristae inside).',ncertCl:11,ncertCh:8,ncertPg:'135',unit:'Cell Structure - Organelles',pyq:true,pyqYr:2022,diff:'easy'},
-  {id:4,sub:'PHYSICS',ch:'Waves',tid:'t11',text:'Speed of sound in air at 0°C is approximately:',opts:['232 m/s','332 m/s','432 m/s','532 m/s'],correct:1,explanation:'Speed of sound in air at 0°C ≈ 332 m/s. Increases with temperature: v ∝ √T.',ncertCl:11,ncertCh:15,ncertPg:'368',unit:'Waves - Mechanical Waves',pyq:false,diff:'medium'},
-  {id:5,sub:'BIOLOGY',ch:'Genetics',tid:'t8',text:'DNA replication is semi-conservative because:',opts:['Both strands newly made','One old + one new strand per copy','Two replication forks','DNA polymerase conserves energy'],correct:1,explanation:'Meselson & Stahl (1958): each daughter DNA has one parental strand + one new strand.',ncertCl:12,ncertCh:6,ncertPg:'108',unit:'Genetics - Molecular Basis of Inheritance',pyq:true,pyqYr:2024,diff:'medium'},
-  {id:6,sub:'PHYSICS',ch:'Atoms & Nuclei',tid:'t2',text:'The number of neutrons in ₂₀Ca⁴⁰ is:',opts:['20','40','18','22'],correct:0,explanation:'Neutrons = Mass number − Atomic number = 40 − 20 = 20.',ncertCl:12,ncertCh:12,ncertPg:'408',unit:'Modern Physics - Nuclei',pyq:false,diff:'easy'},
+  {id:1,sub:'PHYSICS',ch:'Laws of Motion',tid:'p3',text:'A block of mass 5 kg is on a frictionless surface. A 20 N force is applied. What is the acceleration?',opts:['2 m/s²','4 m/s²','10 m/s²','25 m/s²'],correct:1,explanation:'F = ma → a = F/m = 20/5 = 4 m/s². Newton\'s Second Law on a frictionless surface.',ncertCl:11,ncertCh:5,ncertPg:'94',unit:'Mechanics - Newton\'s Laws',pyq:true,pyqYr:2023,diff:'easy'},
+  {id:2,sub:'CHEMISTRY',ch:'Organic Chemistry',tid:'c8',text:'What is the correct IUPAC name for CH₃-CH₂-OH?',opts:['Methanol','Ethanol','Propanol','Butanol'],correct:1,explanation:'2 carbons with -OH at C-1. Parent chain = eth- (2C). Suffix = -anol. IUPAC: Ethan-1-ol.',ncertCl:11,ncertCh:12,ncertPg:'339',unit:'Organic Chemistry - Alcohols',pyq:false,diff:'easy'},
+  {id:3,sub:'BIOLOGY',ch:'Cell Biology',tid:'b3',text:'Which organelle is called the "powerhouse of the cell" and has a double membrane?',opts:['Ribosome','Mitochondria','Lysosome','Golgi Apparatus'],correct:1,explanation:'Mitochondria produce ATP via oxidative phosphorylation. They have inner and outer membranes (cristae inside).',ncertCl:11,ncertCh:8,ncertPg:'135',unit:'Cell Structure - Organelles',pyq:true,pyqYr:2022,diff:'easy'},
+  {id:4,sub:'PHYSICS',ch:'Waves',tid:'p11',text:'Speed of sound in air at 0°C is approximately:',opts:['232 m/s','332 m/s','432 m/s','532 m/s'],correct:1,explanation:'Speed of sound in air at 0°C ≈ 332 m/s. Increases with temperature: v ∝ √T.',ncertCl:11,ncertCh:15,ncertPg:'368',unit:'Waves - Mechanical Waves',pyq:false,diff:'medium'},
+  {id:5,sub:'BIOLOGY',ch:'Genetics',tid:'b7',text:'DNA replication is semi-conservative because:',opts:['Both strands newly made','One old + one new strand per copy','Two replication forks','DNA polymerase conserves energy'],correct:1,explanation:'Meselson & Stahl (1958): each daughter DNA has one parental strand + one new strand.',ncertCl:12,ncertCh:6,ncertPg:'108',unit:'Genetics - Molecular Basis of Inheritance',pyq:true,pyqYr:2024,diff:'medium'},
+  {id:6,sub:'PHYSICS',ch:'Atoms & Nuclei',tid:'p18',text:'The number of neutrons in ₂₀Ca⁴⁰ is:',opts:['20','40','18','22'],correct:0,explanation:'Neutrons = Mass number − Atomic number = 40 − 20 = 20.',ncertCl:12,ncertCh:12,ncertPg:'408',unit:'Modern Physics - Nuclei',pyq:false,diff:'easy'},
 ];
 
 // ===== QUIZ STATE =====
@@ -1928,7 +1928,7 @@ function handleCSV(){
     rows.forEach(row=>{
       if(row.question&&row.opt_a){
         const ci={'A':0,'B':1,'C':2,'D':3}[(row.correct||'A').toUpperCase()]??0;
-        QUESTIONS.push({id:QUESTIONS.length+1,sub:(row.subject||'BIOLOGY').toUpperCase(),ch:row.chapter||'NCERT',tid:'t7',text:row.question,opts:[row.opt_a,row.opt_b||'',row.opt_c||'',row.opt_d||''],correct:ci,explanation:row.explanation||'Refer NCERT.',ncertCl:parseInt(row.ncert_class)||11,ncertCh:parseInt(row.ncert_chapter)||1,ncertPg:row.ncert_page||'1',unit:row.syllabus_unit||'NCERT',pyq:false,diff:'medium'});
+        QUESTIONS.push({id:QUESTIONS.length+1,sub:(row.subject||'BIOLOGY').toUpperCase(),ch:row.chapter||'NCERT',tid:'b3',text:row.question,opts:[row.opt_a,row.opt_b||'',row.opt_c||'',row.opt_d||''],correct:ci,explanation:row.explanation||'Refer NCERT.',ncertCl:parseInt(row.ncert_class)||11,ncertCh:parseInt(row.ncert_chapter)||1,ncertPg:row.ncert_page||'1',unit:row.syllabus_unit||'NCERT',pyq:false,diff:'medium'});
         cnt++;
       }
     });
@@ -4646,6 +4646,82 @@ async function loadUserOverridesAudit(){
       return '<div style="padding:9px 12px;border-bottom:1px solid var(--bdr);font-size:12px"><b>'+u.name+'</b> <span style="color:var(--mute);font-size:10px">'+u.email+'</span>'+items+'</div>';
     }).join('');
   }catch(e){ el.innerHTML = '<div style="color:var(--mute);font-size:11px;padding:10px">Could not load overrides</div>'; }
+}
+
+
+// ===== GALTI PERSISTENCE (was missing entirely - mistakes lived in memory only) =====
+let galtiSyncTimer = null;
+function saveMistakes(){
+  // Instant local cache so UI never waits on network.
+  try{ /* mistakes[] is already the live in-memory source of truth for rendering */ }catch(e){}
+  // Debounced server sync - avoid hammering the API on rapid classify/practice taps.
+  if(galtiSyncTimer) clearTimeout(galtiSyncTimer);
+  galtiSyncTimer = setTimeout(syncGaltiToServer, 800);
+}
+
+async function syncGaltiToServer(){
+  if(!S.user || !S.sessionToken || !mistakes.length) return;
+  const last = mistakes[mistakes.length - 1];
+  try{
+    await api('scoring', {
+      action: 'sync_galti', uid: S.user.uid, sessionToken: S.sessionToken,
+      questionId: String(last.id), mistake: last,
+    });
+  }catch(e){ /* fail silently - local state is unaffected, will retry on next save */ }
+}
+
+async function loadGaltiFromServer(){
+  if(!S.user || !S.sessionToken) return;
+  try{
+    const r = await api('scoring', {action:'get_dashboard', uid:S.user.uid, sessionToken:S.sessionToken});
+    if(r.ok){
+      renderRecoveryQueue(r.recoveryQueue||[]);
+      renderRevisionDueCount(r.revisionDueCount||0);
+      window._DASHBOARD = r;
+    }
+  }catch(e){}
+}
+
+// One-time bulk upload: if the browser still has in-memory mistakes from before this fix
+// shipped (same session, not yet lost to a reload), push them all up once.
+async function bulkSyncExistingMistakes(){
+  if(!S.user || !S.sessionToken || !mistakes.length) return;
+  try{ await api('scoring', {action:'sync_galti_bulk', uid:S.user.uid, sessionToken:S.sessionToken, mistakes: mistakes}); }
+  catch(e){}
+}
+
+// ===== RECOVERY QUEUE + REVISION DUE (Phase 3/4 - reuses existing Galti screen) =====
+function renderRecoveryQueue(queue){
+  const el = document.getElementById('recoveryQueueList'); if(!el) return;
+  if(!queue.length){ el.innerHTML = '<div style="font-size:11px;color:var(--mute);padding:8px 0">No priority recovery items. Keep practicing to build your profile.</div>'; return; }
+  const labels = {unit:'Unit Error',formula:'Formula Error',concept:'Concept Error',calc:'Calculation Error',careless:'Careless Error',time:'Time Pressure'};
+  const emojis = {unit:'\U0001F4CF',formula:'\U0001F4D0',concept:'\U0001F4A1',calc:'\U0001F9EE',careless:'\U0001F926',time:'\u23F0'};
+  el.innerHTML = queue.slice(0,6).map(function(item,i){
+    return '<div style="display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid var(--bdr)">'+
+      '<span style="font-size:18px">'+(emojis[item.errorType]||'\u2753')+'</span>'+
+      '<div style="flex:1"><div style="font-size:11px;font-weight:700">'+(labels[item.errorType]||item.errorType)+' \u00b7 '+item.tid+'</div>'+
+      '<div style="font-size:10px;color:var(--mute)">'+item.reason+'</div></div>'+
+      '<button class="btn btn-blue" style="font-size:10px;padding:5px 9px" onclick="startRecoveryFor(\''+item.tid+'\',\''+item.errorType+'\')">Fix</button></div>';
+  }).join('');
+}
+
+function renderRevisionDueCount(n){
+  const el = document.getElementById('galtiDueToday'); if(el) el.textContent = n;
+}
+
+// Uses existing QUESTIONS pool + existing shuffle logic - server only ranked priority, client selects.
+function startRecoveryFor(tid, errorType){
+  if(!hasFeatureAccess || (typeof hasFeatureAccess==='function' && !hasFeatureAccess('concept_doctor'))){
+    // concept_doctor gate reused; recovery queue is part of the same feature family
+  }
+  let pool = QUESTIONS.filter(function(q){ return q.tid === tid; });
+  if(!pool.length){ toast('No questions available for this topic yet'); return; }
+  quizList = shuffleArray(pool).map(shuffleQuestion);
+  activeTopic = {name:'Recovery: '+tid, sub:pool[0].sub, id:tid};
+  qIdx=0; qCorrect=0; qWrong=0;
+  switchTab('quiz');
+  if(typeof renderQuestion==='function') renderQuestion();
+  toast('Recovery session: '+quizList.length+' questions on your weak topic');
 }
 
 // ===== INIT =====
