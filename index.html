@@ -3495,11 +3495,12 @@ function submitExam(){
   EXAM.done = true;
   clearInterval(EXAM.timerInt);
   let correct=0, wrong=0, skipped=0;
+  const examDiagnoses = [];
   EXAM.qs.forEach(function(q,i){
     const a=EXAM.answers[i];
     if(a===null) skipped++;
     else if(a===q.correct) correct++;
-    else { wrong++; addMistake(q, a); }
+    else { wrong++; addMistake(q, a); examDiagnoses.push(diagnoseWrongAnswer(q, a, 60000)); }
   });
   const score = correct*4 - wrong*1;
   const maxScore = EXAM.qs.length*4;
@@ -3522,6 +3523,14 @@ function submitExam(){
     '<div class="qbox"><div class="qn" style="color:var(--blue)">'+timeTaken+'m</div><div class="ql">Time</div></div></div>'+
   '<div class="card" style="margin-bottom:12px;font-size:12px;line-height:1.7">'+
     (wrong>0?'<b>'+wrong+' mistakes auto-logged to Galti Copy</b> - recover them before the next mock.<br>':'')+
+    (function(){
+      if(!examDiagnoses.length) return '';
+      const counts={};
+      examDiagnoses.forEach(function(d){ counts[d.primaryCause]=(counts[d.primaryCause]||0)+1; });
+      const top = Object.entries(counts).sort(function(a,b){return b[1]-a[1]}).slice(0,2);
+      const labels={concept:'Concept',formula:'Formula',unit:'Unit Conversion',calc:'Calculation',careless:'Careless',time:'Time Pressure'};
+      return '<b>Likely causes:</b> '+top.map(function(t){return (labels[t[0]]||t[0])+' ('+t[1]+')';}).join(', ')+' - added to Recovery Queue and today\'s Daily Mission.<br>';
+    })()+
     'Accuracy: <b>'+pct+'%</b> &middot; NEET marking (+4/-1) applied.<br>'+
     '<span style="color:var(--mute)">Real NEET 2026 (Re-NEET): 21 June 2026 &middot; 180 Qs &middot; 180 min</span></div>'+
   '<button class="btn btn-blue btn-full" onclick="startExamMode()"><i class="ti ti-refresh"></i> New Mock Test</button>'+
