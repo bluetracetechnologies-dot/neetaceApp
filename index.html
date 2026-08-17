@@ -4305,13 +4305,15 @@ function markMissionBlockComplete(key){
   if(DAILY_MISSION.completedBlocks.indexOf(key) < 0){
     DAILY_MISSION.completedBlocks.push(key);
     const block = DAILY_MISSION.blocks.find(function(b){return b.key===key});
-    if(block) DAILY_MISSION.completedQ = Math.min(DAILY_MISSION.totalQ, (DAILY_MISSION.completedQ||0) + block.count);
-    try{
-      localStorage.setItem("na_mission_"+DAILY_MISSION.date, JSON.stringify({
-        completedQ: DAILY_MISSION.completedQ,
-        completedBlocks: DAILY_MISSION.completedBlocks,
-      }));
-    }catch(e){}
+    if(block){
+      DAILY_MISSION.completedQ = Math.min(DAILY_MISSION.totalQ, (DAILY_MISSION.completedQ||0) + block.count);
+      // Persist to the EXISTING user document (fixes localStorage-only gap - was never
+      // in Firestore, so progress was lost on new device / reinstall).
+      if(S.user && S.sessionToken){
+        api('scoring', {action:'mark_mission_progress', uid:S.user.uid, sessionToken:S.sessionToken,
+          blockKey:key, questionsCompleted:block.count}).catch(function(){});
+      }
+    }
   }
 }
 
