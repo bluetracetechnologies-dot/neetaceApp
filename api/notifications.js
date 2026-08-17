@@ -116,6 +116,28 @@ const EMAIL_TEMPLATES = {
 </div>`,
   }),
 
+  trial_expired: (name) => ({
+    subject: `Your NEETAce trial has ended, ${name} - here's what's waiting for you`,
+    html: `
+<div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:20px">
+  <div style="background:#0a2342;color:#fff;border-radius:14px;padding:22px;text-align:center;margin-bottom:20px">
+    <div style="font-size:36px;margin-bottom:4px">\uD83C\uDF93</div>
+    <div style="font-size:20px;font-weight:800">Your trial has ended</div>
+  </div>
+  <h2 style="color:#0a2342">Hi ${name},</h2>
+  <p style="color:#444;line-height:1.7">Your 7-day NEETAce trial ended today. Your progress, Galti Copy entries, and rank are all safely saved and waiting - nothing is lost.</p>
+  <div style="background:#f0f7ff;border-left:4px solid #1F5AA8;border-radius:0 10px 10px 0;padding:14px;margin:16px 0">
+    <b>Plans start at just \u20B9299/year:</b><br>
+    <span style="color:#444;font-size:13px">Annual Pro \u20B9799 &middot; Monthly \u20B999 &middot; Starter \u20B9299</span>
+  </div>
+  <div style="text-align:center;margin:20px 0">
+    <a href="https://neet.bluetrace.tech" style="background:#f59e0b;color:#fff;padding:14px 32px;border-radius:9px;text-decoration:none;font-weight:700;font-size:15px">Continue Where You Left Off &rarr;</a>
+  </div>
+  <p style="color:#666;font-size:13px;text-align:center;line-height:1.6">Not ready yet, or something didn't work for you? Just reply to this email and tell us - we read every reply.</p>
+  <p style="color:#aaa;font-size:11px;text-align:center">NEETAce &middot; support@bluetrace.tech &middot; Crack NEET. Not your budget.</p>
+</div>`,
+  }),
+
   payment_success: (name, planLabel, paidUntil) => ({
     subject: `✅ Payment confirmed - Welcome to NEETAce ${planLabel}, ${name}!`,
     html: `
@@ -236,6 +258,9 @@ const WA_TEMPLATES = {
   trial_last_day: (name) =>
     `⛔ Hi ${name}! Today is the *last day* of your NEETAce trial.\n\nUpgrade before midnight to continue without losing your streak and rank.\n\n📱 https://neet.bluetrace.tech\n\n💡 Plans: ₹299 Starter · ₹799 Annual · ₹99/month`,
 
+  trial_expired: (name) =>
+    `\uD83C\uDF93 Hi ${name}! Your NEETAce trial has ended, but your progress is saved.\n\nContinue anytime from just \u20B9299 \u2192 https://neet.bluetrace.tech\n\nNot ready or ran into an issue? Just reply - we read every message.`,
+
   payment_success: (name, planLabel) =>
     `✅ Hi ${name}! Payment confirmed. Welcome to *NEETAce ${planLabel}*!\n\nAll features unlocked. Go crack NEET! 💪\n\n📱 https://neet.bluetrace.tech`,
 
@@ -309,6 +334,7 @@ async function dispatch(uid, event, customData = {}) {
       trial_started:   [name, daysLeft, trialEnd],
       trial_warning:   [name, daysLeft],
       trial_last_day:  [name],
+      trial_expired:   [name],
       payment_success: [name, planLabel, paidUntil],
       weekly_progress: [name, customData.stats || {}],
       offer_alert:     [name, customData.festival, customData.discount, customData.code, customData.hoursLeft],
@@ -327,6 +353,7 @@ async function dispatch(uid, event, customData = {}) {
       trial_started:   WA_TEMPLATES.trial_started(name, trialEnd),
       trial_warning:   WA_TEMPLATES.trial_warning(name, daysLeft),
       trial_last_day:  WA_TEMPLATES.trial_last_day(name),
+      trial_expired:   WA_TEMPLATES.trial_expired(name),
       payment_success: WA_TEMPLATES.payment_success(name, planLabel),
       weekly_progress: WA_TEMPLATES.weekly_progress(name, customData.stats?.questionsThisWeek||0, customData.stats?.accuracy||0, customData.stats?.currentRank||' - '),
       offer_alert:     WA_TEMPLATES.offer_alert(name, customData.festival, customData.discount, customData.code),
@@ -410,6 +437,11 @@ module.exports = async function handler(req, res) {
 
   return res.status(400).json({ error: 'Unknown action' });
 };
+
+// Named export so other API files (e.g. admin.js log_feedback) can reuse the same,
+// already-tested mail transport instead of duplicating nodemailer setup.
+module.exports.sendEmail = sendEmail;
+
 
 // Export dispatch for internal use by other API files
 module.exports.dispatch = dispatch;
