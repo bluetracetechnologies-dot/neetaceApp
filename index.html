@@ -1604,6 +1604,8 @@ function nextQ(){
 }
 
 function showResult(){
+  // Daily Mission: mark block done if we were in one
+  try{ if(typeof activeTopic!=="undefined" && activeTopic && activeTopic.id && String(activeTopic.id).indexOf("mission_")===0){ if(typeof markMissionBlockComplete==="function") markMissionBlockComplete(String(activeTopic.id).replace("mission_","")); } }catch(e){}
   const total=quizList.length, pct=68;
   document.getElementById('quizView').style.display='none';
   document.getElementById('resultView').style.display='block';
@@ -1636,10 +1638,12 @@ function startTimer(){
 
 // ===== MISTAKES =====
 function addMistake(q,sel){
-  if(!mistakes.some(m=>m.id===q.id)){
+  // Route to enhanced (repeat counter + spaced-rep schedule + error classification)
+  if(typeof addMistakeEnhanced==="function"){ addMistakeEnhanced(q, sel, 0); }
+  else if(!mistakes.some(m=>m.id===q.id)){
     mistakes.push({...q,userIdx:sel,errTag:'Conceptual Error',loggedOn:new Date().toLocaleDateString('en-IN')});
-    const dot=document.getElementById('mistakeDot'); dot.textContent=mistakes.length; dot.style.display='inline-block';
   }
+  const dot=document.getElementById('mistakeDot'); if(dot){ dot.textContent=mistakes.length; dot.style.display='inline-block'; }
 }
 function renderMistakes(){ if(galtiFilter !== undefined){ renderMistakesEnhanced(); updateGaltiStats(); return; } // legacy path
 
