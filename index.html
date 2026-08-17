@@ -3521,7 +3521,7 @@ function submitExam(){
   '<button class="btn btn-ghost btn-full" style="margin-top:8px" onclick="switchTab(\'mistakes\')"><i class="ti ti-notebook"></i> Review Mistakes in Galti</button>';
   if(S.user&&S.sessionToken){
     try{ api('scoring',{uid:S.user.uid,sessionToken:S.sessionToken,subject:'global',sessionTimeSec:timeTaken*60,
-      results:EXAM.qs.map(function(q,i){return {questionId:q.id,correct:EXAM.answers[i]===null?null:EXAM.answers[i]===q.correct,timeTaken:60,difficulty:q.diff,type:'standard'}})}); }catch(e){}
+      results:EXAM.qs.map(function(q,i){return {questionId:q.id,tid:q.tid,chapter:q.ch,correct:EXAM.answers[i]===null?null:EXAM.answers[i]===q.correct,timeTaken:60,difficulty:q.diff,type:'standard'}})}); }catch(e){}
   }
 }
 
