@@ -65,8 +65,26 @@ function userSummary(d) {
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   const { action, uid, sessionToken } = req.body || {};
-  if (!uid || !sessionToken || !action)
-    return res.status(400).json({ error: 'uid, sessionToken, action required' });
+  if (!action) return res.status(400).json({ error: 'action required' });
+
+  // get_trial_config is deliberately public: it returns only non-sensitive shared
+  // configuration (trial day count, daily cap, feature-access mode) and is called by
+  // EVERY page load - including before login (uid:'anon') - to size the free-trial
+  // experience for not-yet-registered visitors. It must not require admin auth.
+  // Fixes a real bug: the blanket gate below was rejecting this call with 403 every
+  // time, so admin-configured trial settings never actually reached real users -
+  // the client silently fell back to hardcoded defaults regardless of config/trial.
+  if (action === 'get_trial_config') {
+    try {
+      const snap = await db.collection('config').doc('trial').get();
+      return res.status(200).json(snap.exists ? snap.data() : { days: 7, dailyQuestionCap: 10, allFeatures: true });
+    } catch (err) {
+      return res.status(200).json({ days: 7, dailyQuestionCap: 10, allFeatures: true });
+    }
+  }
+
+  if (!uid || !sessionToken)
+    return res.status(400).json({ error: 'uid, sessionToken required' });
 
   const admin = await verifyAdmin(uid, sessionToken);
   if (!admin) return res.status(403).json({ error: 'Admin access required' });
@@ -325,11 +343,6 @@ module.exports = async function handler(req, res) {
       await db.collection('config').doc('trial').set(config, { merge: true });
       return res.status(200).json({ ok: true, message: 'Trial config updated', config });
     }
-    if (action === 'get_trial_config') {
-      const snap = await db.collection('config').doc('trial').get();
-      return res.status(200).json(snap.exists ? snap.data() : { days: 7, dailyQuestionCap: 10, allFeatures: true });
-    }
-
     // ── ACADEMY ADMIN DELEGATION ─────────────────────────
     // Grant academy_admin role to a teacher — they get limited admin controls for their academy only
     if (action === 'grant_academy_admin') {
