@@ -177,10 +177,17 @@ module.exports = async function handler(req, res) {
       const completedQCount = Object.values(missionProgress).reduce(function(s, b) { return s + (b.questionsCompleted || 0); }, 0);
       const completionPercentage = TARGET_TOTAL > 0 ? Math.min(100, Math.round((completedQCount / TARGET_TOTAL) * 100)) : 0;
 
+      // Trimmed galti shape for recovery-rate math (Learning DNA) - only sub+recovered needed,
+      // not the full mistake objects. Same doc, same read, minimal payload addition.
+      const galtiSummary = Object.values(galti).map(function(m) {
+        return { sub: m.sub || '', recovered: !!m.recovered };
+      });
+
       return res.status(200).json({
         ok: true,
         scores: user.scores || {},
         conceptStats: list,
+        galtiSummary: galtiSummary,
         weakTopics: weakTopics,
         strongTopics: strongTopics,
         errorBreakdown: errorBreakdown,
