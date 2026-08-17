@@ -337,7 +337,11 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
   <div id="syllabusArea"></div>
 </div>
 <div class="screen" id="screen-practice">
-  <div class="card" style="margin-bottom:12px;background:linear-gradient(135deg,var(--blue-l),var(--teal-l));border-color:#93c5fd;cursor:pointer" onclick="switchTab('syllabus');renderSyllabus()"><div style="display:flex;align-items:center;gap:10px"><div style="font-size:24px">📘</div><div style="flex:1"><b style="font-size:13px">View Full Syllabus</b><div style="font-size:11px;color:var(--mute)">All NEET 2026 units with NCERT refs. Tap any unit to practice.</div></div><i class="ti ti-chevron-right" style="color:var(--mute)"></i></div></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px">
+  <div class="card" style="cursor:pointer;padding:12px;text-align:center;border-color:#a78bfa" onclick="openPaperGen()"><div style="font-size:22px">📄</div><b style="font-size:12px">Paper Generator</b><div style="font-size:10px;color:var(--mute)">Type any topic. Share on WhatsApp.</div></div>
+  <div class="card" style="cursor:pointer;padding:12px;text-align:center;border-color:#f59e0b" onclick="openNcertEbookMenu()"><div style="font-size:22px">📖</div><b style="font-size:12px">NCERT eBook</b><div style="font-size:10px;color:var(--mute)">Official free NCERT textbooks</div></div>
+</div>
+<div class="card" style="margin-bottom:12px;background:linear-gradient(135deg,var(--blue-l),var(--teal-l));border-color:#93c5fd;cursor:pointer" onclick="switchTab('syllabus');renderSyllabus()"><div style="display:flex;align-items:center;gap:10px"><div style="font-size:24px">📘</div><div style="flex:1"><b style="font-size:13px">View Full Syllabus</b><div style="font-size:11px;color:var(--mute)">All NEET 2026 units with NCERT refs. Tap any unit to practice.</div></div><i class="ti ti-chevron-right" style="color:var(--mute)"></i></div></div>
   <div class="card" style="margin-bottom:13px;padding:13px 15px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
       <span style="font-size:13px;font-weight:700">Difficulty</span>
@@ -4351,6 +4355,142 @@ function markMissionBlockComplete(key){
       }));
     }catch(e){}
   }
+}
+
+
+// ===== NCERT eBOOK LINKS (official NCERT) + PAPER GENERATOR + WHATSAPP SHARE =====
+
+// NCERT eBook base URLs (free public NCERT textbooks, official ncert.nic.in mirror)
+const NCERT_EBOOKS = {
+  PHYSICS: {
+    11: 'https://ncert.nic.in/textbook.php?keph1=0-8',
+    12: 'https://ncert.nic.in/textbook.php?leph1=0-8'
+  },
+  CHEMISTRY: {
+    11: 'https://ncert.nic.in/textbook.php?kech1=0-14',
+    12: 'https://ncert.nic.in/textbook.php?lech1=0-16'
+  },
+  BIOLOGY: {
+    11: 'https://ncert.nic.in/textbook.php?kebo1=0-22',
+    12: 'https://ncert.nic.in/textbook.php?lebo1=0-16'
+  },
+};
+function openNcertEbook(subject, cls){
+  // Feature-gated
+  if(!hasFeatureAccess('ncert_ebook')){ toast('NCERT eBook is a paid feature. Upgrade to unlock.'); openPricingModal(); return; }
+  const url = NCERT_EBOOKS[subject] && NCERT_EBOOKS[subject][cls];
+  if(url) window.open(url, '_blank');
+  else toast('eBook link unavailable for '+subject+' Class '+cls);
+}
+
+// Feature access check (respects admin config)
+function hasFeatureAccess(featureKey){
+  if(!S.user) return false;
+  if(S.user.role === 'admin') return true;
+  const cfg = window._FEATURES && window._FEATURES[featureKey];
+  if(!cfg) return true; // feature not configured = open
+  if(cfg.enabled === false) return false;
+  // Check plan gating: 'starter'/'medium'/'pro'/'monthly'/'academy'
+  const userPlan = S.user.planKey || (S.user.academyId ? 'academy' : 'trial');
+  if(cfg.plans && cfg.plans.length && cfg.plans.indexOf(userPlan) < 0 && S.user.accessStatus !== 'trial') return false;
+  return true;
+}
+
+// ===== PAPER GENERATOR — type a topic, get a WhatsApp-shareable practice paper =====
+function openPaperGen(){
+  if(!hasFeatureAccess('paper_generator')){
+    toast('Paper Generator requires paid plan');
+    openPricingModal(); return;
+  }
+  const el = document.createElement('div');
+  el.id = 'paperGenModal';
+  el.style.cssText = 'position:fixed;inset:0;background:rgba(10,35,66,.85);z-index:700;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)';
+  let h = '<div style="background:var(--surf);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:20px;max-height:92vh;overflow-y:auto">';
+  h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><b style="font-size:15px">Generate Practice Paper</b>';
+  h += '<button onclick="document.getElementById(\'paperGenModal\').remove()" style="background:none;border:none;font-size:18px;color:var(--mute);cursor:pointer">x</button></div>';
+  h += '<div style="font-size:11px;color:var(--mute);margin-bottom:12px">Type any topic. Get a printable paper you can practice offline or share with classmates on WhatsApp.</div>';
+  h += '<label style="font-size:11px;color:var(--mute)">Topic / Chapter</label>';
+  h += '<input class="fin" id="pgTopic" placeholder="e.g. Photosynthesis, Kinematics, Amines" style="margin-top:3px;text-transform:none">';
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">';
+  h += '<div><label style="font-size:11px;color:var(--mute)">Number of questions</label><input class="fin" id="pgCount" type="number" value="10" min="5" max="50" style="margin-top:3px"></div>';
+  h += '<div><label style="font-size:11px;color:var(--mute)">Difficulty</label><select id="pgDiff" style="width:100%;padding:9px;border:1.5px solid var(--bdr);border-radius:9px;font-size:12px;background:var(--surf);color:var(--txt);margin-top:3px"><option value="mixed">Mixed</option><option value="easy">Easy only</option><option value="medium">Medium only</option><option value="hard">Hard only</option></select></div></div>';
+  h += '<button class="btn btn-blue btn-full" style="margin-top:12px" onclick="generatePaper()"><i class="ti ti-file-text"></i> Generate Paper</button>';
+  h += '<div id="pgResult" style="margin-top:12px"></div></div>';
+  el.innerHTML = h;
+  el.addEventListener('click', function(e){ if(e.target===el) el.remove(); });
+  document.body.appendChild(el);
+}
+
+function generatePaper(){
+  const topic = (document.getElementById('pgTopic')||{}).value.trim().toLowerCase();
+  const count = parseInt((document.getElementById('pgCount')||{}).value) || 10;
+  const diff = (document.getElementById('pgDiff')||{}).value || 'mixed';
+  if(!topic){ toast('Enter a topic'); return; }
+  // Match questions by chapter/text/tid
+  let pool = QUESTIONS.filter(function(q){
+    const hay = ((q.ch||'')+' '+(q.text||'')+' '+(q.unit||'')).toLowerCase();
+    return hay.indexOf(topic) >= 0;
+  });
+  if(diff !== 'mixed') pool = pool.filter(function(q){ return q.diff === diff; });
+  if(!pool.length){ document.getElementById('pgResult').innerHTML = '<div style="color:var(--red);font-size:12px;padding:8px">No questions found for "'+topic+'". Try a broader term.</div>'; return; }
+  const selected = shuffleArray(pool).slice(0, count).map(shuffleQuestion);
+  const paperId = 'P' + Date.now().toString(36).slice(-5).toUpperCase();
+  const studentName = S.user ? S.user.name : 'Student';
+  // Build paper HTML
+  let paperHTML = '<div id="paperContent" style="background:#fff;color:#000;padding:16px;border-radius:9px;font-size:12px;line-height:1.7;max-height:60vh;overflow-y:auto">';
+  paperHTML += '<div style="text-align:center;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:12px"><b style="font-size:15px">NEETAce Practice Paper</b><br>';
+  paperHTML += '<span style="font-size:11px">Topic: '+topic.toUpperCase()+' &middot; '+selected.length+' questions &middot; '+diff+' &middot; ID: '+paperId+'</span><br>';
+  paperHTML += '<span style="font-size:10px">Generated for '+studentName+' on '+new Date().toLocaleDateString('en-IN')+'</span></div>';
+  selected.forEach(function(q, i){
+    paperHTML += '<div style="margin-bottom:12px"><b>Q'+(i+1)+'.</b> '+q.text+'<br>';
+    ['A','B','C','D'].forEach(function(l, li){
+      if(q.opts && q.opts[li]) paperHTML += '&nbsp;&nbsp;('+l+') '+q.opts[li]+'&nbsp;&nbsp;';
+    });
+    paperHTML += '</div>';
+  });
+  paperHTML += '<div style="margin-top:20px;padding-top:10px;border-top:1px dashed #999;font-size:10px;color:#555">Answer Key: ';
+  paperHTML += selected.map(function(q,i){ return (i+1)+'-'+['A','B','C','D'][q.correct]; }).join(', ');
+  paperHTML += '<br>Source: neet.bluetrace.tech | +91 94622 25303</div></div>';
+
+  // WhatsApp text version (compact, no answers upfront)
+  let waText = 'NEETAce Practice Paper\n';
+  waText += 'Topic: '+topic.toUpperCase()+' | '+selected.length+' Qs | '+diff+'\n';
+  waText += 'ID: '+paperId+' | Prepared: '+new Date().toLocaleDateString('en-IN')+'\n';
+  waText += '----------------------------------------\n\n';
+  selected.forEach(function(q, i){
+    waText += 'Q'+(i+1)+'. '+q.text+'\n';
+    ['A','B','C','D'].forEach(function(l, li){
+      if(q.opts && q.opts[li]) waText += '  ('+l+') '+q.opts[li]+'\n';
+    });
+    waText += '\n';
+  });
+  waText += '----------------------------------------\nANSWER KEY:\n';
+  waText += selected.map(function(q,i){ return (i+1)+'-'+['A','B','C','D'][q.correct]; }).join(' | ');
+  waText += '\n\nPractice more at neet.bluetrace.tech';
+
+  const waUrl = 'https://wa.me/?text=' + encodeURIComponent(waText);
+
+  document.getElementById('pgResult').innerHTML = paperHTML +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">' +
+      '<a href="'+waUrl+'" target="_blank" class="btn" style="background:#25d366;color:#fff;text-align:center;padding:11px;text-decoration:none;font-size:12px"><i class="ti ti-brand-whatsapp"></i> Share on WhatsApp</a>' +
+      '<button class="btn btn-blue" onclick="printPaper()" style="font-size:12px"><i class="ti ti-printer"></i> Print / Save PDF</button>' +
+    '</div>' +
+    '<button class="btn btn-ghost btn-full" style="margin-top:6px;font-size:11px" onclick="copyPaperText('+"'"+encodeURIComponent(waText)+"'"+')"><i class="ti ti-copy"></i> Copy Text</button>';
+}
+
+function printPaper(){
+  const content = document.getElementById('paperContent');
+  if(!content) return;
+  const w = window.open('', '_blank');
+  w.document.write('<html><head><title>NEETAce Practice Paper</title><style>body{font-family:Arial;padding:20px;font-size:12px;line-height:1.6}</style></head><body>'+content.innerHTML+'</body></html>');
+  w.document.close();
+  setTimeout(function(){ w.print(); }, 500);
+}
+
+function copyPaperText(encoded){
+  const text = decodeURIComponent(encoded);
+  if(navigator.clipboard){ navigator.clipboard.writeText(text).then(function(){ toast('Paper text copied - paste anywhere!'); }); }
+  else toast('Copy not supported on this browser');
 }
 
 // ===== INIT =====
