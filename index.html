@@ -2718,7 +2718,7 @@ function updateAccessBanner(){
       : `🎓 Free trial: <b>${d} day${d!==1?'s':''} left</b> · <a href="#" onclick="openPricingModal();return false;" style="color:inherit;text-decoration:underline">Upgrade ₹799/year</a> · <a href="#" onclick="showTrialInvestment(${d},S.user);return false;" style="color:inherit;font-size:11px">View my progress →</a>`;
   } else if(s==='expired'){
     b.style.cssText='display:block;background:var(--red-l);color:#7a0c0c;font-size:12px;font-weight:700;text-align:center;padding:8px 12px;border-bottom:1px solid var(--bdr)';
-    b.innerHTML=`⛔ Trial ended · <a href="#" onclick="showTrialUrgency(0,S.user);return false;" style="color:#7a0c0c;font-weight:800;text-decoration:underline">See what you're missing</a> · <a href="#" onclick="openPricingModal();return false;" style="color:#7a0c0c;text-decoration:underline">Pay ₹299 to continue</a>`;
+    b.innerHTML=`⛔ Trial ended · <a href="#" onclick="showTrialUrgency(0,S.user);return false;" style="color:#7a0c0c;font-weight:800;text-decoration:underline">See what you're missing</a> · <a href="#" onclick="openPricingModal();return false;" style="color:#7a0c0c;text-decoration:underline">Pay ₹299 to continue</a> · <a href="#" onclick="openFeedbackPrompt();return false;" style="color:#7a0c0c;font-size:11px">Not ready? Tell us why</a>`;
   } else {
     b.style.display='none';
   }
@@ -5109,6 +5109,36 @@ function renderDiagnosisBox(d){
   out += '<div style="font-size:11px;font-weight:600;color:var(--blue)">\u2192 '+d.recommendation+'</div>';
   out += '</div>';
   return out;
+}
+
+
+// ===== NON-CONVERSION FEEDBACK (routes to rahim@bluetrace.tech via log_feedback) =====
+function openFeedbackPrompt(){
+  if(!S.user){ return; }
+  const el = document.createElement("div");
+  el.id = "feedbackPromptModal";
+  el.style.cssText = "position:fixed;inset:0;background:rgba(10,35,66,.85);z-index:700;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)";
+  let h = "<div style=\"background:var(--surf);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:22px 20px\">";
+  h += "<div style=\"font-size:15px;font-weight:800;margin-bottom:4px\">Quick question</div>";
+  h += "<div style=\"font-size:12px;color:var(--mute);margin-bottom:14px\">Your trial ended and you haven't upgraded yet - totally fine, just curious why. This goes straight to our founder, not a queue.</div>";
+  h += "<textarea id=\"fbMessage\" placeholder=\"e.g. price, not enough questions, needed more time, found something confusing...\" style=\"width:100%;min-height:90px;padding:11px;border:1.5px solid var(--bdr);border-radius:9px;font-size:13px;font-family:inherit;resize:vertical\"></textarea>";
+  h += "<label style=\"display:flex;align-items:center;gap:7px;margin-top:10px;font-size:12px;color:var(--txt)\"><input type=\"checkbox\" id=\"fbEmailBack\" checked style=\"width:16px;height:16px\"> It is okay to email me back about this</label>";
+  h += "<button onclick=\"submitFeedback()\" style=\"width:100%;padding:12px;margin-top:14px;border-radius:10px;font-size:14px;font-weight:700;background:var(--blue);color:#fff;border:none;cursor:pointer\">Send</button>";
+  h += "<button onclick=\"document.getElementById('feedbackPromptModal').remove()\" style=\"width:100%;padding:10px;margin-top:8px;background:none;border:none;color:var(--mute);font-size:13px;cursor:pointer\">Skip</button></div>";
+  el.innerHTML = h;
+  el.addEventListener("click", function(e){ if(e.target===el) el.remove(); });
+  document.body.appendChild(el);
+}
+async function submitFeedback(){
+  const msg = (document.getElementById("fbMessage")||{}).value || "";
+  if(!msg.trim()){ toast("Add a line so we know what to fix"); return; }
+  const okToEmail = (document.getElementById("fbEmailBack")||{}).checked;
+  try{
+    await api("admin", {action:"log_feedback", uid:S.user.uid, sessionToken:S.sessionToken,
+      feedback:{ context:"trial_expired_not_converting", message:msg.trim(), email:okToEmail?S.user.email:null }});
+    toast("Thanks - this goes straight to our founder.");
+  }catch(e){ toast("Could not send right now, but thanks for trying"); }
+  const m = document.getElementById("feedbackPromptModal"); if(m) m.remove();
 }
 
 // ===== INIT =====
