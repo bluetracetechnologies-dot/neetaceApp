@@ -148,6 +148,34 @@ module.exports = async function handler(req, res) {
         .map(function(e) { return { questionId: e[0], tid: e[1].tid, errorType: e[1].errorType, count: e[1].count }; })
         .slice(0, 30);
 
+      // ── DAILY MISSION (reuses weakTopics/recoveryQueue/revisionDue computed above - zero extra reads) ──
+      // Server returns a PLAN (tids + target counts), not question objects - client's existing
+      // QUESTIONS.filter/shuffle logic (generateDailyMission, unchanged) realizes it. Same pattern
+      // as recoveryQueue - avoids duplicating question-selection logic server-side.
+      const TARGET_TOTAL = 20;
+      const todayKey = new Date().toISOString().slice(0, 10);
+      const missionProgress = (user.dailyMission && user.dailyMission.date === todayKey)
+        ? user.dailyMission.blockProgress : {};
+
+      const missionPlan = {
+        date: todayKey,
+        blocks: [
+          { key: 'recovery', type: 'Recovery Questions', title: 'Recovery Queue', emoji: '\uD83E\uDE7A', color: 'var(--purple)',
+            targetCount: 6, tids: recoveryQueue.slice(0, 3).map(function(r) { return r.tid; }),
+            reason: recoveryQueue.length ? recoveryQueue[0].reason : null },
+          { key: 'weak', type: 'Weak Topic Questions', title: 'Fix Weak Concepts', emoji: '\uD83C\uDFAF', color: 'var(--red)',
+            targetCount: 6, tids: weakTopics.slice(0, 2).map(function(w) { return w.tid; }) },
+          { key: 'revision', type: 'Revision Questions', title: 'Revision (Galti Due)', emoji: '\uD83D\uDD01', color: 'var(--amber)',
+            targetCount: 5, questionIds: revisionDue.slice(0, 5).map(function(r) { return r.questionId; }) },
+          { key: 'challenge', type: 'Challenge Questions', title: 'Fresh Challenge', emoji: '\uD83C\uDD95', color: 'var(--blue)',
+            targetCount: 3, tids: [] }, // client fills from unattempted pool - existing logic
+        ].filter(function(b) { return (b.tids && b.tids.length) || (b.questionIds && b.questionIds.length) || b.key === 'challenge'; }),
+        targetTotal: TARGET_TOTAL,
+      };
+
+      const completedQCount = Object.values(missionProgress).reduce(function(s, b) { return s + (b.questionsCompleted || 0); }, 0);
+      const completionPercentage = TARGET_TOTAL > 0 ? Math.min(100, Math.round((completedQCount / TARGET_TOTAL) * 100)) : 0;
+
       return res.status(200).json({
         ok: true,
         scores: user.scores || {},
@@ -163,7 +191,31 @@ module.exports = async function handler(req, res) {
         consistency7d: (user.scores && user.scores.global && user.scores.global.consistency7d) || 0,
         totalAttempted: user.totalQuestionsAttempted || 0,
         lastSessionAt: user.lastSessionAt || null,
+        dailyMission: missionPlan,
+        missionProgress: missionProgress,
+        completionPercentage: completionPercentage,
       });
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // ACTION: mark_mission_progress
+    // Persists Daily Mission block completion to the EXISTING user document
+    // (user.dailyMission field - not a new collection). Auto-resets when date changes.
+    // ══════════════════════════════════════════════════════════════
+    if (action === 'mark_mission_progress') {
+      const { blockKey, questionsCompleted } = body;
+      if (!blockKey) return res.status(400).json({ error: 'blockKey required' });
+      const todayKey2 = new Date().toISOString().slice(0, 10);
+      const existing2 = (user.dailyMission && user.dailyMission.date === todayKey2)
+        ? user.dailyMission.blockProgress : {}; // stale date = fresh start, no manual cleanup needed
+      existing2[blockKey] = {
+        questionsCompleted: Math.min(50, parseInt(questionsCompleted) || 0),
+        completedAt: new Date().toISOString(),
+      };
+      await db.collection('users').doc(uid).update({
+        dailyMission: { date: todayKey2, blockProgress: existing2 },
+      });
+      return res.status(200).json({ ok: true });
     }
 
     // ══════════════════════════════════════════════════════════════
