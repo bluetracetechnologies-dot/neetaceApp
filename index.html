@@ -1882,6 +1882,7 @@ async function showUserDetail(targetUid){
         ${u.role!=='admin'?`
         <button class="btn btn-green" style="font-size:12px;padding:7px 11px" onclick="adminUserAction('grant_pro','${u.uid}')"><i class="ti ti-star"></i> Grant Pro</button>
         <button class="btn btn-blue" style="font-size:12px;padding:7px 11px" onclick="grantDays('${u.uid}')"><i class="ti ti-calendar-plus"></i> Add Days</button>
+        <button class="btn" style="font-size:12px;padding:7px 11px;background:#0d9488;color:#fff" onclick="editUserFeatures('${u.uid}','${u.name}')"><i class="ti ti-toggle-right"></i> Features</button>
         <button class="btn" style="font-size:12px;padding:7px 11px;background:var(--purple);color:#fff" onclick="setStudentPrice('${u.uid}','${u.name}')"><i class="ti ti-tag"></i> Set Price</button>
         <button class="btn ${u.disabled?'btn-green':'btn-red'}" style="font-size:12px;padding:7px 11px" onclick="adminUserAction('${u.disabled?'enable':'disable'}','${u.uid}')">
           <i class="ti ti-${u.disabled?'lock-open':'lock'}"></i> ${u.disabled?'Enable':'Disable'}
@@ -4392,10 +4393,29 @@ function openNcertEbook(subject, cls){
 function hasFeatureAccess(featureKey){
   if(!S.user) return false;
   if(S.user.role === 'admin') return true;
+
+  // PRIORITY 1: Per-user override (highest priority - admin gift or explicit gate)
+  const userOv = S.user.featureOverrides && S.user.featureOverrides[featureKey];
+  if(userOv){
+    // Check expiry
+    if(userOv.expiresAt && new Date(userOv.expiresAt) < new Date()){
+      // Expired - fall through to next check
+    } else {
+      return !!userOv.enabled;
+    }
+  }
+
+  // PRIORITY 2: Per-academy override (from academy settings)
+  if(MY_ACADEMY && MY_ACADEMY.featureOverrides){
+    const acOv = MY_ACADEMY.featureOverrides[featureKey];
+    if(acOv === true) return true;
+    if(acOv === false) return false;
+  }
+
+  // PRIORITY 3: Global feature config with plan gating (the default)
   const cfg = window._FEATURES && window._FEATURES[featureKey];
   if(!cfg) return true; // feature not configured = open
   if(cfg.enabled === false) return false;
-  // Check plan gating: 'starter'/'medium'/'pro'/'monthly'/'academy'
   const userPlan = S.user.planKey || (S.user.academyId ? 'academy' : 'trial');
   if(cfg.plans && cfg.plans.length && cfg.plans.indexOf(userPlan) < 0 && S.user.accessStatus !== 'trial') return false;
   return true;
