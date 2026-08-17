@@ -3703,7 +3703,7 @@ function renderScorePredictor(dash){
   const recoveryRate = galtiSummary.length>=3 ? galtiSummary.filter(function(x){return x.recovered}).length/galtiSummary.length : 0.5;
   const consistency7d = dash.consistency7d||0;
   const consistencyNorm = Math.min(1, consistency7d/7);
-  const reliabilityFactor = 0.75 + (recoveryRate*0.5 + consistencyNorm*0.5)*0.25; // 0.75-1.0, narrows for demonstrated follow-through
+  const reliabilityFactor = 1.0 - (recoveryRate*0.5 + consistencyNorm*0.5)*0.25; // 0.75-1.0, narrows for demonstrated follow-through (fixed: was widening, backwards from comment)
   const conf = Math.round(baseConf*reliabilityFactor);
   const lo=Math.max(0,currentScore-conf), hi=Math.min(720,currentScore+conf);
   const confidencePct = Math.max(35, Math.min(90, Math.round(100-(conf/90)*60)));
