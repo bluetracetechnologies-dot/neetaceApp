@@ -1,0 +1,39 @@
+name: NEETAce Test Suite
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      # No real Firebase/Razorpay credentials are ever needed - every test
+      # requires ./_firebase via jest's moduleNameMapper, which resolves to
+      # tests/mocks/_firebase.mock.js instead of the real module. This job
+      # deliberately does NOT set FIREBASE_* secrets, as a structural
+      # guarantee that a misconfigured mock would fail loudly here rather
+      # than silently attempt a real network call.
+      - name: Run test suite with coverage
+        run: npx jest --coverage --ci
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 30
