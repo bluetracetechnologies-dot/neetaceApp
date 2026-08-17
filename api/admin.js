@@ -358,6 +358,27 @@ module.exports = async function handler(req, res) {
       const { feedback } = req.body;
       if (!feedback) return res.status(400).json({ error: 'feedback required' });
       await db.collection('feedback').add({ ...feedback, uid, submittedAt: new Date().toISOString() });
+
+      // Route directly to the founder, not a generic support queue - at this stage,
+      // every piece of non-conversion feedback needs a human to see it fast.
+      // Reuses notifications.js's already-tested mail transport, no duplicate setup.
+      try {
+        const { sendEmail } = require('./notifications');
+        if (sendEmail) {
+          await sendEmail('rahim@bluetrace.tech',
+            (fb, fromUid) => ({
+              subject: `NEETAce feedback from ${fb.email || fromUid || 'a user'}`,
+              html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:20px">
+                <h2 style="color:#0a2342">New feedback received</h2>
+                <p style="color:#444"><b>From:</b> ${fb.email || fromUid}</p>
+                <p style="color:#444"><b>Context:</b> ${fb.context || 'not specified'}</p>
+                <div style="background:#f0f7ff;border-radius:9px;padding:14px;margin:14px 0;white-space:pre-wrap">${fb.message || JSON.stringify(fb)}</div>
+                <p style="color:#888;font-size:12px">Also saved in Firestore feedback collection.</p>
+              </div>`,
+            }), feedback, uid);
+        }
+      } catch (e) { /* feedback is already durably saved above; email is best-effort */ }
+
       return res.status(200).json({ ok: true });
     }
 
