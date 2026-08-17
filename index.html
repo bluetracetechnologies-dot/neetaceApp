@@ -1426,7 +1426,7 @@ function switchTab(tab){
   if(tab==='practice') renderPracticeTopics('ALL');
   if(tab==='search') renderAllTopics('ALL');
   if(tab==='analytics') buildStreak();
-  if(tab==='mistakes') renderMistakes();
+  if(tab==='mistakes'){ renderMistakes(); loadGaltiFromServer(); }
   if(tab==='notes') renderNotes();
 }
 document.querySelectorAll('.nb').forEach(b=>b.addEventListener('click',function(){ switchTab(this.getAttribute('data-tab')); }));
