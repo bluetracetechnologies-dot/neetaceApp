@@ -28,10 +28,12 @@ function nextMay31() {
   return d;
 }
 
-function speedBonus(timeTaken, totalTime) {
+function speedBonus(timeTaken, totalTime, isCorrect) {
+  // Speed bonus only if answered correctly - blocks guess-and-move exploit.
+  if (!isCorrect) return 1.0;
   if (!timeTaken || !totalTime) return 1.0;
   const ratio = timeTaken / totalTime;
-  if (ratio < 0.30) return 1.2;
+  if (ratio < 0.30) return 1.2;   // Fast AND correct: real skill
   if (ratio < 0.60) return 1.1;
   return 1.0;
 }
@@ -58,7 +60,7 @@ module.exports = async function handler(req, res) {
     for (const r of results) {
       const w  = WEIGHTS[r.difficulty] || 1;
       const tb = TYPE_BONUS[r.type]    || 1.0;
-      const sb = speedBonus(r.timeTaken, timePerQ * 2);
+      const sb = speedBonus(r.timeTaken, timePerQ * 2, r.correct === true);
 
       if (r.correct === true) {
         sessionScore += w * tb * sb;
@@ -116,9 +118,47 @@ module.exports = async function handler(req, res) {
     const scoresUpdate = { ...existing, [key]: newSubScore };
     if (key !== 'global') scoresUpdate.global = newGlobal;
 
-    // Write to Firestore
+    // ── AGGREGATE PER-TOPIC CONCEPT STATS (Learning DNA foundation) ──
+    // Each question carries tid (topic id), chapter, and optionally errorType.
+    // Concept stats power weak-topic analysis and next-question selection.
+    const conceptStats = user.conceptStats || {};
+    for (const r of results) {
+      const tid = r.tid || r.topicId;
+      if (!tid) continue;
+      const cs = conceptStats[tid] || { attempted: 0, correct: 0, wrong: 0, totalTimeMs: 0, lastSeen: null, errorTypes: {} };
+      cs.attempted++;
+      if (r.correct === true) cs.correct++;
+      else if (r.correct === false) {
+        cs.wrong++;
+        if (r.errorType) cs.errorTypes[r.errorType] = (cs.errorTypes[r.errorType] || 0) + 1;
+      }
+      cs.totalTimeMs += (r.timeTaken || 0);
+      cs.lastSeen = new Date().toISOString();
+      cs.accuracy = cs.attempted > 0 ? Math.round((cs.correct / cs.attempted) * 1000) / 10 : 0;
+      cs.avgTimeMs = cs.attempted > 0 ? Math.round(cs.totalTimeMs / cs.attempted) : 0;
+      // Mastery band: 0-40 weak, 40-70 developing, 70-100 mastered
+      cs.masteryBand = cs.accuracy >= 70 ? 'mastered' : cs.accuracy >= 40 ? 'developing' : 'weak';
+      conceptStats[tid] = cs;
+    }
+
+    // ── CONSISTENCY & MASTERY-ADJUSTED RANK SCORE ──
+    // Prevents "grind easy questions forever" gaming. Rank uses composite:
+    // weightedScore * accuracyMultiplier * consistencyMultiplier
+    const accMultiplier = Math.max(0.5, Math.min(1.2, (newGlobal.accuracy || 50) / 60));
+    // Consistency: sessions in last 7 days
+    const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const recentSessions = await db.collection('sessions').where('uid','==',uid)
+      .where('playedAt','>=',sevenDaysAgo.toISOString()).count().get().catch(function(){return {data:function(){return{count:1}}}});
+    const daysActive = Math.min(7, recentSessions.data().count || 1);
+    const consistencyMultiplier = 0.7 + (daysActive / 7) * 0.4; // 0.7 to 1.1
+    const rankScore = Math.round(newGlobal.weighted * accMultiplier * consistencyMultiplier * 100) / 100;
+    newGlobal.rankScore = rankScore;
+    newGlobal.consistency7d = daysActive;
+
+    // Write to Firestore (with concept stats + rank score)
     await db.collection('users').doc(uid).update({
       scores: scoresUpdate,
+      conceptStats: conceptStats,
       totalQuestionsAttempted: (user.totalQuestionsAttempted || 0) + results.length,
       lastSessionAt: new Date().toISOString(),
     });
@@ -138,8 +178,10 @@ module.exports = async function handler(req, res) {
     let rank = null;
     const totalAttempted = newGlobal.attempted || 0;
     if (totalAttempted >= MIN_FOR_RANK) {
+      // Rank uses composite rankScore (weighted x accuracy x consistency), not raw weighted.
+      // This prevents grinders farming easy questions from dominating leaderboard.
       const aboveCount = await db.collection('users')
-        .where('scores.global.weighted', '>', newGlobal.weighted)
+        .where('scores.global.rankScore', '>', rankScore)
         .count().get();
       rank = (aboveCount.data().count || 0) + 1;
       await db.collection('users').doc(uid).update({ 'scores.global.rank': rank });
@@ -153,6 +195,16 @@ module.exports = async function handler(req, res) {
       qualifiesForLeaderboard: totalAttempted >= MIN_FOR_RANK,
       minQuestionsNeeded: Math.max(0, MIN_FOR_RANK - totalAttempted),
     });
+  // Return concept stats + weak topics
+  if (req.body.action === 'get_concept_stats') {
+    const cs = user.conceptStats || {};
+    const list = Object.entries(cs).map(function(e){
+      return { tid: e[0], attempted: e[1].attempted, correct: e[1].correct, accuracy: e[1].accuracy,
+               avgTimeMs: e[1].avgTimeMs, masteryBand: e[1].masteryBand, errorTypes: e[1].errorTypes };
+    }).sort(function(a,b){ return a.accuracy - b.accuracy; }); // weak first
+    return res.status(200).json({ conceptStats: list, weakTopics: list.filter(function(x){return x.masteryBand==='weak'}).slice(0,5) });
+  }
+
   } catch (err) {
     console.error('scoring error', err);
     return res.status(500).json({ error: err.message });
