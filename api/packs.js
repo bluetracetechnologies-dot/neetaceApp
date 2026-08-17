@@ -35,6 +35,26 @@ function parseCSV(text) {
   return rows;
 }
 
+// Migration strategy for Phase 1 metadata: packs stored in Firestore BEFORE this change
+// have question objects that predate concept/subconcept/formula/unitType/variantGroup/
+// estimatedTime entirely (these fields didn't exist at parse time, so they're not just
+// empty - they're absent). Rather than a risky one-time rewrite of every stored pack,
+// fallback values are computed on every READ, non-destructively. New uploads already get
+// real values at parse time (csvRowToQuestion); this covers everything parsed before today.
+function backfillMetadata(q) {
+  if (q.concept !== undefined) return q; // already has Phase 1 fields, nothing to do
+  const diff = q.diff || 'medium';
+  return {
+    ...q,
+    concept: q.ch || 'General',
+    subconcept: '',
+    formula: '',
+    unitType: 'standard',
+    variantGroup: q.id || 'unknown',
+    estimatedTime: diff === 'hard' || diff === 'exam' ? 90 : diff === 'medium' ? 60 : 45,
+  };
+}
+
 function csvRowToQuestion(row, packId, idx) {
   const correctMap = { A: 0, B: 1, C: 2, D: 3 };
   const chapter = row.chapter || row.ch || 'General';
@@ -149,7 +169,7 @@ module.exports = async function handler(req, res) {
           || (sc.type === 'academy' && sc.academyId && sc.academyId === myAcademy)
           || (sc.type === 'batch'   && sc.batchId   && sc.batchId   === myBatch);
         if (!visible) return;
-        if (pack.questions) questions = questions.concat(pack.questions);
+        if (pack.questions) questions = questions.concat(pack.questions.map(backfillMetadata));
         packMeta.push({ id: doc.id, name: pack.name, count: pack.questionCount, version: pack.version, scope: sc.type });
       });
       return res.status(200).json({ questions, activePacks: packMeta, totalQuestions: questions.length });
