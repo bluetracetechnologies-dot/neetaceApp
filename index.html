@@ -2911,14 +2911,7 @@ const ERROR_TYPES = {
   unknown:  { label:'Unknown',               emoji:'❓', desc:'Not yet diagnosed',               color:'var(--mute)'   },
 };
 
-function classifyError(q, idx, timeTakenMs, expectedTimeMs){
-  // Auto-classify based on question type and time
-  if(timeTakenMs && expectedTimeMs && timeTakenMs > expectedTimeMs * 1.8) return 'time';
-  if(q.diff === 'easy' || q.diff === 'starter') return 'careless';
-  if(q.opts && q.opts[idx] && q.text && q.text.toLowerCase().includes('unit')) return 'unit';
-  if(q.trick && q.trick.toLowerCase().includes('formula')) return 'formula';
-  return 'concept'; // default for hard/medium wrong answers
-}
+
 
 function setGaltiFilter(filter, btn){
   galtiFilter = filter;
