@@ -1063,6 +1063,12 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     <div style="font-size:17px;font-weight:800;margin-bottom:4px">Choose Your Plan</div>
     <div style="font-size:12px;color:var(--mute);margin-bottom:14px">All plans valid till 31 May · Upgrade anytime</div>
     <div id="pricingCards"></div>
+
+    <div style="margin-top:6px;border-top:1px solid var(--bdr);padding-top:12px">
+      <div style="font-size:12px;font-weight:800;margin-bottom:8px">Common questions</div>
+      <div id="pricingFaq"></div>
+    </div>
+
     <button style="width:100%;background:none;border:none;color:var(--mute);font-size:12px;margin-top:11px;cursor:pointer" onclick="closeModal('pricingModal')">Maybe later</button>
   </div>
 </div>
@@ -2075,6 +2081,7 @@ async function openPricingModal(){
         btnLabel+
       '</button></div>';
   }).join('');
+  renderPricingFaq();
   document.getElementById('pricingModal').classList.add('active');
 }
 
@@ -5139,6 +5146,45 @@ async function submitFeedback(){
     toast("Thanks - this goes straight to our founder.");
   }catch(e){ toast("Could not send right now, but thanks for trying"); }
   const m = document.getElementById("feedbackPromptModal"); if(m) m.remove();
+}
+
+
+// ===== PRICING MODAL FAQ (objection-handling, shown at the purchase decision point) =====
+// Every claim below is grounded in what actually exists in this codebase - refund window,
+// Razorpay security, trial persistence - not generic marketing copy.
+const PRICING_FAQ = [
+  { q: "Can I use this alongside my coaching classes?",
+    a: "Yes - most students do. NEETAce isn't video lectures; it's the practice, mistake-diagnosis, and revision layer that sits alongside whatever you're already learning from." },
+  { q: "If I don't upgrade today, do I lose my progress?",
+    a: "No. Your account, your Galti Copy mistakes, and your rank all stay saved. You just won't get new practice questions or adaptive features until you upgrade." },
+  { q: "Is my payment secure?",
+    a: "Yes - payments are handled by Razorpay. NEETAce never stores your card or UPI details." },
+  { q: "What if I'm not satisfied after paying?",
+    a: "Full refund if you've attempted fewer than 20 questions within 48 hours of an annual purchase, or if you were double-charged. See our Refund Policy under About for the complete terms." },
+  { q: "Does this replace video lectures or classroom teaching?",
+    a: "No, and we don't try to. NEETAce is built for what happens after the lecture - practice with real diagnosis of why you got something wrong, not just an answer key." },
+];
+
+function renderPricingFaq(){
+  const el = document.getElementById("pricingFaq"); if(!el) return;
+  el.innerHTML = PRICING_FAQ.map(function(item, i){
+    return '<div style="border-bottom:1px solid var(--bdr)">'+
+      '<div onclick="togglePricingFaq('+i+')" style="display:flex;justify-content:space-between;align-items:center;padding:9px 2px;cursor:pointer">'+
+        '<span style="font-size:12px;font-weight:600;padding-right:10px">'+item.q+'</span>'+
+        '<i class="ti ti-chevron-down" id="faqChevron'+i+'" style="color:var(--mute);font-size:14px;flex-shrink:0;transition:transform .15s"></i>'+
+      '</div>'+
+      '<div id="faqAnswer'+i+'" style="display:none;font-size:11.5px;color:var(--mute);line-height:1.6;padding:0 2px 10px">'+item.a+'</div>'+
+    '</div>';
+  }).join("");
+}
+
+function togglePricingFaq(i){
+  const ans = document.getElementById("faqAnswer"+i);
+  const chev = document.getElementById("faqChevron"+i);
+  if(!ans) return;
+  const isOpen = ans.style.display === "block";
+  ans.style.display = isOpen ? "none" : "block";
+  if(chev) chev.style.transform = isOpen ? "rotate(0deg)" : "rotate(180deg)";
 }
 
 // ===== INIT =====
