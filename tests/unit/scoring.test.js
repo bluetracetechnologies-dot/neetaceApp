@@ -420,3 +420,89 @@ describe('get_dashboard: single-read assembly (Priority 3+4+5+6 integration)', (
     expect(res._status).toBe(200); // completes without error regardless of pruning branch taken
   });
 });
+
+describe('Coverage completion pass — scoring.js real gaps found via line-by-line audit', () => {
+  test('weakTopics/strongTopics sort comparators actually execute (need 2+ items - a sort with 0-1 items never invokes its comparator)', async () => {
+    seed('users', 'u1', baseUser({ uid: 'u1', conceptStats: {
+      p3: { attempted: 5, correct: 1, accuracy: 20, masteryBand: 'weak', errorTypes: {}, lastSeen: '2026-08-01' },
+      c8: { attempted: 5, correct: 2, accuracy: 40, masteryBand: 'weak', errorTypes: {}, lastSeen: '2026-08-01' },
+      p12: { attempted: 5, correct: 4, accuracy: 80, masteryBand: 'mastered', errorTypes: {}, lastSeen: '2026-08-01' },
+      c15: { attempted: 5, correct: 5, accuracy: 100, masteryBand: 'mastered', errorTypes: {}, lastSeen: '2026-08-01' },
+    } }));
+    const { req, res } = mockReqRes({ uid: 'u1', sessionToken: 'valid_session_token_123', action: 'get_dashboard' });
+    await handler(req, res);
+    // weakTopics sorted ascending by accuracy - the weakest (20%) genuinely sorts first
+    expect(res._json.weakTopics[0].accuracy).toBe(20);
+    expect(res._json.weakTopics[1].accuracy).toBe(40);
+    // strongTopics sorted descending by accuracy - the strongest (100%) genuinely sorts first
+    expect(res._json.strongTopics[0].accuracy).toBe(100);
+    expect(res._json.strongTopics[1].accuracy).toBe(80);
+  });
+
+  test('recentSessions count-query catch-fallback fires cleanly, session recording still succeeds', async () => {
+    seed('users', 'u1', baseUser({ uid: 'u1' }));
+    const { MockQueryForPatching } = require('../mocks/firestore.mock');
+    const original = MockQueryForPatching.prototype.count;
+    // Surgical: only the SPECIFIC double-where count (uid + playedAt, the consistency
+    // check at line 412) throws. The pruning check's single-where count, and the
+    // unrelated .add() call for recording THIS session, are untouched - a blanket
+    // db.collection override here previously broke the .add() call too and caused
+    // a different, unintended failure.
+    MockQueryForPatching.prototype.count = function () {
+      if (this._filters.length === 2) return { get: () => Promise.reject(new Error('down')) };
+      return original.call(this);
+    };
+    try {
+      const { req, res } = mockReqRes({
+        uid: 'u1', sessionToken: 'valid_session_token_123', subject: 'physics',
+        results: [{ correct: true, difficulty: 'medium', tid: 'p3' }],
+      });
+      await handler(req, res);
+      expect(res._status).toBe(200); // recording succeeds even if the consistency-count query fails
+    } finally {
+      MockQueryForPatching.prototype.count = original;
+    }
+  });
+
+  test('SESSION PRUNING ACTUALLY FIRES: with 200+ existing sessions, old ones genuinely get deleted (previous test only asserted "completes without error", never proved the real branch ran)', async () => {
+    seed('users', 'u1', baseUser({ uid: 'u1' }));
+    const { db } = require('../helpers/withMockDb');
+    // Seed 201 real session docs so the >200 threshold genuinely trips
+    for (let i = 0; i < 201; i++) {
+      db._store.docs[`sessions/s${i}`] = { uid: 'u1', playedAt: new Date(2026, 0, (i % 28) + 1).toISOString(), subject: 'physics' };
+    }
+    // Force the random 5% pruning check to always trigger for this test (deterministic, not flaky)
+    const originalRandom = Math.random;
+    Math.random = () => 0.01; // well under the 0.05 threshold - guarantees the prune branch runs
+    try {
+      const { req, res } = mockReqRes({
+        uid: 'u1', sessionToken: 'valid_session_token_123', subject: 'physics',
+        results: [{ correct: true, difficulty: 'medium', tid: 'p3' }],
+      });
+      await handler(req, res);
+      expect(res._status).toBe(200);
+      const remaining = Object.keys(db._store.docs).filter((k) => k.startsWith('sessions/')).length;
+      expect(remaining).toBeLessThan(202); // genuinely fewer sessions remain - the delete batch actually ran
+    } finally {
+      Math.random = originalRandom;
+    }
+  });
+
+  test('an unexpected thrown error during session recording is caught by the outer handler, returns clean 500', async () => {
+    seed('users', 'u1', baseUser({ uid: 'u1' }));
+    const { db } = require('../mocks/_firebase.mock');
+    const original = db.collection;
+    let callCount = 0;
+    db.collection = (name) => { callCount++; if (callCount > 1) throw new Error('simulated failure'); return original(name); };
+    try {
+      const { req, res } = mockReqRes({
+        uid: 'u1', sessionToken: 'valid_session_token_123', subject: 'physics',
+        results: [{ correct: true, difficulty: 'medium', tid: 'p3' }],
+      });
+      await handler(req, res);
+      expect(res._status).toBe(500);
+    } finally {
+      db.collection = original;
+    }
+  });
+});
