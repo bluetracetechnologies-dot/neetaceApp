@@ -107,3 +107,128 @@ describe('Priority 11: kill_all disables all non-admin users', () => {
     expect(getDoc('users', 'u_admin').disabled).toBeFalsy();
   });
 });
+
+describe('admin.js — remaining actions (untested until now)', () => {
+  test('search_users requires at least 2 characters', async () => {
+    seed('users', 'u_admin', ADMIN_USER);
+    const { req, res } = mockReqRes({ action: 'search_users', uid: 'u_admin', sessionToken: 'admin_session_token', query: 'a' });
+    await handler(req, res);
+    expect(res._status).toBe(400);
+  });
+
+  test('search_users finds by email prefix', async () => {
+    seed('users', 'u_admin', ADMIN_USER);
+    seed('users', 'u1', baseUser({ uid: 'u1', email: 'rahim@example.com', name: 'Zebra' }));
+    seed('users', 'u2', baseUser({ uid: 'u2', email: 'other@example.com', name: 'Yak' }));
+    const { req, res } = mockReqRes({ action: 'search_users', uid: 'u_admin', sessionToken: 'admin_session_token', query: 'rahim' });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    expect(res._json.users.some((r) => r.email === 'rahim@example.com')).toBe(true);
+  });
+
+  test('search_users requires admin role', async () => {
+    seed('users', 'u1', baseUser({ uid: 'u1', role: 'user' }));
+    const { req, res } = mockReqRes({ action: 'search_users', uid: 'u1', sessionToken: 'valid_session_token_123', query: 'test' });
+    await handler(req, res);
+    expect(res._status).toBe(403);
+  });
+
+  test('get_user returns full detail including mastery for a real target', async () => {
+    seed('users', 'u_admin', ADMIN_USER);
+    seed('users', 'u_target', baseUser({ uid: 'u_target', email: 'student@example.com', mastery: { p3: { theta: 600 } } }));
+    const { req, res } = mockReqRes({ action: 'get_user', uid: 'u_admin', sessionToken: 'admin_session_token', targetUid: 'u_target' });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    expect(res._json.user.email).toBe('student@example.com');
+    expect(res._json.user.mastery.p3.theta).toBe(600);
+  });
+
+  test('get_user 404s for a non-existent target', async () => {
+    seed('users', 'u_admin', ADMIN_USER);
+    const { req, res } = mockReqRes({ action: 'get_user', uid: 'u_admin', sessionToken: 'admin_session_token', targetUid: 'ghost' });
+    await handler(req, res);
+    expect(res._status).toBe(404);
+  });
+
+  test('get_stats computes real counts when no cached stats doc exists', async () => {
+    seed('users', 'u_admin', ADMIN_USER);
+    seed('users', 'u1', baseUser({ uid: 'u1', paid: true }));
+    seed('users', 'u2', baseUser({ uid: 'u2', paid: false }));
+    const { req, res } = mockReqRes({ action: 'get_stats', uid: 'u_admin', sessionToken: 'admin_session_token' });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    expect(res._json.total).toBeGreaterThanOrEqual(3); // u_admin + u1 + u2
+    expect(res._json.paid).toBeGreaterThanOrEqual(1);
+  });
+
+  test('set_expiry batch-updates all non-admin users, leaves admins untouched', async () => {
+    seed('users', 'u_admin', ADMIN_USER);
+    seed('users', 'u1', baseUser({ uid: 'u1', trialEnd: '2020-01-01T00:00:00.000Z', paid: true }));
+    const { req, res } = mockReqRes({ action: 'set_expiry', uid: 'u_admin', sessionToken: 'admin_session_token', days: 3 });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    expect(getDoc('users', 'u1').paid).toBe(false); // reset by the batch update
+    expect(getDoc('users', 'u_admin').paid).toBeFalsy(); // admin excluded from the where('role','!=','admin') query
+  });
+
+  test('set_user_feature_override rejects a reason under 5 characters', async () => {
+    seed('users', 'u_admin', ADMIN_USER);
+    seed('users', 'u_target', baseUser({ uid: 'u_target' }));
+    const { req, res } = mockReqRes({ action: 'set_user_feature_override', uid: 'u_admin', sessionToken: 'admin_session_token', targetUid: 'u_target', featureKey: 'ai_tutor', enabled: true, reason: 'ok' });
+    await handler(req, res);
+    expect(res._status).toBe(400);
+  });
+
+  test('set_user_feature_override grants with a valid reason', async () => {
+    seed('users', 'u_admin', ADMIN_USER);
+    seed('users', 'u_target', baseUser({ uid: 'u_target' }));
+    const { req, res } = mockReqRes({ action: 'set_user_feature_override', uid: 'u_admin', sessionToken: 'admin_session_token', targetUid: 'u_target', featureKey: 'ai_tutor', enabled: true, reason: 'compensation for a bug' });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    expect(getDoc('users', 'u_target').featureOverrides.ai_tutor.enabled).toBe(true);
+  });
+
+  test('list_user_overrides returns only users with real, non-empty overrides', async () => {
+    seed('users', 'u_admin', ADMIN_USER);
+    seed('users', 'u_with_override', baseUser({ uid: 'u_with_override', featureOverrides: { ai_tutor: { enabled: true, reason: 'test' } } }));
+    seed('users', 'u_without', baseUser({ uid: 'u_without' }));
+    const { req, res } = mockReqRes({ action: 'list_user_overrides', uid: 'u_admin', sessionToken: 'admin_session_token' });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    expect(res._json.users.some((u) => u.uid === 'u_with_override')).toBe(true);
+  });
+
+  test('set_trial_config persists days/cap/allFeatures to config/trial', async () => {
+    seed('users', 'u_admin', ADMIN_USER);
+    const { req, res } = mockReqRes({ action: 'set_trial_config', uid: 'u_admin', sessionToken: 'admin_session_token', days: 5, dailyQuestionCap: 15, allFeatures: false });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    const cfg = getDoc('config', 'trial');
+    expect(cfg.days).toBe(5);
+    expect(cfg.dailyQuestionCap).toBe(15);
+  });
+
+  test('set_trial_config requires admin role', async () => {
+    seed('users', 'u1', baseUser({ uid: 'u1', role: 'user' }));
+    const { req, res } = mockReqRes({ action: 'set_trial_config', uid: 'u1', sessionToken: 'valid_session_token_123', days: 999 });
+    await handler(req, res);
+    expect(res._status).toBe(403);
+  });
+
+  test('grant_academy_admin elevates a target user to academy_admin role for a given academy', async () => {
+    seed('users', 'u_admin', ADMIN_USER);
+    seed('users', 'u_teacher', baseUser({ uid: 'u_teacher' }));
+    const { req, res } = mockReqRes({ action: 'grant_academy_admin', uid: 'u_admin', sessionToken: 'admin_session_token', targetUid: 'u_teacher', academyId: 'acy1' });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    expect(getDoc('users', 'u_teacher').academyRole).toBe('academy_admin');
+    expect(getDoc('users', 'u_teacher').academyId).toBe('acy1');
+  });
+
+  test('grant_academy_admin requires admin role', async () => {
+    seed('users', 'u1', baseUser({ uid: 'u1', role: 'user' }));
+    const { req, res } = mockReqRes({ action: 'grant_academy_admin', uid: 'u1', sessionToken: 'valid_session_token_123', targetUid: 'someone', academyId: 'acy1' });
+    await handler(req, res);
+    expect(res._status).toBe(403);
+  });
+});
