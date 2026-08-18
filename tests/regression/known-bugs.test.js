@@ -8,6 +8,8 @@ const scoringHandler = require('../../api/scoring');
 const adminHandler = require('../../api/admin');
 const { computeScorePrediction } = require('../../lib/score-predictor');
 const { buildChapterMasteryList } = require('../../lib/chapter-mastery');
+const fs = require('fs');
+const path = require('path');
 
 function mockReqRes(body) {
   const req = { method: 'POST', body };
@@ -105,5 +107,21 @@ describe('Regression: conceptStats/galtiMistakes unbounded growth (bloat protect
     const { req, res } = mockReqRes({ uid: 'u1', sessionToken: 'valid_session_token_123', subject: 'physics', results: [{ correct: true, difficulty: 'medium', tid: 'brand_new' }] });
     await scoringHandler(req, res);
     expect(Object.keys(getDoc('users', 'u1').conceptStats).length).toBeLessThanOrEqual(60);
+  });
+});
+
+describe('Regression: Biology card swallowed Brain Boost and Study Modes on mobile', () => {
+  test('Subjects, Study Modes, and Brain Boost are closed sibling sections in that order', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', '..', 'index.html'), 'utf8');
+    const subjectsStart = html.indexOf('<section class="home-section" aria-labelledby="subjectsHeading">');
+    const subjectsEnd = html.indexOf('</section>', subjectsStart);
+    const studyStart = html.indexOf('<section class="home-section" aria-labelledby="studyModesHeading">');
+    const studyEnd = html.indexOf('</section>', studyStart);
+    const brainStart = html.indexOf('<section class="home-section" aria-label="Brain Boost">');
+    expect(subjectsStart).toBeGreaterThan(-1);
+    expect(subjectsEnd).toBeGreaterThan(subjectsStart);
+    expect(studyStart).toBeGreaterThan(subjectsEnd);
+    expect(studyEnd).toBeGreaterThan(studyStart);
+    expect(brainStart).toBeGreaterThan(studyEnd);
   });
 });

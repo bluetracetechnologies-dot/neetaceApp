@@ -157,7 +157,10 @@ class MockCollectionRef extends MockQuery {
     this._autoIdCounter = 0;
   }
   doc(id) {
-    const docId = id || `auto_${this._collPath}_${++this._autoIdCounter}_${Date.now()}`;
+    // Firestore document IDs never contain path separators. Using the full
+    // collection path here made collectionGroup() return a different id from
+    // the one returned at creation time, masking/breaking end-to-end flows.
+    const docId = id || `auto_${++this._store._autoIdCounter}_${Date.now()}`;
     return new MockDocRef(this._store, this._collPath, docId);
   }
   async add(data) {
@@ -185,8 +188,14 @@ class MockBatch {
   }
 }
 
+class MockTransaction extends MockBatch {
+  async get(ref) {
+    return ref.get();
+  }
+}
+
 function createMockFirestore(seedDocs = {}) {
-  const store = { docs: { ...seedDocs }, _lastGroupName: null };
+  const store = { docs: { ...seedDocs }, _lastGroupName: null, _transactionQueue: Promise.resolve(), _autoIdCounter: 0 };
   return {
     _store: store, // exposed for test setup/assertions
     collection(path) {
@@ -198,6 +207,17 @@ function createMockFirestore(seedDocs = {}) {
     },
     batch() {
       return new MockBatch(store);
+    },
+    runTransaction(callback) {
+      const execute = async function() {
+        const transaction = new MockTransaction(store);
+        const result = await callback(transaction);
+        await transaction.commit();
+        return result;
+      };
+      const pending = store._transactionQueue.then(execute, execute);
+      store._transactionQueue = pending.catch(function() {});
+      return pending;
     },
   };
 }

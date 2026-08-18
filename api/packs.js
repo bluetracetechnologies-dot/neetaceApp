@@ -42,16 +42,19 @@ function parseCSV(text) {
 // fallback values are computed on every READ, non-destructively. New uploads already get
 // real values at parse time (csvRowToQuestion); this covers everything parsed before today.
 function backfillMetadata(q) {
-  if (q.concept !== undefined) return q; // already has Phase 1 fields, nothing to do
+  if (q.concept !== undefined && q.reviewStatus !== undefined) return q;
   const diff = q.diff || 'medium';
   return {
     ...q,
-    concept: q.ch || 'General',
-    subconcept: '',
-    formula: '',
-    unitType: 'standard',
-    variantGroup: q.id || 'unknown',
-    estimatedTime: diff === 'hard' || diff === 'exam' ? 90 : diff === 'medium' ? 60 : 45,
+    concept: q.concept !== undefined ? q.concept : q.ch || 'General',
+    subconcept: q.subconcept !== undefined ? q.subconcept : '',
+    formula: q.formula !== undefined ? q.formula : '',
+    unitType: q.unitType !== undefined ? q.unitType : 'standard',
+    variantGroup: q.variantGroup !== undefined ? q.variantGroup : q.id || 'unknown',
+    estimatedTime: q.estimatedTime !== undefined ? q.estimatedTime : (diff === 'hard' || diff === 'exam' ? 90 : diff === 'medium' ? 60 : 45),
+    reviewStatus: q.reviewStatus || 'unreviewed',
+    reviewer: q.reviewer || '',
+    reviewedAt: q.reviewedAt || null,
   };
 }
 
@@ -85,6 +88,12 @@ function csvRowToQuestion(row, packId, idx) {
       (row.difficulty || row.diff) === 'hard' || (row.difficulty || row.diff) === 'exam' ? 90 :
       (row.difficulty || row.diff) === 'medium' ? 60 : 45
     ), // sensible default by difficulty if not authored
+    // Optional faculty QA trail. Unreviewed content remains usable in development,
+    // but the audit makes it impossible to mistake it for expert-approved content.
+    reviewStatus: ['approved','rejected','needs_changes'].includes(String(row.review_status || '').toLowerCase())
+      ? String(row.review_status).toLowerCase() : 'unreviewed',
+    reviewer: String(row.reviewer || '').trim().slice(0, 100),
+    reviewedAt: row.reviewed_at || null,
   };
 }
 
@@ -342,12 +351,17 @@ module.exports = async function handler(req, res) {
     const isTeacher = u.academyRole === 'teacher' || u.role === 'admin';
     if (!isTeacher || !u.academyId) return res.status(403).json({ error: 'Academy teacher only. Register with your academy code first.' });
 
-    const { name, csvText, scopeType, targetPackId, changeNote } = req.body;
+    const { name, csvText, scopeType, targetPackId, changeNote, batchId } = req.body;
     if (!csvText) return res.status(400).json({ error: 'csvText required' });
 
-    const scope = scopeType === 'batch' && u.batchId
-      ? { type: 'batch', batchId: u.batchId, academyId: u.academyId }
-      : { type: 'academy', academyId: u.academyId };
+    let scope = { type: 'academy', academyId: u.academyId };
+    if (!targetPackId && scopeType === 'batch') {
+      if (!batchId) return res.status(400).json({ error: 'batchId required for batch scope' });
+      const batchSnap = await db.collection('academies').doc(u.academyId).collection('batches').doc(batchId).get();
+      if (!batchSnap.exists) return res.status(404).json({ error: 'Batch not found' });
+      if (u.role !== 'admin' && batchSnap.data().createdBy !== uid) return res.status(403).json({ error: 'Not your batch' });
+      scope = { type: 'batch', batchId, academyId: u.academyId };
+    }
 
     // New version of an existing teacher pack
     if (targetPackId) {

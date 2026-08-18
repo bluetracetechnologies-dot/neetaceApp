@@ -6,7 +6,9 @@
     "test": "jest",
     "test:coverage": "jest --coverage",
     "test:ci": "jest --coverage --ci",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "audit:questions": "node scripts/question-bank-audit.js",
+    "audit:questions:strict": "node scripts/question-bank-audit.js --strict"
   },
   "dependencies": {
     "firebase-admin": "^12.0.0",

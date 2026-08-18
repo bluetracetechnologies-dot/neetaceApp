@@ -11,6 +11,8 @@ const { db } = require('../mocks/_firebase.mock');
 
 function resetDb() {
   db._store.docs = {};
+  db._store._transactionQueue = Promise.resolve();
+  db._store._autoIdCounter = 0;
 }
 
 function seed(collection, id, data) {

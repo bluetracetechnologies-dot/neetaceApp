@@ -59,6 +59,168 @@ describe('Priority 12: Academy pricing - tiered discounts', () => {
   });
 });
 
+describe('Teacher Dashboard V1: batch creation and teacher-owned batch list', () => {
+  test('list_my_batches returns only batches created by the signed-in teacher plus academy seat counts', async () => {
+    seed('users', 'u_teacher', baseUser({ uid: 'u_teacher', academyId: 'acy1', academyRole: 'teacher' }));
+    seed('academies', 'acy1', { ...PENDING_ACADEMY, id: 'acy1', studentCount: 30, seatsUsed: 7 });
+    seedNested('academies/acy1/batches/b_own', {
+      id: 'b_own', batchName: 'My Batch', batchCode: 'BTOWN01', createdBy: 'u_teacher', studentCount: 4,
+      createdAt: '2026-08-19T10:00:00.000Z', active: true,
+    });
+    seedNested('academies/acy1/batches/b_other', {
+      id: 'b_other', batchName: 'Other Batch', batchCode: 'BTOTHER', createdBy: 'u_other', studentCount: 3,
+      createdAt: '2026-08-19T11:00:00.000Z', active: true,
+    });
+
+    const { req, res } = mockReqRes({
+      uid: 'u_teacher', sessionToken: 'valid_session_token_123', action: 'list_my_batches',
+    });
+    await handler(req, res);
+
+    expect(res._status).toBe(200);
+    expect(res._json.seatsUsed).toBe(7);
+    expect(res._json.studentCount).toBe(30);
+    expect(res._json.batches).toHaveLength(1);
+    expect(res._json.batches[0]).toMatchObject({ id: 'b_own', batchName: 'My Batch', studentCount: 4 });
+  });
+
+  test('list_my_batches rejects an academy student', async () => {
+    seed('users', 'u_student', baseUser({ uid: 'u_student', academyId: 'acy1', academyRole: 'student' }));
+    const { req, res } = mockReqRes({
+      uid: 'u_student', sessionToken: 'valid_session_token_123', action: 'list_my_batches',
+    });
+    await handler(req, res);
+    expect(res._status).toBe(403);
+  });
+
+  test('create_batch rejects an academy student even though the user has an academyId', async () => {
+    seed('users', 'u_student', baseUser({ uid: 'u_student', academyId: 'acy1', academyRole: 'student' }));
+    const { req, res } = mockReqRes({
+      uid: 'u_student', sessionToken: 'valid_session_token_123', action: 'create_batch', batchName: 'Not Allowed',
+    });
+    await handler(req, res);
+    expect(res._status).toBe(403);
+  });
+});
+
+describe('Teacher batch management and roster security', () => {
+  function setupManagedBatch() {
+    seed('academies', 'acy1', { ...PENDING_ACADEMY, id: 'acy1', studentCount: 20, seatsUsed: 2 });
+    seedNested('academies/acy1/batches/b1', BATCH_FIXTURE('acy1', { id: 'b1', batchName: 'Original', createdBy: 'teacher', studentCount: 1 }));
+    seed('users', 'teacher', baseUser({ uid: 'teacher', academyId: 'acy1', academyRole: 'teacher' }));
+  }
+
+  test('teacher edits and deactivates only their own batch', async () => {
+    setupManagedBatch();
+    const updated = mockReqRes({ uid: 'teacher', sessionToken: 'valid_session_token_123', action: 'update_batch', batchId: 'b1', batchName: 'NEET 2027 A', active: false, targetYear: 2027 });
+    await handler(updated.req, updated.res);
+    expect(updated.res._status).toBe(200);
+    expect(db._store.docs['academies/acy1/batches/b1']).toMatchObject({ batchName: 'NEET 2027 A', active: false, targetYear: 2027 });
+
+    seedNested('academies/acy1/batches/b2', BATCH_FIXTURE('acy1', { id: 'b2', createdBy: 'another_teacher' }));
+    const forbidden = mockReqRes({ uid: 'teacher', sessionToken: 'valid_session_token_123', action: 'update_batch', batchId: 'b2', active: false });
+    await handler(forbidden.req, forbidden.res);
+    expect(forbidden.res._status).toBe(403);
+  });
+
+  test('roster returns teacher-owned students with existing progress fields', async () => {
+    setupManagedBatch();
+    seedNested('academies/acy1/batches/b1/students/student', { uid: 'student', joinedAt: '2026-08-01T00:00:00.000Z', active: true });
+    seed('users', 'student', baseUser({ uid: 'student', name: 'A Student', academyId: 'acy1', academyRole: 'student', batchId: 'b1', scores: { global: { attempted: 25, accuracy: 72, weighted: 44 } }, lastSessionAt: '2026-08-18T10:00:00.000Z' }));
+    const roster = mockReqRes({ uid: 'teacher', sessionToken: 'valid_session_token_123', action: 'get_batch_roster', batchId: 'b1' });
+    await handler(roster.req, roster.res);
+    expect(roster.res._status).toBe(200);
+    expect(roster.res._json.students[0]).toMatchObject({ uid: 'student', name: 'A Student', attempted: 25, accuracy: 72, weighted: 44 });
+  });
+
+  test('removing a current academy student releases the seat and academy plan', async () => {
+    setupManagedBatch();
+    seedNested('academies/acy1/batches/b1/students/student', { uid: 'student', active: true });
+    seed('users', 'student', baseUser({ uid: 'student', academyId: 'acy1', academyRole: 'student', batchId: 'b1', paid: true, planKey: 'plan_academy', paidUntil: '2027-05-31T00:00:00.000Z' }));
+    const removed = mockReqRes({ uid: 'teacher', sessionToken: 'valid_session_token_123', action: 'remove_student', batchId: 'b1', studentUid: 'student' });
+    await handler(removed.req, removed.res);
+    expect(removed.res._status).toBe(200);
+    expect(removed.res._json.seatReleased).toBe(true);
+    expect(db._store.docs['academies/acy1/batches/b1/students/student']).toBeUndefined();
+    expect(getDoc('academies', 'acy1').seatsUsed).toBe(1);
+    expect(getDoc('users', 'student')).toMatchObject({ academyId: null, batchId: null, paid: false, planKey: null });
+  });
+});
+
+describe('Academy weekly usage and teacher doubt escalation', () => {
+  function setup() {
+    seed('academies', 'acy1', { ...PENDING_ACADEMY, id: 'acy1', studentCount: 20, seatsUsed: 1 });
+    seedNested('academies/acy1/batches/b1', BATCH_FIXTURE('acy1', { id: 'b1', batchName: 'NEET A', createdBy: 'teacher', studentCount: 1 }));
+    seedNested('academies/acy1/batches/b1/students/student', { uid: 'student', name: 'Student One', active: true });
+    seedNested('academies/acy1/batches/b1/students/inactive', { uid: 'inactive', name: 'Inactive Student', active: true });
+    seed('users', 'teacher', baseUser({ uid: 'teacher', name: 'Teacher', academyId: 'acy1', academyRole: 'teacher' }));
+    seed('users', 'student', baseUser({ uid: 'student', name: 'Student One', academyId: 'acy1', academyRole: 'student', batchId: 'b1' }));
+  }
+
+  test('teacher weekly summary aggregates only the selected owned batch', async () => {
+    setup();
+    const today = new Date().toISOString().slice(0, 10);
+    seed('usage_daily', 'student_' + today, { uid: 'student', userName: 'Student One', academyId: 'acy1', batchId: 'b1', date: today, totalTimeSec: 900, questionsAttempted: 20, aiQuestions: 2, testsSubmitted: 1, sections: { practice: { timeSec: 600, questions: 20 }, ai_tutor: { timeSec: 300, questions: 0 } }, subjects: { BIOLOGY: { timeSec: 900, questions: 20 } }, chapters: { Genetics: { timeSec: 900, questions: 20 } }, lastActiveAt: new Date().toISOString() });
+    seed('usage_daily', 'other_' + today, { uid: 'other', userName: 'Other Batch', academyId: 'acy1', batchId: 'b2', date: today, totalTimeSec: 5000, questionsAttempted: 80 });
+    const { req, res } = mockReqRes({ uid: 'teacher', sessionToken: 'valid_session_token_123', action: 'get_usage_summary', batchId: 'b1', days: 7 });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    expect(res._json.summary).toMatchObject({ activeStudents: 1, assignedStudents: 2, totalTimeSec: 900, questionsAttempted: 20, aiQuestions: 2, testsSubmitted: 1 });
+    expect(res._json.summary.chapters[0].name).toBe('Genetics');
+    expect(res._json.summary.inactiveStudents).toEqual([expect.objectContaining({ uid: 'inactive', name: 'Inactive Student' })]);
+  });
+
+  test('teacher cannot read usage for another teacher batch', async () => {
+    setup();
+    seedNested('academies/acy1/batches/b2', BATCH_FIXTURE('acy1', { id: 'b2', createdBy: 'another_teacher' }));
+    const { req, res } = mockReqRes({ uid: 'teacher', sessionToken: 'valid_session_token_123', action: 'get_usage_summary', batchId: 'b2' });
+    await handler(req, res);
+    expect(res._status).toBe(403);
+  });
+
+  test('student raises a doubt, owning teacher resolves it, and student sees the reply', async () => {
+    setup();
+    const raised = mockReqRes({ uid: 'student', sessionToken: 'valid_session_token_123', action: 'raise_doubt', question: 'Why is DNA replication semi-conservative?', aiAnswer: 'One old and one new strand.', subject: 'BIOLOGY', chapter: 'Genetics' });
+    await handler(raised.req, raised.res);
+    expect(raised.res._status).toBe(200);
+    const doubtId = raised.res._json.doubt.id;
+
+    const listed = mockReqRes({ uid: 'teacher', sessionToken: 'valid_session_token_123', action: 'list_batch_doubts', batchId: 'b1' });
+    await handler(listed.req, listed.res);
+    expect(listed.res._json.doubts[0]).toMatchObject({ id: doubtId, studentUid: 'student', status: 'open' });
+
+    const resolved = mockReqRes({ uid: 'teacher', sessionToken: 'valid_session_token_123', action: 'resolve_doubt', doubtId, teacherReply: 'Each daughter molecule keeps one parental strand.' });
+    await handler(resolved.req, resolved.res);
+    expect(resolved.res._json.doubt.status).toBe('resolved');
+
+    const studentList = mockReqRes({ uid: 'student', sessionToken: 'valid_session_token_123', action: 'list_my_doubts' });
+    await handler(studentList.req, studentList.res);
+    expect(studentList.res._json.doubts[0]).toMatchObject({ status: 'resolved', teacherReply: 'Each daughter molecule keeps one parental strand.' });
+  });
+
+  test('a teacher who does not own the batch cannot resolve its doubt', async () => {
+    setup();
+    seed('users', 'outsider', baseUser({ uid: 'outsider', academyId: 'acy1', academyRole: 'teacher' }));
+    seed('academy_doubts', 'd1', { id: 'd1', academyId: 'acy1', batchId: 'b1', studentUid: 'student', status: 'open' });
+    const { req, res } = mockReqRes({ uid: 'outsider', sessionToken: 'valid_session_token_123', action: 'resolve_doubt', doubtId: 'd1', teacherReply: 'Not allowed' });
+    await handler(req, res);
+    expect(res._status).toBe(403);
+  });
+
+  test('same-named batch ids cannot expose or resolve a different academy doubt', async () => {
+    setup();
+    seed('academy_doubts', 'foreign', { id: 'foreign', academyId: 'acy2', batchId: 'b1', studentUid: 'foreign_student', status: 'open' });
+
+    const listed = mockReqRes({ uid: 'teacher', sessionToken: 'valid_session_token_123', action: 'list_batch_doubts', batchId: 'b1' });
+    await handler(listed.req, listed.res);
+    expect(listed.res._json.doubts).toEqual([]);
+
+    const resolved = mockReqRes({ uid: 'teacher', sessionToken: 'valid_session_token_123', action: 'resolve_doubt', doubtId: 'foreign', teacherReply: 'Not allowed' });
+    await handler(resolved.req, resolved.res);
+    expect(resolved.res._status).toBe(403);
+  });
+});
+
 describe('Priority 12: Seat enforcement (join_batch)', () => {
   function setupAcademyWithBatch(academyOverrides = {}, batchOverrides = {}) {
     const acad = { ...PENDING_ACADEMY, ...academyOverrides };
@@ -97,6 +259,33 @@ describe('Priority 12: Seat enforcement (join_batch)', () => {
     expect(res._status).toBe(200); // allowed even though seats are "full" - re-joining, not a new seat
     const updatedAcad = getDoc('academies', acad.id);
     expect(updatedAcad.seatsUsed).toBe(10); // unchanged
+  });
+
+  test('rejoining the SAME batch is idempotent and does not inflate studentCount', async () => {
+    const { acad, batch } = setupAcademyWithBatch({ studentCount: 10, seatsUsed: 1 }, { studentCount: 1 });
+    seedNested(`academies/${acad.id}/batches/${batch.id}/students/u_existing`, { uid: 'u_existing', active: true });
+    seed('users', 'u_existing', baseUser({ uid: 'u_existing', academyId: acad.id, academyRole: 'student', batchId: batch.id }));
+    const { req, res } = mockReqRes({ uid: 'u_existing', sessionToken: 'valid_session_token_123', action: 'join_batch', batchCode: batch.batchCode });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    expect(res._json.alreadyJoined).toBe(true);
+    expect(db._store.docs[`academies/${acad.id}/batches/${batch.id}`].studentCount).toBe(1);
+    expect(getDoc('academies', acad.id).seatsUsed).toBe(1);
+  });
+
+  test('moving batches removes the stale old roster membership and keeps one academy seat', async () => {
+    const { acad, batch } = setupAcademyWithBatch({ studentCount: 10, seatsUsed: 1 }, { id: 'new_batch', batchCode: 'BTNEW01', studentCount: 0 });
+    seedNested(`academies/${acad.id}/batches/old_batch`, BATCH_FIXTURE(acad.id, { id: 'old_batch', batchCode: 'BTOLD01', studentCount: 1 }));
+    seedNested(`academies/${acad.id}/batches/old_batch/students/u_existing`, { uid: 'u_existing', active: true });
+    seed('users', 'u_existing', baseUser({ uid: 'u_existing', academyId: acad.id, academyRole: 'student', batchId: 'old_batch' }));
+    const { req, res } = mockReqRes({ uid: 'u_existing', sessionToken: 'valid_session_token_123', action: 'join_batch', batchCode: batch.batchCode });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    expect(db._store.docs[`academies/${acad.id}/batches/old_batch/students/u_existing`]).toBeUndefined();
+    expect(db._store.docs[`academies/${acad.id}/batches/new_batch/students/u_existing`]).toBeDefined();
+    expect(db._store.docs[`academies/${acad.id}/batches/old_batch`].studentCount).toBe(0);
+    expect(db._store.docs[`academies/${acad.id}/batches/new_batch`].studentCount).toBe(1);
+    expect(getDoc('academies', acad.id).seatsUsed).toBe(1);
   });
 
   test('LATE-JOINER ACTIVATION: joining an already-PAID academy activates the student immediately', async () => {
@@ -235,11 +424,12 @@ describe('Priority 12: academy.js — remaining admin actions (untested until no
 
 describe('Priority 12: academy.js — batch_leaderboard (untested until now)', () => {
   test('returns ranked students sorted by weighted score', async () => {
+    seedNested('academies/acy1/batches/b1', BATCH_FIXTURE('acy1', { id: 'b1', createdBy: 'u_teacher' }));
     seedNested('academies/acy1/batches/b1/students/u_a', { uid: 'u_a' });
     seedNested('academies/acy1/batches/b1/students/u_b', { uid: 'u_b' });
     seed('users', 'u_a', baseUser({ uid: 'u_a', name: 'Low Scorer', scores: { global: { weighted: 20, attempted: 25 } } }));
     seed('users', 'u_b', baseUser({ uid: 'u_b', name: 'High Scorer', scores: { global: { weighted: 80, attempted: 30 } } }));
-    seed('users', 'u_caller', baseUser({ uid: 'u_caller' }));
+    seed('users', 'u_caller', baseUser({ uid: 'u_caller', academyId: 'acy1', academyRole: 'student', batchId: 'b1' }));
     const { req, res } = mockReqRes({ uid: 'u_caller', sessionToken: 'valid_session_token_123', action: 'batch_leaderboard', batchId: 'b1', academyId: 'acy1' });
     await handler(req, res);
     expect(res._status).toBe(200);
@@ -248,16 +438,18 @@ describe('Priority 12: academy.js — batch_leaderboard (untested until now)', (
   });
 
   test('a student with fewer than 5 attempted questions does NOT appear on the leaderboard (real minimum-sample gate)', async () => {
+    seedNested('academies/acy1/batches/b1', BATCH_FIXTURE('acy1', { id: 'b1', createdBy: 'u_teacher' }));
     seedNested('academies/acy1/batches/b1/students/u_new', { uid: 'u_new' });
     seed('users', 'u_new', baseUser({ uid: 'u_new', name: 'Just Joined', scores: { global: { weighted: 100, attempted: 2 } } }));
-    seed('users', 'u_caller', baseUser({ uid: 'u_caller' }));
+    seed('users', 'u_caller', baseUser({ uid: 'u_caller', academyId: 'acy1', academyRole: 'student', batchId: 'b1' }));
     const { req, res } = mockReqRes({ uid: 'u_caller', sessionToken: 'valid_session_token_123', action: 'batch_leaderboard', batchId: 'b1', academyId: 'acy1' });
     await handler(req, res);
     expect(res._json.leaderboard).toEqual([]); // filtered out despite a high score, per the real gate
   });
 
   test('empty batch returns an empty leaderboard, not an error', async () => {
-    seed('users', 'u_caller', baseUser({ uid: 'u_caller' }));
+    seedNested('academies/acy1/batches/ghost', BATCH_FIXTURE('acy1', { id: 'ghost', createdBy: 'u_teacher' }));
+    seed('users', 'u_caller', baseUser({ uid: 'u_caller', academyId: 'acy1', academyRole: 'student', batchId: 'ghost' }));
     const { req, res } = mockReqRes({ uid: 'u_caller', sessionToken: 'valid_session_token_123', action: 'batch_leaderboard', batchId: 'ghost', academyId: 'acy1' });
     await handler(req, res);
     expect(res._status).toBe(200);
@@ -271,19 +463,13 @@ describe('Priority 12: academy.js — batch_leaderboard (untested until now)', (
     expect(res._status).toBe(400);
   });
 
-  // FINDING (not a fix — documenting current behavior per this session's testing pass,
-  // consistent with "test first, decide later" sequencing): this action has NO check that
-  // the caller actually belongs to the batch/academy they're querying. Any authenticated
-  // user who knows or guesses a batchId+academyId pair can see that batch's leaderboard
-  // (names + weighted scores). Not severely sensitive data, but a real, confirmed scoping
-  // gap - flagging via this test rather than silently working around or silently fixing it.
-  test('DOCUMENTS FINDING: a user with NO relationship to the batch/academy can still query its leaderboard (no scoping check exists)', async () => {
+  test('rejects a user with no relationship to the requested batch', async () => {
+    seedNested('academies/acy_other/batches/b_other', BATCH_FIXTURE('acy_other', { id: 'b_other', createdBy: 'u_other_teacher' }));
     seedNested('academies/acy_other/batches/b_other/students/u_member', { uid: 'u_member' });
     seed('users', 'u_member', baseUser({ uid: 'u_member', name: 'Batch Member', scores: { global: { weighted: 50, attempted: 10 } } }));
     seed('users', 'u_stranger', baseUser({ uid: 'u_stranger' })); // has no academyId, no batchId - unrelated
     const { req, res } = mockReqRes({ uid: 'u_stranger', sessionToken: 'valid_session_token_123', action: 'batch_leaderboard', batchId: 'b_other', academyId: 'acy_other' });
     await handler(req, res);
-    expect(res._status).toBe(200); // succeeds - confirms no scoping check, documented not fixed
-    expect(res._json.leaderboard.length).toBe(1);
+    expect(res._status).toBe(403);
   });
 });

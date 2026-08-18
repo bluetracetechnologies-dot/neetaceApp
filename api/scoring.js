@@ -6,6 +6,7 @@
 // No new Firestore collections created.
 
 const { db } = require('./_firebase');
+const { recordUsage } = require('../lib/usage');
 
 // Difficulty weights
 const WEIGHTS = { starter:1, easy:2, medium:4, hard:7, exam:10 };
@@ -26,6 +27,7 @@ const LEVEL_DECAY = [1.0, 0.85, 0.65, 0.40]; // [same, -1, -2, -3+]
 const MAX_CONCEPT_TIDS = 60;
 const MAX_GALTI_ENTRIES = 150;
 const MAX_TARGET_HISTORY = 50;
+const MAX_BOOKMARKS = 100;
 const ALLOWED_ERROR_TYPES = ['concept','formula','unit','calc','careless','time'];
 
 // Recovery priority order (Phase 3 requirement): unit > formula > concept > calc > careless > time
@@ -317,6 +319,72 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ history: history });
     }
 
+    // ── PERSISTENT BOOKMARKS ─────────────────────────────
+    // Stored on the existing user document and capped to avoid unbounded growth.
+    if (action === 'toggle_bookmark') {
+      const q = body.question;
+      if (!q || q.id === undefined || !q.text) return res.status(400).json({ error: 'question required' });
+      const questionId = String(q.id).slice(0, 80);
+      const bookmarks = Array.isArray(user.bookmarks) ? user.bookmarks.slice() : [];
+      const existingIndex = bookmarks.findIndex(function(b) { return b.questionId === questionId; });
+      let bookmarked;
+      if (existingIndex >= 0) {
+        bookmarks.splice(existingIndex, 1);
+        bookmarked = false;
+      } else {
+        bookmarks.unshift({
+          questionId,
+          text: String(q.text).slice(0, 1000),
+          sub: String(q.sub || '').slice(0, 20),
+          chapter: String(q.ch || '').slice(0, 100),
+          tid: String(q.tid || '').slice(0, 40),
+          options: Array.isArray(q.opts) ? q.opts.slice(0, 4).map(function(o) { return String(o).slice(0, 300); }) : [],
+          correct: Number.isInteger(q.correct) ? q.correct : null,
+          explanation: String(q.explanation || '').slice(0, 1500),
+          savedAt: new Date().toISOString(),
+        });
+        bookmarked = true;
+      }
+      await db.collection('users').doc(uid).update({ bookmarks: bookmarks.slice(0, MAX_BOOKMARKS) });
+      return res.status(200).json({ ok: true, bookmarked, count: Math.min(bookmarks.length, MAX_BOOKMARKS) });
+    }
+
+    if (action === 'list_bookmarks') {
+      const bookmarks = Array.isArray(user.bookmarks) ? user.bookmarks.slice() : [];
+      bookmarks.sort(function(a, b) { return new Date(b.savedAt || 0) - new Date(a.savedAt || 0); });
+      return res.status(200).json({ ok: true, bookmarks });
+    }
+
+    // Lightweight dwell-time/AI usage signal. Question and test counts are never
+    // trusted from this client action; those are recorded by their server-side
+    // scoring/test submission handlers below.
+    if (action === 'track_activity') {
+      const tracked = await recordUsage(db, uid, user, {
+        section: body.section,
+        elapsedSec: body.elapsedSec,
+        subject: body.subject,
+        chapter: body.chapter,
+        aiQuestions: body.aiQuestions ? 1 : 0,
+        occurredAt: body.occurredAt,
+      });
+      return res.status(200).json({ ok: true, tracked: !!tracked });
+    }
+
+    if (action === 'track_practice_answer') {
+      const questionId = String(body.questionId || '').trim().slice(0, 100);
+      if (!questionId) return res.status(400).json({ error: 'questionId required' });
+      const tracked = await recordUsage(db, uid, user, {
+        section: body.mode === 'revision' ? 'revision' : 'practice',
+        // Screen dwell is recorded separately by track_activity. Keeping this
+        // event count-only prevents the same practice time being added twice.
+        elapsedSec: 0,
+        questions: 1,
+        subject: body.subject,
+        chapter: body.chapter,
+      });
+      return res.status(200).json({ ok: true, tracked: !!tracked });
+    }
+
     // ══════════════════════════════════════════════════════════════
     // DEFAULT ACTION: record (session scoring) - legacy callers send no `action` field,
     // so this must stay the default. Behavior is UNCHANGED from before this refactor.
@@ -434,6 +502,23 @@ module.exports = async function handler(req, res) {
       playedAt: new Date().toISOString(),
       expiresAt: nextMay31().toISOString(),
     });
+
+    // Reuse the authoritative scoring payload for weekly usage analytics.
+    // Analytics failure must never block a student's scored session.
+    try {
+      const chapters = results.map(function(r) { return r.chapter || ''; }).filter(Boolean);
+      await recordUsage(db, uid, user, {
+        section: body.mode === 'exam' ? 'exam' : body.mode === 'revision' ? 'revision' : 'practice',
+        // Browser study-mode dwell is the time source when explicitly marked;
+        // this scored payload remains authoritative for question totals.
+        elapsedSec: body.usageTimeTracked ? 0 : (sessionTimeSec || 0),
+        questions: results.length,
+        subject: key === 'global' ? '' : key,
+        chapter: chapters.length && chapters.every(function(c) { return c === chapters[0]; }) ? chapters[0] : '',
+      });
+    } catch (usageError) {
+      console.error('usage aggregation error', usageError.message);
+    }
 
     if (Math.random() < 0.05) {
       try {
