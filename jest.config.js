@@ -24,15 +24,14 @@ module.exports = {
     '!lib/**/*.test.js',
   ],
   coverageThreshold: {
-    // Thresholds updated to match what THIS pass actually achieved (was: adaptive.js 43%,
-    // academy.js 64%, admin.js 43%, features.js 0% - all closed this session). Small
-    // margin below the real achieved number so a future minor refactor doesn't
-    // immediately fail CI on a 0.1% fluctuation.
-    'api/scoring.js':   { statements: 90, branches: 80, functions: 84, lines: 94 },
+    // Updated after the "100% unit testing" completion pass - real achieved numbers,
+    // not aspirational. Every genuinely closeable gap from a full line-by-line audit
+    // was closed with real tests; remaining gaps are named explicitly below.
+    'api/scoring.js':   { statements: 97, branches: 83, functions: 99, lines: 99 },
     'api/adaptive.js':  { statements: 89, branches: 75, functions: 99, lines: 94 },
     'api/academy.js':   { statements: 87, branches: 76, functions: 99, lines: 97 },
-    'api/admin.js':     { statements: 79, branches: 70, functions: 75, lines: 90 },
-    'api/features.js':  { statements: 83, branches: 73, functions: 99, lines: 90 },
+    'api/admin.js':     { statements: 87, branches: 76, functions: 83, lines: 99 },
+    'api/features.js':  { statements: 89, branches: 76, functions: 99, lines: 97 },
     'lib/chapter-mastery.js': { statements: 89, branches: 82, functions: 79, lines: 99 },
     'lib/galti-classify.js':  { statements: 94, branches: 83, functions: 99, lines: 97 },
     'lib/learning-dna.js':    { statements: 99, branches: 63, functions: 99, lines: 99 },
