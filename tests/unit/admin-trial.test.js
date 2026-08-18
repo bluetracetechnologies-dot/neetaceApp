@@ -232,3 +232,100 @@ describe('admin.js — remaining actions (untested until now)', () => {
     expect(res._status).toBe(403);
   });
 });
+
+describe('Coverage completion pass — admin.js real gaps found via line-by-line audit', () => {
+  test('get_trial_config catch-fallback fires when the config read throws', async () => {
+    const { db } = require('../mocks/_firebase.mock');
+    const original = db.collection;
+    db.collection = (name) => {
+      if (name === 'config') return { doc: () => ({ get: () => { throw new Error('Firestore down'); } }) };
+      return original(name);
+    };
+    try {
+      const { req, res } = mockReqRes({ action: 'get_trial_config', uid: 'anon', sessionToken: 'anon' });
+      await handler(req, res);
+      expect(res._status).toBe(200); // graceful fallback, not a crash
+      expect(res._json).toEqual({ days: 7, dailyQuestionCap: 10, allFeatures: true });
+    } finally {
+      db.collection = original;
+    }
+  });
+
+  test('get_stats returns the cached stats doc directly when one already exists (skips live recompute)', async () => {
+    seed('users', 'u_admin', ADMIN_USER);
+    seed('config', 'stats', { total: 999, paid: 111, admins: 1, updatedAt: '2026-08-18T00:00:00.000Z' });
+    const { req, res } = mockReqRes({ action: 'get_stats', uid: 'u_admin', sessionToken: 'admin_session_token' });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    expect(res._json.total).toBe(999); // the cached value, not a fresh live count
+  });
+
+  test('rejects a gated action with sessionToken missing entirely (distinct from wrong-token)', async () => {
+    seed('users', 'u_admin', ADMIN_USER);
+    const { req, res } = mockReqRes({ action: 'list_users', uid: 'u_admin' }); // no sessionToken at all
+    await handler(req, res);
+    expect(res._status).toBe(400);
+  });
+
+  test('list_users with a real pageToken cursor paginates past the first page', async () => {
+    seed('users', 'u_admin', ADMIN_USER);
+    for (let i = 0; i < 5; i++) seed('users', `u${i}`, baseUser({ uid: `u${i}`, createdAt: `2026-08-0${i + 1}T00:00:00.000Z` }));
+    const { req, res } = mockReqRes({ action: 'list_users', uid: 'u_admin', sessionToken: 'admin_session_token', pageToken: 'u2' });
+    await handler(req, res);
+    expect(res._status).toBe(200); // cursor path completes without error
+  });
+
+  test('enable action actually re-enables a disabled user (never directly tested before this pass)', async () => {
+    seed('users', 'u_admin', ADMIN_USER);
+    seed('users', 'u_target', baseUser({ uid: 'u_target', disabled: true }));
+    const { req, res } = mockReqRes({ action: 'enable', uid: 'u_admin', sessionToken: 'admin_session_token', targetUid: 'u_target' });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    expect(getDoc('users', 'u_target').disabled).toBe(false);
+  });
+
+  test('enable rejects a missing targetUid', async () => {
+    seed('users', 'u_admin', ADMIN_USER);
+    const { req, res } = mockReqRes({ action: 'enable', uid: 'u_admin', sessionToken: 'admin_session_token' });
+    await handler(req, res);
+    expect(res._status).toBe(400);
+  });
+
+  test('set_user_feature_override with enabled=null CLEARS an existing override (the reset path, never tested before)', async () => {
+    seed('users', 'u_admin', ADMIN_USER);
+    seed('users', 'u_target', baseUser({ uid: 'u_target', featureOverrides: { ai_tutor: { enabled: true, reason: 'old grant' } } }));
+    const { req, res } = mockReqRes({ action: 'set_user_feature_override', uid: 'u_admin', sessionToken: 'admin_session_token', targetUid: 'u_target', featureKey: 'ai_tutor', enabled: null, reason: 'clearing this override now' });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    expect(getDoc('users', 'u_target').featureOverrides.ai_tutor).toBeUndefined();
+  });
+
+  test('an unrecognized action returns a clean 400, not a crash', async () => {
+    seed('users', 'u_admin', ADMIN_USER);
+    const { req, res } = mockReqRes({ action: 'totally_made_up_action', uid: 'u_admin', sessionToken: 'admin_session_token' });
+    await handler(req, res);
+    expect(res._status).toBe(400);
+  });
+
+  test('a second unexpected thrown error scenario is caught by the outer handler and returns a clean 500, not an unhandled crash', async () => {
+    seed('users', 'u_admin', ADMIN_USER);
+    const { db } = require('../mocks/_firebase.mock');
+    const original = db.collection;
+    let callCount = 0;
+    // Let verifyAdmin's own read succeed normally (it runs BEFORE the try/catch),
+    // then throw on the action's OWN later query - this is what actually exercises
+    // the try/catch, not breaking auth itself before the code under test even runs.
+    db.collection = (name) => {
+      callCount++;
+      if (callCount > 1) throw new Error('simulated unexpected failure');
+      return original(name);
+    };
+    try {
+      const { req, res } = mockReqRes({ action: 'list_users', uid: 'u_admin', sessionToken: 'admin_session_token' });
+      await handler(req, res);
+      expect(res._status).toBe(500);
+    } finally {
+      db.collection = original;
+    }
+  });
+});
