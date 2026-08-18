@@ -195,3 +195,62 @@ describe('features.js — get_trial_config / update_trial_config (ADMIN-ONLY her
     expect(cfg.trialDays).toBe(14); // features.js's write ALSO survived, different field, both present
   });
 });
+
+describe('Coverage completion pass — features.js real gaps found via line-by-line audit', () => {
+  test('GET catch-fallback fires cleanly when the features config read throws', async () => {
+    const { db } = require('../mocks/_firebase.mock');
+    const original = db.collection;
+    db.collection = () => { throw new Error('Firestore down'); };
+    try {
+      const { req, res } = mockReqRes({}, 'GET');
+      await handler(req, res);
+      expect(res._status).toBe(200);
+      expect(res._json.features).toBeDefined();
+    } finally {
+      db.collection = original;
+    }
+  });
+
+  test('get_levels catch-fallback fires cleanly when the levels config read throws', async () => {
+    seed('users', 'u_admin', ADMIN_USER);
+    const { db } = require('../mocks/_firebase.mock');
+    const original = db.collection;
+    let callCount = 0;
+    db.collection = (name) => { callCount++; if (callCount > 1) throw new Error('down'); return original(name); };
+    try {
+      const { req, res } = mockReqRes({ action: 'get_levels', uid: 'u_admin', sessionToken: 'admin_session_token' });
+      await handler(req, res);
+      expect(res._status).toBe(200);
+      expect(res._json.levels.length).toBe(5); // DEFAULT_LEVELS fallback
+    } finally {
+      db.collection = original;
+    }
+  });
+
+  test('get_trial_config (THIS file\'s admin-only version) succeeds for a real admin - success path never tested before', async () => {
+    seed('users', 'u_admin', ADMIN_USER);
+    seed('config', 'trial', { trialDays: 12, dailyCapAmount: 20 });
+    const { req, res } = mockReqRes({ action: 'get_trial_config', uid: 'u_admin', sessionToken: 'admin_session_token' });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    expect(res._json.trial.trialDays).toBe(12);
+  });
+
+  test('an unrecognized action returns a clean 400, not a crash', async () => {
+    seed('users', 'u_admin', ADMIN_USER);
+    const { req, res } = mockReqRes({ action: 'not_a_real_action', uid: 'u_admin', sessionToken: 'admin_session_token' });
+    await handler(req, res);
+    expect(res._status).toBe(400);
+  });
+});
+
+// ARCHITECTURE NOTE, not a test gap to force-close: update_trial_config re-checks
+// admin role internally (db.collection('users').doc(uid).get() a second time), but
+// this file's top-level gate ALREADY blocks any non-admin before ANY action-specific
+// code runs at all. Under normal operation this inner check is provably unreachable
+// in its false branch - a non-admin can never reach it, since they're already
+// rejected earlier. Writing a test to force that specific branch would require
+// contriving a scenario where a user's role changes BETWEEN the outer read and this
+// inner read (a real but extremely narrow race), which isn't meaningful to simulate
+// artificially just to inflate a coverage number. Documented here rather than
+// silently left unexplained or dishonestly "covered" with a fake scenario.
