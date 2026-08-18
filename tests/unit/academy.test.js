@@ -172,3 +172,118 @@ describe('Priority 12: Seat enforcement (join_batch)', () => {
     expect(successCount).toBe(1);
   });
 });
+
+describe('Priority 12: academy.js — remaining admin actions (untested until now)', () => {
+  test('admin_list requires admin role', async () => {
+    seed('users', 'u1', baseUser({ uid: 'u1', role: 'user' }));
+    const { req, res } = mockReqRes({ uid: 'u1', sessionToken: 'valid_session_token_123', action: 'admin_list' });
+    await handler(req, res);
+    expect(res._status).toBe(403);
+  });
+
+  test('admin_list returns all academies for a real admin', async () => {
+    seed('users', 'u_admin', baseUser({ uid: 'u_admin', role: 'admin' }));
+    seed('academies', 'acy1', { ...PENDING_ACADEMY, id: 'acy1', createdAt: '2026-08-01T00:00:00.000Z' });
+    seed('academies', 'acy2', { ...PENDING_ACADEMY, id: 'acy2', academyCode: 'ACY2', createdAt: '2026-08-02T00:00:00.000Z' });
+    const { req, res } = mockReqRes({ uid: 'u_admin', sessionToken: 'valid_session_token_123', action: 'admin_list' });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    expect(res._json.total).toBe(2);
+  });
+
+  test('admin_update requires admin role', async () => {
+    seed('users', 'u1', baseUser({ uid: 'u1', role: 'user' }));
+    const { req, res } = mockReqRes({ uid: 'u1', sessionToken: 'valid_session_token_123', action: 'admin_update', academyId: 'acy1', updates: { name: 'Hacked' } });
+    await handler(req, res);
+    expect(res._status).toBe(403);
+  });
+
+  test('admin_update applies partial updates and stamps updatedAt', async () => {
+    seed('users', 'u_admin', baseUser({ uid: 'u_admin', role: 'admin' }));
+    seed('academies', 'acy1', { ...PENDING_ACADEMY, id: 'acy1' });
+    const { req, res } = mockReqRes({ uid: 'u_admin', sessionToken: 'valid_session_token_123', action: 'admin_update', academyId: 'acy1', updates: { name: 'Renamed Academy' } });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    const acad = getDoc('academies', 'acy1');
+    expect(acad.name).toBe('Renamed Academy');
+    expect(acad.updatedAt).toBeTruthy();
+  });
+
+  test('admin_update rejects missing academyId', async () => {
+    seed('users', 'u_admin', baseUser({ uid: 'u_admin', role: 'admin' }));
+    const { req, res } = mockReqRes({ uid: 'u_admin', sessionToken: 'valid_session_token_123', action: 'admin_update', updates: {} });
+    await handler(req, res);
+    expect(res._status).toBe(400);
+  });
+
+  test('admin_update_config converts rupees to paise correctly', async () => {
+    seed('users', 'u_admin', baseUser({ uid: 'u_admin', role: 'admin' }));
+    const { req, res } = mockReqRes({ uid: 'u_admin', sessionToken: 'valid_session_token_123', action: 'admin_update_config', pricePerStudent: 599 });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    const cfg = getDoc('config', 'academy');
+    expect(cfg.pricePerStudent).toBe(59900); // Rs 599 -> 59900 paise
+  });
+
+  test('admin_update_config requires admin role', async () => {
+    seed('users', 'u1', baseUser({ uid: 'u1', role: 'user' }));
+    const { req, res } = mockReqRes({ uid: 'u1', sessionToken: 'valid_session_token_123', action: 'admin_update_config', pricePerStudent: 999 });
+    await handler(req, res);
+    expect(res._status).toBe(403);
+  });
+});
+
+describe('Priority 12: academy.js — batch_leaderboard (untested until now)', () => {
+  test('returns ranked students sorted by weighted score', async () => {
+    seedNested('academies/acy1/batches/b1/students/u_a', { uid: 'u_a' });
+    seedNested('academies/acy1/batches/b1/students/u_b', { uid: 'u_b' });
+    seed('users', 'u_a', baseUser({ uid: 'u_a', name: 'Low Scorer', scores: { global: { weighted: 20, attempted: 25 } } }));
+    seed('users', 'u_b', baseUser({ uid: 'u_b', name: 'High Scorer', scores: { global: { weighted: 80, attempted: 30 } } }));
+    seed('users', 'u_caller', baseUser({ uid: 'u_caller' }));
+    const { req, res } = mockReqRes({ uid: 'u_caller', sessionToken: 'valid_session_token_123', action: 'batch_leaderboard', batchId: 'b1', academyId: 'acy1' });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    expect(res._json.leaderboard[0].name).toBe('High Scorer'); // highest weighted first
+    expect(res._json.leaderboard[0].rank).toBe(1);
+  });
+
+  test('a student with fewer than 5 attempted questions does NOT appear on the leaderboard (real minimum-sample gate)', async () => {
+    seedNested('academies/acy1/batches/b1/students/u_new', { uid: 'u_new' });
+    seed('users', 'u_new', baseUser({ uid: 'u_new', name: 'Just Joined', scores: { global: { weighted: 100, attempted: 2 } } }));
+    seed('users', 'u_caller', baseUser({ uid: 'u_caller' }));
+    const { req, res } = mockReqRes({ uid: 'u_caller', sessionToken: 'valid_session_token_123', action: 'batch_leaderboard', batchId: 'b1', academyId: 'acy1' });
+    await handler(req, res);
+    expect(res._json.leaderboard).toEqual([]); // filtered out despite a high score, per the real gate
+  });
+
+  test('empty batch returns an empty leaderboard, not an error', async () => {
+    seed('users', 'u_caller', baseUser({ uid: 'u_caller' }));
+    const { req, res } = mockReqRes({ uid: 'u_caller', sessionToken: 'valid_session_token_123', action: 'batch_leaderboard', batchId: 'ghost', academyId: 'acy1' });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    expect(res._json.leaderboard).toEqual([]);
+  });
+
+  test('rejects missing batchId or academyId', async () => {
+    seed('users', 'u_caller', baseUser({ uid: 'u_caller' }));
+    const { req, res } = mockReqRes({ uid: 'u_caller', sessionToken: 'valid_session_token_123', action: 'batch_leaderboard', batchId: 'b1' });
+    await handler(req, res);
+    expect(res._status).toBe(400);
+  });
+
+  // FINDING (not a fix — documenting current behavior per this session's testing pass,
+  // consistent with "test first, decide later" sequencing): this action has NO check that
+  // the caller actually belongs to the batch/academy they're querying. Any authenticated
+  // user who knows or guesses a batchId+academyId pair can see that batch's leaderboard
+  // (names + weighted scores). Not severely sensitive data, but a real, confirmed scoping
+  // gap - flagging via this test rather than silently working around or silently fixing it.
+  test('DOCUMENTS FINDING: a user with NO relationship to the batch/academy can still query its leaderboard (no scoping check exists)', async () => {
+    seedNested('academies/acy_other/batches/b_other/students/u_member', { uid: 'u_member' });
+    seed('users', 'u_member', baseUser({ uid: 'u_member', name: 'Batch Member', scores: { global: { weighted: 50, attempted: 10 } } }));
+    seed('users', 'u_stranger', baseUser({ uid: 'u_stranger' })); // has no academyId, no batchId - unrelated
+    const { req, res } = mockReqRes({ uid: 'u_stranger', sessionToken: 'valid_session_token_123', action: 'batch_leaderboard', batchId: 'b_other', academyId: 'acy_other' });
+    await handler(req, res);
+    expect(res._status).toBe(200); // succeeds - confirms no scoping check, documented not fixed
+    expect(res._json.leaderboard.length).toBe(1);
+  });
+});
