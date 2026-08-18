@@ -25,6 +25,7 @@ const LEVEL_DECAY = [1.0, 0.85, 0.65, 0.40]; // [same, -1, -2, -3+]
 // Bloat guards (same pattern applied to conceptStats and galtiMistakes)
 const MAX_CONCEPT_TIDS = 60;
 const MAX_GALTI_ENTRIES = 150;
+const MAX_TARGET_HISTORY = 50;
 const ALLOWED_ERROR_TYPES = ['concept','formula','unit','calc','careless','time'];
 
 // Recovery priority order (Phase 3 requirement): unit > formula > concept > calc > careless > time
@@ -283,6 +284,39 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ ok: true, synced: mistakes.length });
     }
 
+    // ── TARGET-LEAP TRACKER: student sets a target score before a real exam attempt,
+    // then sees a running history of target-vs-actual outcomes. Uses NEETAce's real
+    // NEET-pattern /720 scale (not NEETprep's /360) - consistent with Exam Mode's
+    // existing scoring, not a separate scale invented for this feature alone. ──
+    if (action === 'set_target') {
+      const { targetScore, targetDate } = body;
+      const ts = parseInt(targetScore);
+      if (!Number.isFinite(ts) || ts < 0 || ts > 720)
+        return res.status(400).json({ error: 'targetScore must be between 0 and 720' });
+      if (!targetDate) return res.status(400).json({ error: 'targetDate required' });
+
+      const history = Array.isArray(user.targetHistory) ? user.targetHistory.slice() : [];
+      const newTarget = {
+        id: 'tgt_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+        targetScore: ts, targetDate: String(targetDate).slice(0, 20),
+        createdAt: new Date().toISOString(), status: 'pending', actualScore: null, hit: null,
+      };
+      history.push(newTarget);
+      // Bloat protection, same pattern as conceptStats/galtiMistakes elsewhere in this file:
+      // oldest entries evicted beyond the cap, keyed by createdAt.
+      const trimmed = history.length > MAX_TARGET_HISTORY
+        ? history.sort(function(a, b) { return new Date(b.createdAt) - new Date(a.createdAt); }).slice(0, MAX_TARGET_HISTORY)
+        : history;
+      await db.collection('users').doc(uid).update({ targetHistory: trimmed });
+      return res.status(200).json({ ok: true, targetId: newTarget.id });
+    }
+
+    if (action === 'get_target_history') {
+      const history = Array.isArray(user.targetHistory) ? user.targetHistory.slice() : [];
+      history.sort(function(a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
+      return res.status(200).json({ history: history });
+    }
+
     // ══════════════════════════════════════════════════════════════
     // DEFAULT ACTION: record (session scoring) - legacy callers send no `action` field,
     // so this must stay the default. Behavior is UNCHANGED from before this refactor.
@@ -424,6 +458,23 @@ module.exports = async function handler(req, res) {
         .count().get();
       rank = (aboveCount.data().count || 0) + 1;
       await db.collection('users').doc(uid).update({ 'scores.global.rank': rank });
+    }
+
+    // Target-Leap Tracker: if this session was submitted against a pending target
+    // (Exam Mode passes targetId + its own already-computed real /720 score), mark
+    // that target complete. Never blocks the exam submission itself if the targetId
+    // is stale or missing - scoring the exam always succeeds regardless.
+    const { targetId, examScoreOutOf720 } = body;
+    if (targetId && Number.isFinite(parseInt(examScoreOutOf720))) {
+      const history = Array.isArray(user.targetHistory) ? user.targetHistory.slice() : [];
+      const idx = history.findIndex(function(t) { return t.id === targetId && t.status === 'pending'; });
+      if (idx >= 0) {
+        const scoreVal = parseInt(examScoreOutOf720);
+        history[idx] = Object.assign({}, history[idx], {
+          status: 'complete', actualScore: scoreVal, hit: scoreVal >= history[idx].targetScore,
+        });
+        await db.collection('users').doc(uid).update({ targetHistory: history });
+      }
     }
 
     return res.status(200).json({
