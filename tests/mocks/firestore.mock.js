@@ -88,6 +88,9 @@ class MockQuery {
   limit(n) {
     return new MockQuery(this._store, this._collPath, this._filters, { ...this._opts, limit: n });
   }
+  startAfter(docSnapshot) {
+    return new MockQuery(this._store, this._collPath, this._filters, { ...this._opts, startAfterDoc: docSnapshot });
+  }
   _matchDocs(prefixMatch) {
     const entries = Object.entries(this._store.docs).filter(([key]) =>
       prefixMatch ? key.startsWith(this._collPath === '__group__' ? '' : this._collPath + '/') : key.startsWith(this._collPath + '/')
@@ -117,6 +120,13 @@ class MockQuery {
         const bv = getPath(b[1], this._opts.orderBy);
         return this._opts.dir === 'desc' ? (bv > av ? 1 : -1) : (av > bv ? 1 : -1);
       });
+    }
+    if (this._opts.startAfterDoc) {
+      // Real Firestore semantics: skip everything up to and including the cursor doc,
+      // in whatever order is currently active (orderBy field, or doc id as fallback).
+      const cursorId = this._opts.startAfterDoc.id;
+      const cursorIdx = results.findIndex(([key]) => key.split('/').pop() === cursorId);
+      if (cursorIdx >= 0) results = results.slice(cursorIdx + 1);
     }
     if (this._opts.limit) results = results.slice(0, this._opts.limit);
     return results;
@@ -192,4 +202,4 @@ function createMockFirestore(seedDocs = {}) {
   };
 }
 
-module.exports = { createMockFirestore };
+module.exports = { createMockFirestore, MockQueryForPatching: MockQuery };
