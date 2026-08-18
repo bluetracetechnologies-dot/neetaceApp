@@ -295,6 +295,13 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     <div class="sc bio" onclick="goSubject('BIOLOGY')" ondblclick="startAdaptiveQuiz('BIOLOGY')" title="Double-tap for Adaptive Mode"><div class="si">🧬</div><div class="sn">Biology</div>
   <div class="card" style="margin-top:11px;background:linear-gradient(135deg,var(--purple-l),var(--blue-l));border-color:#c4b5fd;cursor:pointer" onclick="startBrainBoost()"><div style="display:flex;align-items:center;gap:11px"><div style="font-size:28px">🧠</div><div style="flex:1"><b>Brain Boost</b><div style="font-size:11px;color:var(--mute)">5-minute IQ warm-up. Patterns, logic, speed. Sharpens your NEET brain.</div></div>
   <div style="margin-top:13px"><div class="sec-hd" style="margin-bottom:8px"><i class="ti ti-layout-grid"></i> Study Modes</div>
+  <div class="card" style="padding:11px 13px;margin-bottom:9px;display:flex;justify-content:space-between;align-items:center" id="targetLeapBar">
+    <div style="font-size:11px;color:var(--mute)" id="targetLeapStatus">Loading target...</div>
+    <div style="display:flex;gap:8px">
+      <span onclick="openTargetHistory()" style="font-size:11px;color:var(--blue);font-weight:700;cursor:pointer">View History</span>
+      <span onclick="openSetTarget()" style="font-size:11px;color:var(--blue);font-weight:700;cursor:pointer">Set Target</span>
+    </div>
+  </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
     <div class="card" style="cursor:pointer;padding:13px;text-align:center" onclick="switchTab('practice')"><div style="font-size:22px">📚</div><b style="font-size:12px">Learn</b><div style="font-size:10px;color:var(--mute)">Topic-wise with explanations</div></div>
     <div class="card" style="cursor:pointer;padding:13px;text-align:center" onclick="startAdaptiveQuiz('')"><div style="font-size:22px">🎯</div><b style="font-size:12px">Practice</b><div style="font-size:10px;color:var(--mute)">Adaptive - tuned to you</div></div>
@@ -1073,6 +1080,27 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
   </div>
 </div>
 
+<div class="mov" id="setTargetModal">
+  <div class="mcard" style="max-width:380px">
+    <div style="font-size:16px;font-weight:800;margin-bottom:4px">Set Your Target</div>
+    <div style="font-size:12px;color:var(--mute);margin-bottom:14px">Set a goal for your next Exam Mode attempt, then see how close you got.</div>
+    <label style="font-size:11px;font-weight:700;color:var(--mute)">Target Score (out of 720)</label>
+    <input type="number" id="tgtScoreInput" min="0" max="720" placeholder="e.g. 600" style="width:100%;padding:11px;margin:5px 0 12px;border:1.5px solid var(--bdr);border-radius:9px;font-size:14px">
+    <label style="font-size:11px;font-weight:700;color:var(--mute)">Target Date</label>
+    <input type="date" id="tgtDateInput" style="width:100%;padding:11px;margin:5px 0 14px;border:1.5px solid var(--bdr);border-radius:9px;font-size:14px">
+    <button class="btn btn-blue btn-full" onclick="submitSetTarget()">Set Target</button>
+    <button style="width:100%;background:none;border:none;color:var(--mute);font-size:12px;margin-top:9px;cursor:pointer" onclick="closeModal('setTargetModal')">Cancel</button>
+  </div>
+</div>
+
+<div class="mov" id="targetHistoryModal">
+  <div class="mcard" style="max-width:420px;max-height:80vh;overflow-y:auto">
+    <div style="font-size:16px;font-weight:800;margin-bottom:12px">Target History</div>
+    <div id="targetHistoryList"></div>
+    <button style="width:100%;background:none;border:none;color:var(--mute);font-size:12px;margin-top:9px;cursor:pointer" onclick="closeModal('targetHistoryModal')">Close</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <!-- FIREBASE CLIENT SDK -->
@@ -1427,7 +1455,7 @@ function switchTab(tab){
   if(tab==='admin'){ loadAdminUsers(); loadPacksList(); loadFeatureFlags(); loadAcademyList(); loadTrialConfigAdmin(); }
   if(tab==='about'){ initAbout(); loadReferral(); }
   if(tab==='syllabus') renderSyllabus();
-  if(tab==='home') renderDailyMission();
+  if(tab==='home'){ renderDailyMission(); refreshTargetLeapBar(); }
   if(tab==='analytics') renderMasteryDash();
   if(tab==='profile'){ loadProfileContacts(); loadTeacherPanel(); renderAcademyStatus(); }
   if(tab==='flash') renderFlash();
@@ -3545,7 +3573,9 @@ function submitExam(){
   '<button class="btn btn-ghost btn-full" style="margin-top:8px" onclick="switchTab(\'mistakes\')"><i class="ti ti-notebook"></i> Review Mistakes in Galti</button>';
   if(S.user&&S.sessionToken){
     try{ api('scoring',{uid:S.user.uid,sessionToken:S.sessionToken,subject:'global',sessionTimeSec:timeTaken*60,
-      results:EXAM.qs.map(function(q,i){return {questionId:q.id,tid:q.tid,chapter:q.ch,correct:EXAM.answers[i]===null?null:EXAM.answers[i]===q.correct,timeTaken:60,difficulty:q.diff,type:'standard'}})}); }catch(e){}
+      targetId:S.pendingTargetId||null,examScoreOutOf720:score720,
+      results:EXAM.qs.map(function(q,i){return {questionId:q.id,tid:q.tid,chapter:q.ch,correct:EXAM.answers[i]===null?null:EXAM.answers[i]===q.correct,timeTaken:60,difficulty:q.diff,type:'standard'}})});
+      S.pendingTargetId = null; }catch(e){}
   }
 }
 
@@ -5185,6 +5215,71 @@ function togglePricingFaq(i){
   const isOpen = ans.style.display === "block";
   ans.style.display = isOpen ? "none" : "block";
   if(chev) chev.style.transform = isOpen ? "rotate(0deg)" : "rotate(180deg)";
+}
+
+
+// ===== TARGET-LEAP TRACKER (backend: scoring.js set_target/get_target_history) =====
+async function refreshTargetLeapBar(){
+  const el = document.getElementById("targetLeapStatus"); if(!el || !S.user) return;
+  try{
+    const r = await api("scoring", {uid:S.user.uid, sessionToken:S.sessionToken, action:"get_target_history"});
+    const pending = (r.history||[]).find(function(t){return t.status==='pending'});
+    if(pending){
+      S.pendingTargetId = pending.id;
+      el.innerHTML = 'Target: <b>'+pending.targetScore+'/720</b> by '+pending.targetDate;
+    } else {
+      S.pendingTargetId = null;
+      el.textContent = "No active target set";
+    }
+  }catch(e){ el.textContent = "No active target set"; }
+}
+
+function openSetTarget(){
+  if(!S.user){ openAuth(); return; }
+  document.getElementById("tgtScoreInput").value = "";
+  const d = new Date(); d.setDate(d.getDate()+7);
+  document.getElementById("tgtDateInput").value = d.toISOString().slice(0,10);
+  document.getElementById("setTargetModal").classList.add("active");
+}
+
+async function submitSetTarget(){
+  const score = parseInt(document.getElementById("tgtScoreInput").value);
+  const date = document.getElementById("tgtDateInput").value;
+  if(!score || score<0 || score>720){ toast("Enter a target between 0 and 720"); return; }
+  if(!date){ toast("Pick a target date"); return; }
+  try{
+    const r = await api("scoring", {uid:S.user.uid, sessionToken:S.sessionToken, action:"set_target", targetScore:score, targetDate:date});
+    S.pendingTargetId = r.targetId;
+    closeModal("setTargetModal");
+    toast("Target set: "+score+"/720");
+    refreshTargetLeapBar();
+  }catch(e){ toast("Could not set target right now"); }
+}
+
+async function openTargetHistory(){
+  if(!S.user){ openAuth(); return; }
+  const el = document.getElementById("targetHistoryList");
+  el.innerHTML = '<div style="text-align:center;padding:14px;color:var(--mute);font-size:12px">Loading...</div>';
+  document.getElementById("targetHistoryModal").classList.add("active");
+  try{
+    const r = await api("scoring", {uid:S.user.uid, sessionToken:S.sessionToken, action:"get_target_history"});
+    const hist = r.history || [];
+    if(!hist.length){ el.innerHTML = '<div style="text-align:center;padding:14px;color:var(--mute);font-size:12px">No targets set yet - tap "Set Target" before your next Exam Mode attempt.</div>'; return; }
+    el.innerHTML = hist.map(function(t){
+      const statusColor = t.status==='pending' ? 'var(--blue)' : (t.hit ? 'var(--green)' : 'var(--red)');
+      const statusLabel = t.status==='pending' ? 'Pending' : (t.hit ? 'Hit' : 'Missed');
+      return '<div class="card" style="margin-bottom:9px;padding:11px 13px">'+
+        '<div style="display:flex;justify-content:space-between;margin-bottom:4px">'+
+          '<span style="font-size:10px;color:var(--mute)">Status</span>'+
+          '<span style="font-size:11px;font-weight:800;color:'+statusColor+'">'+statusLabel+'</span></div>'+
+        '<div style="display:flex;justify-content:space-between;margin-bottom:4px">'+
+          '<span style="font-size:10px;color:var(--mute)">Target Date</span><span style="font-size:12px">'+t.targetDate+'</span></div>'+
+        '<div style="display:flex;justify-content:space-between">'+
+          '<span style="font-size:10px;color:var(--mute)">Target Score</span>'+
+          '<span style="font-size:12px;font-weight:700">'+t.targetScore+'/720'+(t.actualScore!==null?' (got '+t.actualScore+')':'')+'</span></div>'+
+      '</div>';
+    }).join('');
+  }catch(e){ el.innerHTML = '<div style="text-align:center;padding:14px;color:var(--mute);font-size:12px">Could not load history right now.</div>'; }
 }
 
 // ===== INIT =====
