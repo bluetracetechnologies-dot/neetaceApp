@@ -112,3 +112,115 @@ describe('Priority 2: Adaptive Engine (ELO/IRT) - record_answer', () => {
     expect(res._status).toBe(401);
   });
 });
+
+describe('adaptive.js — get_mastery (untested until now)', () => {
+  test('returns per-tid summary sorted weakest-theta-first', async () => {
+    seed('users', 'u1', baseUser({ uid: 'u1', mastery: {
+      p3: { theta: 700, attempts: 10, correct: 8, correctStreak: 3, avgTimeMs: 30000, lastSeenAt: '2026-08-01T00:00:00.000Z' },
+      c8: { theta: 300, attempts: 5, correct: 1, correctStreak: 0, avgTimeMs: 60000, lastSeenAt: '2026-08-01T00:00:00.000Z' },
+    } }));
+    const { req, res } = mockReqRes({ uid: 'u1', sessionToken: 'valid_session_token_123', action: 'get_mastery' });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    expect(res._json.mastery[0].tid).toBe('c8'); // weaker theta (300) sorts first
+    expect(res._json.mastery[1].tid).toBe('p3');
+  });
+
+  test('accuracy computed correctly from correct/attempts', async () => {
+    seed('users', 'u1', baseUser({ uid: 'u1', mastery: { p3: { theta: 500, attempts: 4, correct: 3 } } }));
+    const { req, res } = mockReqRes({ uid: 'u1', sessionToken: 'valid_session_token_123', action: 'get_mastery' });
+    await handler(req, res);
+    expect(res._json.mastery[0].accuracy).toBe(75);
+  });
+
+  test('subject theta mapping: p-prefixed tid maps to PHYSICS, c to CHEMISTRY, else BIOLOGY', async () => {
+    seed('users', 'u1', baseUser({ uid: 'u1', mastery: {
+      p3: { theta: 500, attempts: 1 }, c8: { theta: 500, attempts: 1 }, b7: { theta: 500, attempts: 1 },
+    } }));
+    const { req, res } = mockReqRes({ uid: 'u1', sessionToken: 'valid_session_token_123', action: 'get_mastery' });
+    await handler(req, res);
+    expect(res._json.subjectTheta).toHaveProperty('PHYSICS');
+    expect(res._json.subjectTheta).toHaveProperty('CHEMISTRY');
+    expect(res._json.subjectTheta).toHaveProperty('BIOLOGY');
+  });
+
+  test('empty mastery returns empty summary, not an error', async () => {
+    seed('users', 'u1', baseUser({ uid: 'u1' }));
+    const { req, res } = mockReqRes({ uid: 'u1', sessionToken: 'valid_session_token_123', action: 'get_mastery' });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    expect(res._json.mastery).toEqual([]);
+  });
+});
+
+describe('adaptive.js — reset_mastery (untested until now)', () => {
+  test('a regular user resets their OWN mastery', async () => {
+    seed('users', 'u1', baseUser({ uid: 'u1', mastery: { p3: { theta: 700, attempts: 10 } } }));
+    const { req, res } = mockReqRes({ uid: 'u1', sessionToken: 'valid_session_token_123', action: 'reset_mastery' });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    expect(getDoc('users', 'u1').mastery).toEqual({});
+  });
+
+  test("SECURITY: a regular user CANNOT reset someone else's mastery via adminReset+targetUid", async () => {
+    seed('users', 'u1', baseUser({ uid: 'u1', role: 'user' }));
+    seed('users', 'u_victim', baseUser({ uid: 'u_victim', mastery: { p3: { theta: 700, attempts: 10 } } }));
+    const { req, res } = mockReqRes({ uid: 'u1', sessionToken: 'valid_session_token_123', action: 'reset_mastery', adminReset: true, targetUid: 'u_victim' });
+    await handler(req, res);
+    expect(getDoc('users', 'u_victim').mastery.p3.theta).toBe(700);
+  });
+
+  test("an admin CAN reset a specific target user's mastery via adminReset+targetUid", async () => {
+    seed('users', 'u_admin', baseUser({ uid: 'u_admin', role: 'admin' }));
+    seed('users', 'u_target', baseUser({ uid: 'u_target', mastery: { p3: { theta: 700, attempts: 10 } } }));
+    const { req, res } = mockReqRes({ uid: 'u_admin', sessionToken: 'valid_session_token_123', action: 'reset_mastery', adminReset: true, targetUid: 'u_target' });
+    await handler(req, res);
+    expect(getDoc('users', 'u_target').mastery).toEqual({});
+  });
+});
+
+describe('adaptive.js — next_question (untested until now)', () => {
+  const pool = [
+    { id: 'q1', tid: 'p3', diff: 'medium' }, { id: 'q2', tid: 'p3', diff: 'medium' },
+    { id: 'q3', tid: 'c8', diff: 'easy' },
+  ];
+  test('rejects when availableQuestions is missing or empty', async () => {
+    seed('users', 'u1', baseUser({ uid: 'u1' }));
+    const { req, res } = mockReqRes({ uid: 'u1', sessionToken: 'valid_session_token_123', action: 'next_question', availableQuestions: [] });
+    await handler(req, res);
+    expect(res._status).toBe(400);
+  });
+
+  test('returns a question from the pool when mastery data is empty (cold start)', async () => {
+    seed('users', 'u1', baseUser({ uid: 'u1' }));
+    const { req, res } = mockReqRes({ uid: 'u1', sessionToken: 'valid_session_token_123', action: 'next_question', availableQuestions: pool, subject: 'PHYSICS' });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    expect(res._json.question).toBeDefined();
+    expect(pool.some((q) => q.id === res._json.question.id)).toBe(true);
+  });
+
+  test('excludes already-seen question ids when an unseen alternative exists in the same tid', async () => {
+    const largerPool = [
+      { id: 'q1', tid: 'p3', diff: 'medium' }, { id: 'q2', tid: 'p3', diff: 'medium' }, { id: 'q4', tid: 'p3', diff: 'medium' },
+    ];
+    seed('users', 'u1', baseUser({ uid: 'u1' }));
+    const { req, res } = mockReqRes({
+      uid: 'u1', sessionToken: 'valid_session_token_123', action: 'next_question',
+      availableQuestions: largerPool, seenIds: ['q1', 'q2'], subject: 'PHYSICS',
+    });
+    await handler(req, res);
+    expect(res._json.question.id).toBe('q4'); // the one genuine unseen alternative
+  });
+
+  test('DOCUMENTED FALLBACK: if every question in the priority tid is already seen, returns one anyway rather than nothing', async () => {
+    seed('users', 'u1', baseUser({ uid: 'u1' }));
+    const { req, res } = mockReqRes({
+      uid: 'u1', sessionToken: 'valid_session_token_123', action: 'next_question',
+      availableQuestions: pool, seenIds: ['q1', 'q2'], subject: 'PHYSICS', // both p3 questions seen
+    });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    expect(res._json.question).toBeDefined(); // still returns something, per selectBest's documented fallback
+  });
+});
