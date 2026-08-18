@@ -1,11 +1,20 @@
-// api/test-series.js
-// Fixed academy tests, batch assignments, persisted attempts, and post-test analytics.
+// Private academy test-series handler. Dispatched by api/academy.js so the
+// Hobby deployment stays within Vercel's 12-function limit.
 
 const { db } = require('./_firebase');
 const { recordUsage } = require('../lib/usage');
 
 const MAX_QUESTIONS = 180;
 const MAX_ATTEMPTS = 3;
+const ACTIONS = new Set([
+  'create_test',
+  'list_tests',
+  'get_test',
+  'save_progress',
+  'submit_test',
+  'get_attempt_history',
+  'get_test_results',
+]);
 
 function cleanText(value, max) {
   return String(value || '').trim().slice(0, max);
@@ -93,7 +102,7 @@ function addMetric(map, key, result) {
   map[key] = item;
 }
 
-module.exports = async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   const body = req.body || {};
   const { action, uid, sessionToken } = body;
@@ -323,4 +332,7 @@ module.exports = async function handler(req, res) {
   }
 
   return res.status(400).json({ error: 'Unknown action' });
-};
+}
+
+handler.actions = ACTIONS;
+module.exports = handler;

@@ -1,6 +1,13 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "outputDirectory": ".",
   "installCommand": "npm install",
   "buildCommand": null,
-  "framework": null
+  "framework": null,
+  "rewrites": [
+    {
+      "source": "/api/test-series",
+      "destination": "/api/academy"
+    }
+  ]
 }

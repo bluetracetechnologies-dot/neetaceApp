@@ -6,7 +6,6 @@ const { PENDING_ACADEMY, BATCH_FIXTURE } = require('../fixtures/academies.fixtur
 const scoringHandler = require('../../api/scoring');
 const adaptiveHandler = require('../../api/adaptive');
 const academyHandler = require('../../api/academy');
-const testSeriesHandler = require('../../api/test-series');
 const adminHandler = require('../../api/admin');
 
 function mockReqRes(body) {
@@ -142,28 +141,28 @@ describe('Integration: teacher assigns fixed test -> student resumes -> submits 
       { id: 'q2', sub: 'BIOLOGY', ch: 'Cell', tid: 'b3', text: 'Q2?', opts: ['A','B','C','D'], correct: 2, explanation: 'E2', estimatedTime: 60 },
     ];
     const create = mockReqRes({ uid: 'u_teacher', sessionToken: 'valid_session_token_123', action: 'create_test', batchId: 'b1', title: 'Weekly Test', durationMinutes: 20, questions });
-    await testSeriesHandler(create.req, create.res);
+    await academyHandler(create.req, create.res);
     expect(create.res._status).toBe(200);
     const testId = create.res._json.test.id;
 
     const list = mockReqRes({ uid: 'u_student', sessionToken: 'valid_session_token_123', action: 'list_tests' });
-    await testSeriesHandler(list.req, list.res);
+    await academyHandler(list.req, list.res);
     expect(list.res._json.tests.map((t) => t.id)).toContain(testId);
 
     const save = mockReqRes({ uid: 'u_student', sessionToken: 'valid_session_token_123', action: 'save_progress', testId, answers: [1, null], responseTimes: [25000, 0] });
-    await testSeriesHandler(save.req, save.res);
+    await academyHandler(save.req, save.res);
     expect(save.res._status).toBe(200);
 
     const resume = mockReqRes({ uid: 'u_student', sessionToken: 'valid_session_token_123', action: 'get_test', testId });
-    await testSeriesHandler(resume.req, resume.res);
+    await academyHandler(resume.req, resume.res);
     expect(resume.res._json.attempt.answers).toEqual([1, null]);
 
     const submit = mockReqRes({ uid: 'u_student', sessionToken: 'valid_session_token_123', action: 'submit_test', testId, answers: [1, 0], responseTimes: [25000, 90000] });
-    await testSeriesHandler(submit.req, submit.res);
+    await academyHandler(submit.req, submit.res);
     expect(submit.res._json.attempt).toMatchObject({ correct: 1, wrong: 1, score: 3, accuracy: 50 });
 
     const results = mockReqRes({ uid: 'u_teacher', sessionToken: 'valid_session_token_123', action: 'get_test_results', testId });
-    await testSeriesHandler(results.req, results.res);
+    await academyHandler(results.req, results.res);
     expect(results.res._json.summary.submitted).toBe(1);
     expect(results.res._json.summary).toMatchObject({ assigned: 1, notAttempted: 0, totalSubmissions: 1 });
     expect(results.res._json.attempts[0]).toMatchObject({ studentName: 'Student', score: 3 });

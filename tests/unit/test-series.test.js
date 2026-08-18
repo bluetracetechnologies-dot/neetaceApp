@@ -1,6 +1,6 @@
 const { resetDb, seed, seedNested, getDoc, db } = require('../helpers/withMockDb');
 const { baseUser } = require('../fixtures/users.fixture');
-const handler = require('../../api/test-series');
+const handler = require('../../api/academy');
 
 function mockReqRes(body) {
   const req = { method: 'POST', body };

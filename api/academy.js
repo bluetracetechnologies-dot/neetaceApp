@@ -24,6 +24,7 @@
 const { db } = require('./_firebase');
 const crypto  = require('crypto');
 const { summarizeUsage, daysAgoKey } = require('../lib/usage');
+const testSeriesHandler = require('./_test-series');
 
 function generateCode(prefix) {
   return prefix + crypto.randomBytes(3).toString('hex').toUpperCase();
@@ -94,6 +95,11 @@ function computePricing(studentCount, config) {
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   const { action, uid, sessionToken } = req.body || {};
+
+  // Test-series is part of the academy domain. Keep it behind this existing
+  // function instead of creating a 13th deployable /api entry on Vercel Hobby.
+  if (testSeriesHandler.actions.has(action)) return testSeriesHandler(req, res);
+
   if (!uid || !sessionToken) return res.status(400).json({ error: 'Auth required' });
 
   const uSnap = await db.collection('users').doc(uid).get();
