@@ -406,8 +406,10 @@ module.exports = async function handler(req, res) {
   // Admin: update usage cap for a feature
   if (action === 'update_cap') {
     const { featureKey, usageCap } = req.body;
+    if (!featureKey) return res.status(400).json({ error: 'featureKey required' });
     const snap = await db.collection('config').doc('features').get();
     const features = snap.exists ? snap.data() : { ...DEFAULT_FEATURES };
+    if (!features[featureKey]) return res.status(404).json({ error: 'Feature not found' });
     features[featureKey].usageCap = usageCap;
     await db.collection('config').doc('features').set(features);
     return res.status(200).json({ ok: true });
