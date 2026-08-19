@@ -109,14 +109,21 @@ describe('features.js — update_cap (REAL FINDING: no existence check, no outer
   // whole handler. This test proves the actual, reachable behavior rather than assert
   // a guess about it - documented here as a real, unfixed crash path, not silently
   // patched, per this session's "test now, decide fixes later" sequencing.
-  test('DOCUMENTS A REAL BUG: a non-existent featureKey causes an unhandled crash, not a clean 404', async () => {
+  test('FIXED: a non-existent featureKey now returns a clean 404, not an unhandled crash', async () => {
     seed('users', 'u_admin', ADMIN_USER);
     const { req, res } = mockReqRes({ action: 'update_cap', uid: 'u_admin', sessionToken: 'admin_session_token', featureKey: 'totally_made_up_key', usageCap: { daily: 1 } });
-    // This actually throws inside the handler (features[featureKey] is undefined, then
-    // .usageCap = ... throws a TypeError) - proven by awaiting and catching it directly,
-    // not inferred. In real Vercel, this manifests as a 500/FUNCTION_INVOCATION_FAILED,
-    // not the clean res.status(404) its sibling actions correctly return.
-    await expect(handler(req, res)).rejects.toThrow();
+    // Previously this threw (features[featureKey] is undefined, then .usageCap = ...
+    // throws a TypeError) - confirmed via a full-review pass, now fixed to match its
+    // siblings toggle/update_plans, which already had this exact check.
+    await handler(req, res);
+    expect(res._status).toBe(404);
+  });
+
+  test('update_cap rejects a missing featureKey', async () => {
+    seed('users', 'u_admin', ADMIN_USER);
+    const { req, res } = mockReqRes({ action: 'update_cap', uid: 'u_admin', sessionToken: 'admin_session_token', usageCap: { daily: 1 } });
+    await handler(req, res);
+    expect(res._status).toBe(400);
   });
 });
 
