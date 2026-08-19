@@ -20,6 +20,8 @@ module.exports = {
     'api/academy.js',
     'api/admin.js',
     'api/features.js',
+    'api/payments.js',
+    'api/pricing.js',
     'lib/**/*.js',
     '!lib/**/*.test.js',
   ],
@@ -38,6 +40,13 @@ module.exports = {
     'api/academy.js':   { statements: 92, branches: 77, functions: 99, lines: 99 },
     'api/admin.js':     { statements: 87, branches: 76, functions: 83, lines: 99 },
     'api/features.js':  { statements: 89, branches: 76, functions: 99, lines: 97 },
+    // Added during the full-codebase review - these two files were never tracked
+    // before, despite payments.js being the highest-stakes file in the app (real
+    // money). A real vulnerability was found and fixed here (see api/payments.js
+    // header comment / commit history) specifically because this review finally
+    // looked at a file that had been out of scope for every earlier testing pass.
+    'api/payments.js':  { statements: 88, branches: 82, functions: 79, lines: 96 },
+    'api/pricing.js':   { statements: 99, branches: 92, functions: 99, lines: 99 },
     'lib/chapter-mastery.js': { statements: 89, branches: 82, functions: 79, lines: 99 },
     'lib/galti-classify.js':  { statements: 94, branches: 83, functions: 99, lines: 97 },
     'lib/learning-dna.js':    { statements: 99, branches: 63, functions: 99, lines: 99 },
