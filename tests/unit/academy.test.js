@@ -762,3 +762,76 @@ describe('Coverage completion — raise_doubt rate-limit filter (needs an existi
     expect(res._status).toBe(429);
   });
 });
+
+describe('Reporting V1: export_batch_report (TDD — written before implementation)', () => {
+  function seedRosterFor(batchId, academyId = 'acy1') {
+    seedNested(`academies/${academyId}/batches/${batchId}/students/u_a`, { name: 'Amit', joinedAt: '2026-08-01T00:00:00.000Z', active: true });
+    seedNested(`academies/${academyId}/batches/${batchId}/students/u_b`, { name: 'Zara', joinedAt: '2026-08-05T00:00:00.000Z', active: true });
+    seed('users', 'u_a', baseUser({ uid: 'u_a', name: 'Amit', email: 'amit@example.com', scores: { global: { attempted: 20, accuracy: 70, weighted: 55 } } }));
+    seed('users', 'u_b', baseUser({ uid: 'u_b', name: 'Zara', email: 'zara@example.com', scores: { global: { attempted: 15, accuracy: 60, weighted: 40 } } }));
+  }
+
+  test('returns CSV text with a header row and one row per student, reusing the exact same data get_batch_roster returns', async () => {
+    const { batch } = setupTeacherWithBatch();
+    seedRosterFor(batch.id);
+    const { req, res } = mockReqRes({ uid: 'u_teacher', sessionToken: 'valid_session_token_123', action: 'export_batch_report', batchId: batch.id });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    expect(res._json.csv).toContain('Amit');
+    expect(res._json.csv).toContain('Zara');
+    expect(res._json.csv).toContain('amit@example.com');
+    expect(res._json.filename).toMatch(/\.csv$/);
+  });
+
+  test('CSV rows are sorted alphabetically by name, matching get_batch_roster exactly (same shared logic, not reimplemented)', async () => {
+    const { batch } = setupTeacherWithBatch();
+    seedRosterFor(batch.id);
+    const { req, res } = mockReqRes({ uid: 'u_teacher', sessionToken: 'valid_session_token_123', action: 'export_batch_report', batchId: batch.id });
+    await handler(req, res);
+    const amitIdx = res._json.csv.indexOf('Amit');
+    const zaraIdx = res._json.csv.indexOf('Zara');
+    expect(amitIdx).toBeLessThan(zaraIdx); // Amit before Zara, alphabetical
+  });
+
+  test('includes only a generated-date and total-count header - no new analytics, just packaging existing data', async () => {
+    const { batch } = setupTeacherWithBatch();
+    seedRosterFor(batch.id);
+    const { req, res } = mockReqRes({ uid: 'u_teacher', sessionToken: 'valid_session_token_123', action: 'export_batch_report', batchId: batch.id });
+    await handler(req, res);
+    expect(res._json.csv).toContain('Total students,2');
+  });
+
+  test('rejects a non-owning teacher, same authorization as get_batch_roster (reuses getOwnedBatch, not a new auth check)', async () => {
+    const { batch } = setupTeacherWithBatch();
+    seed('users', 'u_stranger', baseUser({ uid: 'u_stranger', academyId: 'acy1', academyRole: 'teacher' }));
+    const { req, res } = mockReqRes({ uid: 'u_stranger', sessionToken: 'valid_session_token_123', action: 'export_batch_report', batchId: batch.id });
+    await handler(req, res);
+    expect(res._status).toBe(403);
+  });
+
+  test('handles an empty batch (zero students) without crashing, produces a valid header-only CSV', async () => {
+    const { batch } = setupTeacherWithBatch();
+    const { req, res } = mockReqRes({ uid: 'u_teacher', sessionToken: 'valid_session_token_123', action: 'export_batch_report', batchId: batch.id });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    expect(res._json.csv).toContain('Total students,0');
+  });
+
+  test('CSV-escapes a student name containing a comma (data integrity, not a crash)', async () => {
+    const { batch } = setupTeacherWithBatch();
+    seedNested(`academies/acy1/batches/${batch.id}/students/u_c`, { name: 'Singh, Raj', joinedAt: '2026-08-01T00:00:00.000Z', active: true });
+    seed('users', 'u_c', baseUser({ uid: 'u_c', name: 'Singh, Raj', scores: { global: { attempted: 5, accuracy: 50, weighted: 10 } } }));
+    const { req, res } = mockReqRes({ uid: 'u_teacher', sessionToken: 'valid_session_token_123', action: 'export_batch_report', batchId: batch.id });
+    await handler(req, res);
+    expect(res._json.csv).toContain('"Singh, Raj"'); // properly quoted, not silently broken into extra columns
+  });
+
+  test('an admin can also export a report for any batch (same access rule as get_batch_roster)', async () => {
+    const { batch } = setupTeacherWithBatch();
+    seedRosterFor(batch.id);
+    seed('users', 'u_admin2', baseUser({ uid: 'u_admin2', role: 'admin', academyId: 'acy1', academyRole: 'teacher' }));
+    const { req, res } = mockReqRes({ uid: 'u_admin2', sessionToken: 'valid_session_token_123', action: 'export_batch_report', batchId: batch.id });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+  });
+});
