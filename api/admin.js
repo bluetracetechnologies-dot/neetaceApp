@@ -27,11 +27,11 @@ function nextMay31(fromDate) {
 }
 
 async function verifyAdmin(uid, sessionToken) {
-  const snap = await db.collection('users').doc(uid).get();
-  if (!snap.exists) return null;
-  const p = snap.data();
-  if (p.sessionToken !== sessionToken || p.role !== 'admin') return null;
-  return p;
+  // Delegates to the shared lib/session.js implementation - was previously an
+  // independent, hand-copied duplicate of the exact same check in packs.js.
+  const { verifyAdminSession } = require('../lib/session');
+  const result = await verifyAdminSession(db, uid, sessionToken);
+  return result.ok ? result.profile : null;
 }
 
 function computeStatus(u) {
