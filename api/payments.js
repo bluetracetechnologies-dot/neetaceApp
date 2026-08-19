@@ -3,6 +3,7 @@
 const Razorpay = require('razorpay');
 const { db } = require('./_firebase');
 const crypto = require('crypto');
+const { verifySession } = require('../lib/session');
 
 const FALLBACK = { plan_pro:79900, plan_medium:49900, plan_starter:29900, plan_monthly:9900 };
 
@@ -39,11 +40,9 @@ module.exports = async function handler(req, res) {
   // ── CREATE ORDER ──
   if (action === 'create_order') {
     const { uid, sessionToken, planKey = 'plan_pro', promoCode } = body;
-    if (!uid||!sessionToken) return res.status(400).json({ error: 'uid and sessionToken required' });
-    const snap = await db.collection('users').doc(uid).get();
-    if (!snap.exists) return res.status(404).json({ error: 'User not found' });
-    const profile = snap.data();
-    if (profile.sessionToken!==sessionToken) return res.status(401).json({ error: 'Invalid session' });
+    const auth = await verifySession(db, uid, sessionToken);
+    if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
+    const profile = auth.profile;
     if (profile.disabled) return res.status(403).json({ error: 'Access disabled' });
     const keyId=process.env.RAZORPAY_KEY_ID, keySecret=process.env.RAZORPAY_KEY_SECRET;
     if (!keyId||!keySecret) return res.status(500).json({ error: 'Payment not configured.' });
@@ -68,9 +67,8 @@ module.exports = async function handler(req, res) {
     // FIX (security): this session-ownership check was missing entirely - sessionToken
     // was destructured from the request but never actually verified against the real
     // value on the user's own document, unlike create_order a few lines above.
-    const userSnap = await db.collection('users').doc(uid).get();
-    if (!userSnap.exists) return res.status(404).json({ error: 'User not found' });
-    if (userSnap.data().sessionToken !== sessionToken) return res.status(401).json({ error: 'Invalid session' });
+    const auth = await verifySession(db, uid, sessionToken);
+    if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
 
     const expectedSig = crypto.createHmac('sha256', keySecret).update(razorpay_order_id + '|' + razorpay_payment_id).digest('hex');
     if (expectedSig !== razorpay_signature) return res.status(400).json({ error: 'Invalid payment signature.' });
