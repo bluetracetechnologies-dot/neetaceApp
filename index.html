@@ -368,6 +368,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
       <span>Free</span><span>Simple</span><span>Hard</span><span>V.Hard</span><span>Talent</span>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:11px;padding-top:10px;border-top:1px solid var(--bdr)"><span style="font-size:12px;font-weight:700">⏱️ Time per question</span><span style="font-size:11px;font-weight:700;color:var(--blue)" id="timerSecLabel">60s / question</span></div><input type="range" min="30" max="120" step="15" value="60" style="width:100%" oninput="setTimerSec(this.value)"><div style="display:flex;justify-content:space-between;font-size:9px;color:var(--mute)"><span>30s sprint</span><span>60s NEET</span><span>120s learn</span></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:11px;padding-top:10px;border-top:1px solid var(--bdr)"><label style="font-size:12px;font-weight:700;display:flex;align-items:center;gap:7px;cursor:pointer"><input type="checkbox" id="omrModeToggle" style="width:16px;height:16px;cursor:pointer" onchange="setOmrMode(this.checked)"> ⚫ OMR Bubble Mode (Exam Mode)</label></div>
     <div id="freePracticeWarn" style="display:none;margin-top:9px;font-size:11px;background:var(--amber-l);color:#7a4800;padding:7px 10px;border-radius:8px"></div>
   </div>
   <div class="chips"><div class="chip active" onclick="filterPractice(this,'ALL')">All</div><div class="chip" onclick="filterPractice(this,'PHYSICS')">⚛️ Physics</div><div class="chip" onclick="filterPractice(this,'CHEMISTRY')">🧪 Chemistry</div><div class="chip" onclick="filterPractice(this,'BIOLOGY')">🧬 Biology</div><div class="chip" onclick="filterPractice(this,'PYQ')">📜 PYQ</div><div class="chip" onclick="filterPractice(this,'MOCK')">🎯 Mock</div></div>
@@ -3833,11 +3834,12 @@ function renderExamQuestion(){
   '<div class="qcard"><div class="qtag">'+q.ch+(q.pyq?' &middot; PYQ '+q.pyqYr:'')+'</div>'+
     renderStatementBlock(q)+
     '<div class="qtext">'+q.text+'</div>'+
+    (getOmrMode() ? renderOmrOptions(q, ans) :
     '<div class="opts">'+['A','B','C','D'].map(function(l,i){
       if(!q.opts[i]) return '';
       const sel = ans===i ? 'style="border-color:var(--blue);background:var(--blue-l)"' : '';
       return '<div class="opt" '+sel+' onclick="examAnswer('+i+')"><div class="oltr" '+(ans===i?'style="background:var(--blue);color:#fff"':'')+'>'+l+'</div>'+q.opts[i]+'</div>';
-    }).join('')+'</div></div>'+
+    }).join('')+'</div>')+'</div>'+
   '<div style="display:flex;gap:7px;margin:11px 0">'+
     '<button class="btn btn-ghost" style="flex:1;font-size:12px" onclick="examClear()">Clear</button>'+
     '<button class="btn btn-ghost" style="flex:1;font-size:12px;color:#7a4800;border-color:var(--amber)" onclick="examMark()"><i class="ti ti-flag"></i> Mark</button>'+
@@ -3929,6 +3931,28 @@ function setTimerSec(v){
   localStorage.setItem("na_timer_sec", v);
   const lbl=document.getElementById("timerSecLabel"); if(lbl) lbl.textContent=v+"s / question";
   toast("Timer set: "+v+" seconds per question");
+}
+
+// ===== OMR BUBBLE MODE (Exam Mode only) =====
+// Same persistence pattern as getTimerSec/setTimerSec above - a single boolean
+// UI preference, read once at exam-render time, not a server-side setting.
+function getOmrMode(){ return localStorage.getItem("na_omr_mode")==="1"; }
+function setOmrMode(checked){
+  localStorage.setItem("na_omr_mode", checked?"1":"0");
+  toast(checked ? "OMR Bubble Mode on - practice real exam bubbling" : "OMR Bubble Mode off");
+}
+function renderOmrOptions(q, ans){
+  return '<div class="opts" style="display:flex;flex-direction:column;gap:10px">'+['A','B','C','D'].map(function(l,i){
+    if(!q.opts[i]) return '';
+    const filled = ans===i;
+    return '<div style="display:flex;align-items:center;gap:12px;cursor:pointer" onclick="examAnswer('+i+')">'+
+      '<div style="width:28px;height:28px;min-width:28px;border-radius:50%;border:2px solid '+(filled?'var(--blue)':'var(--bdr)')+';'+
+        'background:'+(filled?'var(--blue)':'transparent')+';color:'+(filled?'#fff':'var(--txt)')+';'+
+        'display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;'+
+        'transition:background .15s,border-color .15s">'+l+'</div>'+
+      '<div style="font-size:13px">'+escapeHtml(q.opts[i])+'</div>'+
+    '</div>';
+  }).join('')+'</div>';
 }
 
 // ===== SHARE PROGRESS (student + parent, WhatsApp) =====
