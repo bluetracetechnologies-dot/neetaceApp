@@ -1249,7 +1249,23 @@ function escapeHtml(value){
   });
 }
 
-// ===== LIGHTWEIGHT USAGE VISIBILITY =====
+// ===== ASSERTION-REASON / STATEMENT QUESTION DISPLAY =====
+// Single shared helper used by every question-rendering path (renderSingleQuestion,
+// renderExamQuestion, renderAssignedQuestion - renderDoctorQuestion reuses
+// renderSingleQuestion so needs no separate change). Deliberately not duplicated
+// per-function - the session-verification bug found earlier this project was a
+// direct result of exactly that kind of copy-paste, so this stays as one function.
+function renderStatementBlock(q){
+  if(q.type !== 'assertion_reason' && q.type !== 'statement') return '';
+  const label1 = q.type === 'assertion_reason' ? 'Assertion (A)' : 'Statement I';
+  const label2 = q.type === 'assertion_reason' ? 'Reason (R)' : 'Statement II';
+  return '<div style="background:var(--surf2);border-radius:9px;padding:11px 13px;margin-bottom:11px;font-size:13px;line-height:1.6">'+
+    '<div style="margin-bottom:6px"><b>'+label1+':</b> '+escapeHtml(q.statement1||'')+'</div>'+
+    '<div><b>'+label2+':</b> '+escapeHtml(q.statement2||'')+'</div>'+
+  '</div>';
+}
+
+
 // Sends bounded section dwell-time summaries. Question/test counts are recorded
 // authoritatively by their existing server-side submission handlers.
 let ACTIVE_USAGE = null;
@@ -2675,6 +2691,7 @@ function renderSingleQuestion(q, expectedProb){
   <div class="qpbg"><div class="qpfill" id="qProg" style="width:50%"></div></div>
   <div class="qcard">
     <div class="qtag">${q.ch}${q.pyq?' · PYQ '+q.pyqYr:''}</div>
+    ${renderStatementBlock(q)}
     <div class="qtext">${q.text}</div>
     <div class="opts" id="optList">${['A','B','C','D'].map((l,i)=>q.opts[i]?
       '<div class="opt" data-i="'+i+'" onclick="handleAdaptiveAns(this,'+i+','+JSON.stringify(q).replace(/"/g,"'")+')"><div class="oltr">'+l+'</div>'+q.opts[i]+'</div>':''
@@ -3696,7 +3713,7 @@ function renderAssignedQuestion(){
   const qv=document.getElementById('quizView');document.getElementById('resultView').style.display='none';qv.style.display='block';
   const grid=ASSIGNED_TEST.questions.map(function(_,i){const a=ASSIGNED_TEST.answers[i];return '<button onclick="assignedGoto('+i+')" style="width:30px;height:30px;border-radius:7px;border:1px solid var(--bdr);background:'+(i===ASSIGNED_TEST.cur?'var(--blue)':a!==null?'var(--green)':'var(--surf2)')+';color:'+(i===ASSIGNED_TEST.cur||a!==null?'#fff':'var(--mute)')+';font-size:10px;font-weight:700">'+(i+1)+'</button>';}).join('');
   qv.innerHTML='<div style="background:linear-gradient(135deg,#0a2342,var(--purple));color:#fff;border-radius:13px;padding:12px 14px;margin-bottom:11px;display:flex;justify-content:space-between"><div><div style="font-size:10px;opacity:.75">ASSIGNED TEST · +4/-1</div><div style="font-size:14px;font-weight:800">'+escapeHtml(ASSIGNED_TEST.test.title)+'</div><div style="font-size:10px;opacity:.75">Q '+(ASSIGNED_TEST.cur+1)+' of '+ASSIGNED_TEST.questions.length+'</div></div><div style="text-align:right"><div style="font-size:9px;opacity:.7">TIME LEFT</div><div id="assignedTestTimer" style="font-size:19px;font-weight:800">--:--</div></div></div>'+
-    '<div class="qcard"><div class="qtag">'+escapeHtml(q.sub)+' · '+escapeHtml(q.ch)+'</div><div class="qtext">'+escapeHtml(q.text)+'</div><div class="opts">'+['A','B','C','D'].map(function(l,i){if(!q.opts[i])return '';return '<div class="opt" '+(ans===i?'style="border-color:var(--blue);background:var(--blue-l)"':'')+' onclick="assignedAnswer('+i+')"><div class="oltr" '+(ans===i?'style="background:var(--blue);color:#fff"':'')+'>'+l+'</div>'+escapeHtml(q.opts[i])+'</div>';}).join('')+'</div></div>'+
+    '<div class="qcard"><div class="qtag">'+escapeHtml(q.sub)+' · '+escapeHtml(q.ch)+'</div>'+renderStatementBlock(q)+'<div class="qtext">'+escapeHtml(q.text)+'</div><div class="opts">'+['A','B','C','D'].map(function(l,i){if(!q.opts[i])return '';return '<div class="opt" '+(ans===i?'style="border-color:var(--blue);background:var(--blue-l)"':'')+' onclick="assignedAnswer('+i+')"><div class="oltr" '+(ans===i?'style="background:var(--blue);color:#fff"':'')+'>'+l+'</div>'+escapeHtml(q.opts[i])+'</div>';}).join('')+'</div></div>'+
     '<div style="display:flex;gap:7px;margin:10px 0"><button class="btn btn-ghost" style="flex:1" onclick="assignedClear()">Clear</button><button class="btn btn-blue" style="flex:2" onclick="assignedNext()">Save & Next</button></div><div class="card"><div style="font-size:11px;font-weight:700;margin-bottom:7px">Question Palette</div><div style="display:flex;flex-wrap:wrap;gap:5px">'+grid+'</div><button class="btn btn-full" style="margin-top:11px;background:var(--red);color:#fff" onclick="if(confirm(\'Submit this test?\'))submitAssignedTest(false)"><i class="ti ti-send"></i> Submit Test</button></div>';
   assignedTestTick();
 }
@@ -3814,6 +3831,7 @@ function renderExamQuestion(){
     '<div style="font-size:14px;font-weight:800">Q '+(EXAM.cur+1)+' of '+EXAM.qs.length+' &middot; '+q.sub+'</div></div>'+
     '<div style="text-align:right"><div style="font-size:9px;opacity:.7">TIME LEFT</div><div id="examTimer" style="font-size:19px;font-weight:800;font-variant-numeric:tabular-nums">--:--</div></div></div>'+
   '<div class="qcard"><div class="qtag">'+q.ch+(q.pyq?' &middot; PYQ '+q.pyqYr:'')+'</div>'+
+    renderStatementBlock(q)+
     '<div class="qtext">'+q.text+'</div>'+
     '<div class="opts">'+['A','B','C','D'].map(function(l,i){
       if(!q.opts[i]) return '';
