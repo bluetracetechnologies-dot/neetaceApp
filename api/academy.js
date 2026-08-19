@@ -55,6 +55,58 @@ async function getOwnedBatch(user, uid, batchId) {
   return { ref, batch };
 }
 
+// Shared by get_batch_roster and export_batch_report - single source of truth for
+// per-student roster data, so the JSON view and the CSV export can never silently
+// diverge on what a "student row" contains.
+async function buildBatchRosterRows(owned) {
+  const memberSnap = await owned.ref.collection('students').get();
+  const profiles = await Promise.all(memberSnap.docs.map(function(member) {
+    return db.collection('users').doc(member.id).get();
+  }));
+  return memberSnap.docs.map(function(member, index) {
+    const membership = member.data();
+    const profile = profiles[index].exists ? profiles[index].data() : {};
+    const global = profile.scores && profile.scores.global || {};
+    return {
+      uid: member.id,
+      name: profile.name || membership.name || 'Student',
+      email: profile.email || membership.email || '',
+      joinedAt: membership.joinedAt || null,
+      active: membership.active !== false,
+      attempted: global.attempted || profile.totalQuestionsAttempted || 0,
+      accuracy: global.accuracy || 0,
+      weighted: global.weighted || 0,
+      lastSessionAt: profile.lastSessionAt || profile.lastLogin || null,
+    };
+  }).sort(function(a, b) { return a.name.localeCompare(b.name); });
+}
+
+function csvField(value) {
+  const s = String(value === null || value === undefined ? '' : value);
+  return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+
+// Pure formatting - takes rows already computed by buildBatchRosterRows, no new
+// aggregation beyond a total count and generation date (both trivially derivable,
+// not a new analytic).
+function buildRosterCsv(batch, students) {
+  const lines = [
+    `Batch,${csvField(batch.batchName || '')}`,
+    `Generated,${csvField(new Date().toISOString())}`,
+    `Total students,${students.length}`,
+    '',
+    'Name,Email,Joined,Active,Questions Attempted,Accuracy %,Score,Last Active',
+  ];
+  students.forEach(function(s) {
+    lines.push([
+      csvField(s.name), csvField(s.email), csvField(s.joinedAt || ''),
+      csvField(s.active ? 'Yes' : 'No'), csvField(s.attempted),
+      csvField(s.accuracy), csvField(s.weighted), csvField(s.lastSessionAt || ''),
+    ].join(','));
+  });
+  return lines.join('\n');
+}
+
 async function getAcademyConfig() {
   try {
     const snap = await db.collection('config').doc('academy').get();
@@ -314,29 +366,27 @@ module.exports = async function handler(req, res) {
   if (action === 'get_batch_roster') {
     try {
       const owned = await getOwnedBatch(user, uid, req.body.batchId);
-      const memberSnap = await owned.ref.collection('students').get();
-      const profiles = await Promise.all(memberSnap.docs.map(function(member) {
-        return db.collection('users').doc(member.id).get();
-      }));
-      const students = memberSnap.docs.map(function(member, index) {
-        const membership = member.data();
-        const profile = profiles[index].exists ? profiles[index].data() : {};
-        const global = profile.scores && profile.scores.global || {};
-        return {
-          uid: member.id,
-          name: profile.name || membership.name || 'Student',
-          email: profile.email || membership.email || '',
-          joinedAt: membership.joinedAt || null,
-          active: membership.active !== false,
-          attempted: global.attempted || profile.totalQuestionsAttempted || 0,
-          accuracy: global.accuracy || 0,
-          weighted: global.weighted || 0,
-          lastSessionAt: profile.lastSessionAt || profile.lastLogin || null,
-        };
-      }).sort(function(a, b) { return a.name.localeCompare(b.name); });
+      const students = await buildBatchRosterRows(owned);
       return res.status(200).json({ ok: true, batch: owned.batch, students });
     } catch (error) {
       return res.status(error.status || 500).json({ error: error.message || 'Could not load roster' });
+    }
+  }
+
+  // Reporting V1: packages the SAME roster data get_batch_roster already returns into a
+  // downloadable CSV. Deliberately not "analytics" - no new computed insights, trends, or
+  // predictions, just the existing per-student fields (accuracy, attempted, weighted,
+  // joined date) formatted for a teacher to download and share/print/archive. Reuses
+  // getOwnedBatch and buildBatchRosterRows - zero duplicate auth or data-shaping logic.
+  if (action === 'export_batch_report') {
+    try {
+      const owned = await getOwnedBatch(user, uid, req.body.batchId);
+      const students = await buildBatchRosterRows(owned);
+      const csv = buildRosterCsv(owned.batch, students);
+      const safeName = String(owned.batch.batchName || 'batch').replace(/[^a-z0-9]+/gi, '_').slice(0, 40);
+      return res.status(200).json({ ok: true, csv, filename: `${safeName}_report.csv` });
+    } catch (error) {
+      return res.status(error.status || 500).json({ error: error.message || 'Could not generate report' });
     }
   }
 
