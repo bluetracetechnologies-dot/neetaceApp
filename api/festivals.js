@@ -3,6 +3,7 @@
 // POST { action:'admin_update', ... } → admin manages festival calendar
 
 const { db } = require('./_firebase');
+const { verifyAdminSession } = require('../lib/session');
 
 // Pre-loaded festival calendar — admin can edit any of these in Firestore
 // Dates use MM-DD format for annual recurrence (year-independent)
@@ -305,9 +306,8 @@ module.exports = async function handler(req, res) {
     const { action, uid, sessionToken } = req.body || {};
     if (!uid || !sessionToken) return res.status(400).json({ error: 'Auth required' });
 
-    const uSnap = await db.collection('users').doc(uid).get();
-    if (!uSnap.exists || uSnap.data().role !== 'admin' || uSnap.data().sessionToken !== sessionToken)
-      return res.status(403).json({ error: 'Admin only' });
+    const auth = await verifyAdminSession(db, uid, sessionToken);
+    if (!auth.ok) return res.status(403).json({ error: 'Admin only' });
 
     if (action === 'get_all') {
       try {
