@@ -12,6 +12,7 @@
 // Question selection targets this zone per tid, weighted toward weakest tids first.
 
 const { db } = require('./_firebase');
+const { recordUsage } = require('../lib/usage');
 
 // ── Constants ────────────────────────────────────────────
 const TARGET_EXPECTED   = 0.70;  // aim for 70% probability of correct answer
@@ -127,6 +128,16 @@ module.exports = async function handler(req, res) {
     };
 
     await db.collection('users').doc(uid).update({ [`mastery.${tid}`]: updatedMastery });
+    try {
+      await recordUsage(db, uid, user, {
+        // The client dwell tracker owns time-on-screen; this authenticated
+        // adaptive event only contributes the authoritative question count.
+        section: 'practice', elapsedSec: 0, questions: 1,
+        subject: req.body.subject, chapter: req.body.chapter,
+      });
+    } catch (usageError) {
+      console.error('adaptive usage aggregation error', usageError.message);
+    }
 
     // Decision hint for the client — what to do next
     let nextAction = 'continue';

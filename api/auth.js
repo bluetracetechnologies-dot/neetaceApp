@@ -40,9 +40,16 @@ module.exports = async function handler(req, res) {
       const now = new Date();
       // Admin-configurable trial duration
       let trialDays = 7;
+      let trialQuestionCap = 10;
+      let trialFeatures = 'all';
       try {
         const tcSnap = await db.collection('config').doc('trial').get();
-        if (tcSnap.exists) trialDays = tcSnap.data().days || 7;
+        if (tcSnap.exists) {
+          const trialConfig = tcSnap.data();
+          trialDays = trialConfig.trialDays || trialConfig.days || 7;
+          trialQuestionCap = trialConfig.dailyCapAmount ?? trialConfig.dailyQuestionCap ?? 10;
+          trialFeatures = trialConfig.featureAccess || (trialConfig.allFeatures === false ? 'basic' : 'all');
+        }
       } catch(e) {}
       const trialEnd = new Date(now); trialEnd.setDate(trialEnd.getDate() + trialDays);
       const isAdmin = email.toLowerCase() === ADMIN_EMAIL.toLowerCase();

@@ -72,6 +72,8 @@ describe('Priority 2: Adaptive Engine (ELO/IRT) - record_answer', () => {
     await handler(req, res);
     expect(res._json.speedSignal).toBe('sharp');
     expect(res._json.nextAction).toBe('advance');
+    const usage = getDoc('usage_daily', 'u1_' + new Date().toISOString().slice(0, 10));
+    expect(usage).toMatchObject({ questionsAttempted: 1, totalTimeSec: 0 });
   });
 
   test('wrong answer sets speedSignal=scaffold and nextAction=scaffold', async () => {

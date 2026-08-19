@@ -68,7 +68,7 @@ describe('Integration: adaptive theta update independently feeds into get_dashbo
 });
 
 describe('Integration: full academy lifecycle - create, teacher register, batch, student join, mark paid', () => {
-  test('admin creates academy -> teacher registers -> creates batch -> student joins -> admin marks paid -> student activated', async () => {
+  test('admin creates academy -> teacher registers -> creates batch -> student joins -> teacher dashboard reflects counts -> admin marks paid', async () => {
     seed('users', 'u_admin', ADMIN_USER);
     seed('users', 'u_teacher', baseUser({ uid: 'u_teacher' }));
     seed('users', 'u_student', baseUser({ uid: 'u_student', paid: false }));
@@ -93,6 +93,7 @@ describe('Integration: full academy lifecycle - create, teacher register, batch,
     await academyHandler(r3, s3);
     expect(s3._status).toBe(200);
     const batchCode = s3._json.batchCode;
+    const batchId = s3._json.batchId;
 
     // Step 4: student joins with the batch code (academy not yet paid - stays on trial)
     const { req: r4, res: s4 } = mockReqRes({ uid: 'u_student', sessionToken: 'valid_session_token_123', action: 'join_batch', batchCode });
@@ -100,12 +101,71 @@ describe('Integration: full academy lifecycle - create, teacher register, batch,
     expect(s4._status).toBe(200);
     expect(getDoc('users', 'u_student').paid).toBe(false);
 
-    // Step 5: admin marks the academy as paid - student should now be activated
-    const { req: r5, res: s5 } = mockReqRes({ uid: 'u_admin', sessionToken: 'admin_session_token', action: 'admin_mark_paid', academyId, amountPaid: 8980 });
+    // Step 5: Teacher Dashboard V1 lists the owned batch and updated student/seat counts.
+    const { req: r5, res: s5 } = mockReqRes({ uid: 'u_teacher', sessionToken: 'valid_session_token_123', action: 'list_my_batches' });
     await academyHandler(r5, s5);
     expect(s5._status).toBe(200);
+    expect(s5._json.batches).toHaveLength(1);
+    expect(s5._json.batches[0]).toMatchObject({ batchName: 'Batch A', studentCount: 1 });
+    expect(s5._json.seatsUsed).toBe(1);
+    expect(s5._json.studentCount).toBe(20);
+
+    // Step 6: teacher can rename the batch and inspect the connected roster.
+    const update = mockReqRes({ uid: 'u_teacher', sessionToken: 'valid_session_token_123', action: 'update_batch', batchId, batchName: 'Batch A - Renamed' });
+    await academyHandler(update.req, update.res);
+    expect(update.res._status).toBe(200);
+    const roster = mockReqRes({ uid: 'u_teacher', sessionToken: 'valid_session_token_123', action: 'get_batch_roster', batchId });
+    await academyHandler(roster.req, roster.res);
+    expect(roster.res._status).toBe(200);
+    expect(roster.res._json.students[0]).toMatchObject({ uid: 'u_student', name: 'Test Student' });
+
+    // Step 7: admin marks the academy as paid - student should now be activated
+    const { req: r6, res: s6 } = mockReqRes({ uid: 'u_admin', sessionToken: 'admin_session_token', action: 'admin_mark_paid', academyId, amountPaid: 8980 });
+    await academyHandler(r6, s6);
+    expect(s6._status).toBe(200);
     expect(getDoc('users', 'u_student').paid).toBe(true);
     expect(getDoc('users', 'u_student').planKey).toBe('plan_academy');
+  });
+});
+
+describe('Integration: teacher assigns fixed test -> student resumes -> submits -> teacher sees analytics', () => {
+  test('academy assignment lifecycle is connected end to end', async () => {
+    seed('academies', 'acy1', { ...PENDING_ACADEMY, id: 'acy1', studentCount: 20, seatsUsed: 1 });
+    seedNested('academies/acy1/batches/b1', { ...BATCH_FIXTURE('acy1'), id: 'b1', batchName: 'Batch A', createdBy: 'u_teacher' });
+    seedNested('academies/acy1/batches/b1/students/u_student', { uid: 'u_student', joinedAt: '2026-01-01T00:00:00.000Z' });
+    seed('users', 'u_teacher', baseUser({ uid: 'u_teacher', name: 'Teacher', academyId: 'acy1', academyRole: 'teacher' }));
+    seed('users', 'u_student', baseUser({ uid: 'u_student', name: 'Student', academyId: 'acy1', academyRole: 'student', batchId: 'b1' }));
+
+    const questions = [
+      { id: 'q1', sub: 'PHYSICS', ch: 'Motion', tid: 'p3', text: 'Q1?', opts: ['A','B','C','D'], correct: 1, explanation: 'E1', estimatedTime: 60 },
+      { id: 'q2', sub: 'BIOLOGY', ch: 'Cell', tid: 'b3', text: 'Q2?', opts: ['A','B','C','D'], correct: 2, explanation: 'E2', estimatedTime: 60 },
+    ];
+    const create = mockReqRes({ uid: 'u_teacher', sessionToken: 'valid_session_token_123', action: 'create_test', batchId: 'b1', title: 'Weekly Test', durationMinutes: 20, questions });
+    await academyHandler(create.req, create.res);
+    expect(create.res._status).toBe(200);
+    const testId = create.res._json.test.id;
+
+    const list = mockReqRes({ uid: 'u_student', sessionToken: 'valid_session_token_123', action: 'list_tests' });
+    await academyHandler(list.req, list.res);
+    expect(list.res._json.tests.map((t) => t.id)).toContain(testId);
+
+    const save = mockReqRes({ uid: 'u_student', sessionToken: 'valid_session_token_123', action: 'save_progress', testId, answers: [1, null], responseTimes: [25000, 0] });
+    await academyHandler(save.req, save.res);
+    expect(save.res._status).toBe(200);
+
+    const resume = mockReqRes({ uid: 'u_student', sessionToken: 'valid_session_token_123', action: 'get_test', testId });
+    await academyHandler(resume.req, resume.res);
+    expect(resume.res._json.attempt.answers).toEqual([1, null]);
+
+    const submit = mockReqRes({ uid: 'u_student', sessionToken: 'valid_session_token_123', action: 'submit_test', testId, answers: [1, 0], responseTimes: [25000, 90000] });
+    await academyHandler(submit.req, submit.res);
+    expect(submit.res._json.attempt).toMatchObject({ correct: 1, wrong: 1, score: 3, accuracy: 50 });
+
+    const results = mockReqRes({ uid: 'u_teacher', sessionToken: 'valid_session_token_123', action: 'get_test_results', testId });
+    await academyHandler(results.req, results.res);
+    expect(results.res._json.summary.submitted).toBe(1);
+    expect(results.res._json.summary).toMatchObject({ assigned: 1, notAttempted: 0, totalSubmissions: 1 });
+    expect(results.res._json.attempts[0]).toMatchObject({ studentName: 'Student', score: 3 });
   });
 });
 

@@ -70,12 +70,17 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 .qbox{background:var(--surf2);border:1px solid var(--bdr);border-radius:10px;padding:11px;text-align:center}
 .qn{font-size:20px;font-weight:800;color:var(--blue)}
 .ql{font-size:10px;color:var(--mute);margin-top:2px}
-.sgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-bottom:16px}
-.sc{border-radius:13px;padding:14px;cursor:pointer;transition:transform .2s,box-shadow .2s;border:2px solid transparent}
+.home-section{display:block;position:relative;isolation:isolate;clear:both}
+.sgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px;margin-bottom:16px}
+.sc{border-radius:13px;padding:14px;min-width:0;cursor:pointer;transition:transform .2s,box-shadow .2s;border:2px solid transparent}
 .sc:hover{transform:translateY(-2px);box-shadow:var(--sh)}
 .sc.phy{background:var(--blue-l);border-color:#93b4f4}.sc.chem{background:var(--green-l);border-color:#6dd4a8}.sc.bio{background:var(--amber-l);border-color:#f4c05a}
 .si{font-size:26px;margin-bottom:7px}.sn{font-size:12px;font-weight:700;color:var(--navy)}
 [data-theme=dark] .sn{color:var(--txt)}
+.study-mode-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.study-mode-card{cursor:pointer;padding:13px;text-align:center;min-width:0}
+.brain-boost-card{margin-top:13px;background:linear-gradient(135deg,var(--purple-l),var(--blue-l));border-color:#c4b5fd;cursor:pointer}
+@media(max-width:380px){.sgrid{grid-template-columns:1fr}.study-mode-grid{grid-template-columns:1fr}.quad{grid-template-columns:repeat(2,1fr)}}
 .ai-box{background:linear-gradient(135deg,var(--purple-l),var(--blue-l));border:1px solid #c4b5fd;border-radius:12px;padding:13px;margin-bottom:14px;display:flex;gap:11px}
 .ai-av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--purple),var(--blue));display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;flex-shrink:0}
 /* QUIZ */
@@ -263,6 +268,8 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 <div class="screen active" id="screen-home">
   <div class="sec-hd" style="margin-top:4px"><i class="ti ti-target"></i> Daily Mission <span style="font-size:10px;font-weight:400;color:var(--mute)">personalized for today</span></div>
   <div class="card" style="margin-bottom:13px" id="dailyMissionCard"></div>
+  <div class="sec-hd"><i class="ti ti-clipboard-check"></i> Assigned Test Series <span onclick="openTestHistory()" style="margin-left:auto;font-size:10px;color:var(--blue);cursor:pointer">Attempt History</span></div>
+  <div class="card" id="assignedTestsList" style="margin-bottom:13px"><div style="font-size:11px;color:var(--mute)">Sign in to view assigned tests.</div></div>
   <div class="hero">
     <div style="font-size:12px;opacity:.75;margin-bottom:3px">Good morning, <span id="welcomeName">Student</span> 👋</div>
     <div style="font-size:18px;font-weight:800">NEET 2026 - <span id="daysLeft">0</span> days left</div>
@@ -270,7 +277,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     <div style="height:4px;background:rgba(255,255,255,.15);border-radius:3px;margin-top:11px;overflow:hidden"><div style="height:100%;width:60%;background:linear-gradient(90deg,#fbbf24,#f59e0b);border-radius:3px"></div></div>
     <div class="hero-stats">
       <div class="hs"><div class="hs-n" id="hScore">68%</div><div class="hs-l">Overall Score</div></div>
-      <div class="hs"><div class="hs-n" id="hSolved">3,240</div><div class="hs-l">Qs Solved</div></div>
+      <div class="hs"><div class="hs-n" id="hSolved">0</div><div class="hs-l">Qs Solved</div></div>
       <div class="hs"><div class="hs-n" id="hRank">#842</div><div class="hs-l">AIR Estimate</div></div>
     </div>
   </div>
@@ -288,27 +295,27 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     <input class="sin" id="homeSearch" placeholder="Search any topic - Mitosis, Ohm's Law, Organic..." oninput="doSearch(this.value,'homeRes')" onfocus="doSearch(this.value,'homeRes')">
     <div class="sres" id="homeRes"></div>
   </div>
-  <div class="sec-hd"><i class="ti ti-atom"></i> Subjects</div>
-  <div class="sgrid">
-    <div class="sc phy" onclick="goSubject('PHYSICS')" ondblclick="startAdaptiveQuiz('PHYSICS')" title="Double-tap for Adaptive Mode"><div class="si">⚛️</div><div class="sn">Physics</div><div style="font-size:10px;color:var(--mute)">4,200 Qs</div><div class="pbg"><div class="pfill" style="width:62%;background:var(--blue)"></div></div><div style="font-size:10px;color:var(--mute);margin-top:4px">62% done</div></div>
-    <div class="sc chem" onclick="goSubject('CHEMISTRY')" ondblclick="startAdaptiveQuiz('CHEMISTRY')" title="Double-tap for Adaptive Mode"><div class="si">🧪</div><div class="sn">Chemistry</div><div style="font-size:10px;color:var(--mute)">3,800 Qs</div><div class="pbg"><div class="pfill" style="width:48%;background:var(--teal)"></div></div><div style="font-size:10px;color:var(--mute);margin-top:4px">48% done</div></div>
-    <div class="sc bio" onclick="goSubject('BIOLOGY')" ondblclick="startAdaptiveQuiz('BIOLOGY')" title="Double-tap for Adaptive Mode"><div class="si">🧬</div><div class="sn">Biology</div>
-  <div class="card" style="margin-top:11px;background:linear-gradient(135deg,var(--purple-l),var(--blue-l));border-color:#c4b5fd;cursor:pointer" onclick="startBrainBoost()"><div style="display:flex;align-items:center;gap:11px"><div style="font-size:28px">🧠</div><div style="flex:1"><b>Brain Boost</b><div style="font-size:11px;color:var(--mute)">5-minute IQ warm-up. Patterns, logic, speed. Sharpens your NEET brain.</div></div>
-  <div style="margin-top:13px"><div class="sec-hd" style="margin-bottom:8px"><i class="ti ti-layout-grid"></i> Study Modes</div>
-  <div class="card" style="padding:11px 13px;margin-bottom:9px;display:flex;justify-content:space-between;align-items:center" id="targetLeapBar">
-    <div style="font-size:11px;color:var(--mute)" id="targetLeapStatus">Loading target...</div>
-    <div style="display:flex;gap:8px">
-      <span onclick="openTargetHistory()" style="font-size:11px;color:var(--blue);font-weight:700;cursor:pointer">View History</span>
-      <span onclick="openSetTarget()" style="font-size:11px;color:var(--blue);font-weight:700;cursor:pointer">Set Target</span>
+  <section class="home-section" aria-labelledby="subjectsHeading">
+    <div class="sec-hd" id="subjectsHeading"><i class="ti ti-atom"></i> Subjects</div>
+    <div class="sgrid">
+      <div class="sc phy" onclick="goSubject('PHYSICS')" ondblclick="startAdaptiveQuiz('PHYSICS')" title="Double-tap for Adaptive Mode"><div class="si">⚛️</div><div class="sn">Physics</div><div id="physicsQuestionCount" style="font-size:10px;color:var(--mute)">Loading questions...</div></div>
+      <div class="sc chem" onclick="goSubject('CHEMISTRY')" ondblclick="startAdaptiveQuiz('CHEMISTRY')" title="Double-tap for Adaptive Mode"><div class="si">🧪</div><div class="sn">Chemistry</div><div id="chemistryQuestionCount" style="font-size:10px;color:var(--mute)">Loading questions...</div></div>
+      <div class="sc bio" onclick="goSubject('BIOLOGY')" ondblclick="startAdaptiveQuiz('BIOLOGY')" title="Double-tap for Adaptive Mode"><div class="si">🧬</div><div class="sn">Biology</div><div id="biologyQuestionCount" style="font-size:10px;color:var(--mute)">Loading questions...</div></div>
     </div>
-  </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
-    <div class="card" style="cursor:pointer;padding:13px;text-align:center" onclick="switchTab('practice')"><div style="font-size:22px">📚</div><b style="font-size:12px">Learn</b><div style="font-size:10px;color:var(--mute)">Topic-wise with explanations</div></div>
-    <div class="card" style="cursor:pointer;padding:13px;text-align:center" onclick="startAdaptiveQuiz('')"><div style="font-size:22px">🎯</div><b style="font-size:12px">Practice</b><div style="font-size:10px;color:var(--mute)">Adaptive - tuned to you</div></div>
-    <div class="card" style="cursor:pointer;padding:13px;text-align:center;border-color:var(--red)" onclick="startExamMode()"><div style="font-size:22px">⏱️</div><b style="font-size:12px">Exam Mode</b><div style="font-size:10px;color:var(--mute)">NEET pattern &middot; +4/-1 &middot; timed</div></div>
-    <div class="card" style="cursor:pointer;padding:13px;text-align:center;border-color:var(--amber)" onclick="startRevisionMode()"><div style="font-size:22px">🔁</div><b style="font-size:12px">Revision</b><div style="font-size:10px;color:var(--mute)">Due mistakes rapid-fire</div></div>
-  </div></div><i class="ti ti-chevron-right" style="color:var(--mute)"></i></div></div><div style="font-size:10px;color:var(--mute)">5,600 Qs</div><div class="pbg"><div class="pfill" style="width:75%;background:var(--amber)"></div></div><div style="font-size:10px;color:var(--mute);margin-top:4px">75% done</div></div>
-  </div>
+  </section>
+  <section class="home-section" aria-labelledby="studyModesHeading">
+    <div class="sec-hd" id="studyModesHeading" style="margin-bottom:8px"><i class="ti ti-layout-grid"></i> Study Modes</div>
+    <div class="card" style="padding:11px 13px;margin-bottom:9px;display:flex;justify-content:space-between;align-items:center" id="targetLeapBar"><div style="font-size:11px;color:var(--mute)" id="targetLeapStatus">Loading target...</div><div style="display:flex;gap:8px"><span onclick="openTargetHistory()" style="font-size:11px;color:var(--blue);font-weight:700;cursor:pointer">View History</span><span onclick="openSetTarget()" style="font-size:11px;color:var(--blue);font-weight:700;cursor:pointer">Set Target</span></div></div>
+    <div class="study-mode-grid">
+      <div class="card study-mode-card" onclick="switchTab('practice')"><div style="font-size:22px">📚</div><b style="font-size:12px">Learn</b><div style="font-size:10px;color:var(--mute)">Topic-wise with explanations</div></div>
+      <div class="card study-mode-card" onclick="startAdaptiveQuiz('')"><div style="font-size:22px">🎯</div><b style="font-size:12px">Practice</b><div style="font-size:10px;color:var(--mute)">Adaptive - tuned to you</div></div>
+      <div class="card study-mode-card" style="border-color:var(--red)" onclick="startExamMode()"><div style="font-size:22px">⏱️</div><b style="font-size:12px">Exam Mode</b><div style="font-size:10px;color:var(--mute)">NEET pattern &middot; +4/-1 &middot; timed</div></div>
+      <div class="card study-mode-card" style="border-color:var(--amber)" onclick="startRevisionMode()"><div style="font-size:22px">🔁</div><b style="font-size:12px">Revision</b><div style="font-size:10px;color:var(--mute)">Due mistakes rapid-fire</div></div>
+    </div>
+  </section>
+  <section class="home-section" aria-label="Brain Boost">
+    <div class="card brain-boost-card" onclick="startBrainBoost()"><div style="display:flex;align-items:center;gap:11px"><div style="font-size:28px">🧠</div><div style="flex:1"><b>Brain Boost</b><div style="font-size:11px;color:var(--mute)">Optional 5-minute IQ warm-up for patterns, logic and speed.</div></div><i class="ti ti-chevron-right" style="color:var(--mute)"></i></div></div>
+  </section>
   <div class="sec-hd"><i class="ti ti-target"></i> Today's Targets</div>
   <div id="targetsArea">
     <div class="tgt done"><i class="ti ti-circle-check" style="color:var(--green);font-size:20px"></i><div style="flex:1"><div style="font-size:13px;font-weight:600">Laws of Motion · Daily Quiz</div><div style="font-size:11px;color:var(--mute)">20 Qs · Scored 85%</div></div><span class="badge be">Done</span></div>
@@ -346,7 +353,8 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 <div class="screen" id="screen-practice">
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px">
   <div class="card" style="cursor:pointer;padding:12px;text-align:center;border-color:#a78bfa" onclick="openPaperGen()"><div style="font-size:22px">📄</div><b style="font-size:12px">Paper Generator</b><div style="font-size:10px;color:var(--mute)">Type any topic. Share on WhatsApp.</div></div>
-  <div class="card" style="cursor:pointer;padding:12px;text-align:center;border-color:#f59e0b" onclick="openNcertEbookMenu()"><div style="font-size:22px">📖</div><b style="font-size:12px">NCERT eBook</b><div style="font-size:10px;color:var(--mute)">Official free NCERT textbooks</div></div>
+  <div class="card" style="cursor:pointer;padding:12px;text-align:center;border-color:#f59e0b" onclick="openNcertPracticeMenu()"><div style="font-size:22px">📖</div><b style="font-size:12px">NCERT Practice</b><div style="font-size:10px;color:var(--mute)">Practice by class and chapter</div></div>
+  <div class="card" style="cursor:pointer;padding:12px;text-align:center;border-color:#60a5fa" onclick="openBookmarks()"><div style="font-size:22px">🔖</div><b style="font-size:12px">Saved Questions</b><div style="font-size:10px;color:var(--mute)">Your persistent revision list</div></div>
 </div>
 <div class="card" style="margin-bottom:12px;background:linear-gradient(135deg,var(--blue-l),var(--teal-l));border-color:#93c5fd;cursor:pointer" onclick="switchTab('syllabus');renderSyllabus()"><div style="display:flex;align-items:center;gap:10px"><div style="font-size:24px">📘</div><div style="flex:1"><b style="font-size:13px">View Full Syllabus</b><div style="font-size:11px;color:var(--mute)">All NEET 2026 units with NCERT refs. Tap any unit to practice.</div></div><i class="ti ti-chevron-right" style="color:var(--mute)"></i></div></div>
   <div class="card" style="margin-bottom:13px;padding:13px 15px">
@@ -461,6 +469,10 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
   <div class="card">
     <div class="aiwrap" id="aiWrap"><div class="aimsg bot"><b>Hi! I'm your NEET AI Tutor.</b> Ask me anything from Physics, Chemistry, or Biology - I explain with NCERT references and exam tips!</div></div>
     <div class="aiinrow"><input class="aiin" id="aiIn" placeholder="Ask a concept, formula, doubt..." onkeydown="if(event.key==='Enter')sendAI()"><button class="aisend" onclick="sendAI()"><i class="ti ti-send"></i></button></div>
+    <div id="teacherDoubtActions" style="display:none;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px">
+      <button class="btn btn-ghost" style="font-size:11px" onclick="raiseTeacherDoubt()"><i class="ti ti-help-hexagon"></i> Ask My Teacher</button>
+      <button class="btn btn-ghost" style="font-size:11px" onclick="openMyDoubts()"><i class="ti ti-messages"></i> Teacher Replies</button>
+    </div>
   </div>
 </div>
 
@@ -586,13 +598,70 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
   <div id="teacherPanel" style="display:none">
   <div class="sec-hd" style="margin-top:14px"><i class="ti ti-chalkboard"></i> Teacher Zone <span style="font-size:10px;font-weight:400;color:var(--mute)">your packs, your students only</span></div>
   <div class="card">
+    <div style="font-size:13px;font-weight:800;margin-bottom:4px">My Batches</div>
+    <div id="teacherSeatSummary" style="font-size:11px;color:var(--mute);margin-bottom:10px">Loading seats...</div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input class="fin" id="teacherBatchName" placeholder="Batch name e.g. NEET 2027 - A" style="flex:1;margin-top:0">
+      <button class="btn btn-blue" id="teacherCreateBatchBtn" onclick="teacherCreateBatch()" style="white-space:nowrap"><i class="ti ti-plus"></i> Create Batch</button>
+    </div>
+    <div id="teacherNewBatchCode" style="display:none;margin-top:10px;padding:14px;border:2px solid var(--blue);border-radius:10px;background:var(--blue-l);text-align:center">
+      <div style="font-size:10px;color:var(--mute);font-weight:700;text-transform:uppercase">Student join code</div>
+      <div id="teacherNewBatchCodeValue" style="font:800 24px monospace;letter-spacing:2px;color:var(--blue);margin:4px 0"></div>
+      <button class="btn btn-ghost" onclick="copyTeacherBatchCode()"><i class="ti ti-copy"></i> Copy Code</button>
+    </div>
+    <div id="teacherBatchesList" style="margin-top:10px"></div>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px">
+      <div><div style="font-size:13px;font-weight:800">This Week's Usage</div><div style="font-size:10px;color:var(--mute)">Time, topics and students needing attention</div></div>
+      <select id="teacherUsageBatch" onchange="loadTeacherUsage(this.value)" style="max-width:180px;padding:7px;border:1.5px solid var(--bdr);border-radius:8px;background:var(--surf);color:var(--txt)"><option value="">Select batch</option></select>
+    </div>
+    <div id="teacherUsageSummary" style="font-size:11px;color:var(--mute)">Create or select a batch to view usage.</div>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px">
+      <div><div style="font-size:13px;font-weight:800">Student Doubts</div><div style="font-size:10px;color:var(--mute)">Questions escalated from AI Tutor</div></div>
+      <select id="teacherDoubtBatch" onchange="loadTeacherDoubts(this.value)" style="max-width:180px;padding:7px;border:1.5px solid var(--bdr);border-radius:8px;background:var(--surf);color:var(--txt)"><option value="">Select batch</option></select>
+    </div>
+    <div id="teacherDoubtsList" style="font-size:11px;color:var(--mute)">No batch selected.</div>
+  </div>
+  <div class="card">
+    <div style="font-size:13px;font-weight:800;margin-bottom:4px">Assign a Test</div>
+    <div style="font-size:11px;color:var(--mute);margin-bottom:10px">Create a fixed paper from the verified question packs and assign it to one of your batches.</div>
+    <select id="teacherTestTemplate" onchange="applyTeacherTestTemplate(this.value)" style="width:100%;padding:9px;border:1.5px solid var(--bdr);border-radius:9px;background:var(--surf);color:var(--txt);margin-bottom:8px">
+      <option value="custom">Custom test</option>
+      <option value="weekly_neet">NEET-style Weekly Mock · 45 Q · 45 min</option>
+      <option value="full_neet">NEET-style Full Mock · 180 Q · 180 min</option>
+      <option value="physics_45">Physics Subject Test · 45 Q · 45 min</option>
+      <option value="chemistry_45">Chemistry Subject Test · 45 Q · 45 min</option>
+      <option value="biology_90">Biology Subject Test · 90 Q · 90 min</option>
+    </select>
+    <input class="fin" id="teacherTestTitle" placeholder="Test title e.g. Physics Chapter Test 1" style="margin-top:0">
+    <input class="fin" id="teacherTestChapter" placeholder="Optional chapter/topic filter e.g. Motion" style="margin-top:8px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+      <select id="teacherTestBatch" style="padding:9px;border:1.5px solid var(--bdr);border-radius:9px;background:var(--surf);color:var(--txt)"><option value="">Select batch</option></select>
+      <select id="teacherTestSubject" style="padding:9px;border:1.5px solid var(--bdr);border-radius:9px;background:var(--surf);color:var(--txt)"><option value="ALL">All subjects</option><option value="PHYSICS">Physics</option><option value="CHEMISTRY">Chemistry</option><option value="BIOLOGY">Biology</option></select>
+      <select id="teacherTestType" style="padding:9px;border:1.5px solid var(--bdr);border-radius:9px;background:var(--surf);color:var(--txt)"><option value="chapter">Chapter Test</option><option value="subject">Subject Test</option><option value="part">Part Syllabus</option><option value="full">Full Syllabus</option></select>
+      <input class="fin" id="teacherTestCount" type="number" min="5" max="180" value="20" placeholder="Questions" style="margin-top:0">
+      <input class="fin" id="teacherTestDuration" type="number" min="5" max="180" value="20" placeholder="Duration minutes" style="margin-top:0">
+      <select id="teacherTestAttempts" style="padding:9px;border:1.5px solid var(--bdr);border-radius:9px;background:var(--surf);color:var(--txt)"><option value="1">1 attempt</option><option value="2">2 attempts</option><option value="3">3 attempts</option></select>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+      <label style="font-size:10px;color:var(--mute)">Opens (optional)<input class="fin" id="teacherTestStart" type="datetime-local" style="margin-top:3px"></label>
+      <label style="font-size:10px;color:var(--mute)">Deadline (optional)<input class="fin" id="teacherTestDue" type="datetime-local" style="margin-top:3px"></label>
+    </div>
+    <button class="btn btn-blue btn-full" id="teacherCreateTestBtn" onclick="teacherCreateTest()" style="margin-top:10px"><i class="ti ti-clipboard-plus"></i> Create & Assign Test</button>
+    <div id="teacherTestsList" style="margin-top:10px"></div>
+  </div>
+  <div class="card">
     <div style="font-size:11px;color:var(--mute);margin-bottom:9px">Upload a CSV question pack visible only to your academy or your batch. Re-upload to the same pack to create a new version (old versions preserved, rollback via admin).</div>
     <select id="tpTarget" style="width:100%;padding:9px 12px;border:1.5px solid var(--bdr);border-radius:9px;font-size:12px;background:var(--surf);color:var(--txt)" onchange="var n=document.getElementById('tpName'); if(n) n.style.display=this.value?'none':'block'"></select>
     <input class="fin" id="tpName" placeholder="Pack name e.g. Physics DPP Week 3" style="margin-top:8px">
-    <select id="tpScope" style="width:100%;padding:9px 12px;border:1.5px solid var(--bdr);border-radius:9px;font-size:12px;background:var(--surf);color:var(--txt);margin-top:8px">
+    <select id="tpScope" onchange="toggleTeacherPackBatch()" style="width:100%;padding:9px 12px;border:1.5px solid var(--bdr);border-radius:9px;font-size:12px;background:var(--surf);color:var(--txt);margin-top:8px">
       <option value="academy">Visible to: whole academy</option>
-      <option value="batch">Visible to: my batch only</option>
+      <option value="batch">Visible to: selected batch only</option>
     </select>
+    <select id="tpBatch" style="display:none;width:100%;padding:9px 12px;border:1.5px solid var(--bdr);border-radius:9px;font-size:12px;background:var(--surf);color:var(--txt);margin-top:8px"><option value="">Select batch</option></select>
     <input type="file" id="tpFile" accept=".csv" style="margin:10px 0;font-size:12px">
     <button class="btn btn-blue btn-full" onclick="teacherUploadPack()"><i class="ti ti-upload"></i> Upload / New Version</button>
     <div id="teacherPacksList" style="margin-top:10px"></div>
@@ -640,6 +709,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
           <div style="color:var(--mute)">Your role</div>
         </div>
       </div>
+      <button class="btn btn-ghost btn-full" id="academyLeaderboardBtn" style="display:none;margin-top:9px" onclick="openMyBatchLeaderboard()"><i class="ti ti-trophy"></i> View Batch Leaderboard</button>
     </div>
   </div>
   <div class="sec-hd" style="margin-top:14px"><i class="ti ti-phone"></i> Contact & Notifications</div>
@@ -656,6 +726,8 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
         <div class="srow" style="padding:5px 0;border:none"><span style="font-size:12px">Parent notifications</span><button class="tsw on" id="notifParent" onclick="this.classList.toggle('on')"></button></div>
       </div>
       <button class="btn btn-blue btn-full" onclick="saveContacts()"><i class="ti ti-device-floppy"></i> Save Contact Details</button>
+      <button class="btn btn-ghost btn-full" onclick="sendParentWeekly()"><i class="ti ti-report"></i> Preview / Send Parent Weekly Update</button>
+      <div id="parentWeeklyPreview" style="display:none;background:var(--surf2);border-radius:9px;padding:10px;font-size:11px"></div>
     </div>
   </div>
   <button class="btn btn-ghost btn-full" style="margin-top:4px;color:var(--red);border-color:var(--red)" onclick="signOut()"><i class="ti ti-logout"></i> Sign Out</button>
@@ -670,6 +742,8 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     <div class="qbox"><div class="qn" style="color:var(--teal)" id="admA">0</div><div class="ql">Active</div></div>
     <div class="qbox"><div class="qn" style="color:var(--purple)">₹0</div><div class="ql">Revenue</div></div>
   </div>
+  <div class="sec-hd"><i class="ti ti-chart-histogram"></i> Usage This Week</div>
+  <div class="card" id="adminUsageSummary" style="margin-bottom:14px"><div style="font-size:11px;color:var(--mute)">Loading real usage data...</div></div>
   <div class="sec-hd"><i class="ti ti-clock-play"></i> Trial Configuration</div>
   <div class="card" style="margin-bottom:14px" id="trialConfigPanel">
     <div style="text-align:center;padding:10px;color:var(--mute);font-size:12px">Loading trial config...</div>
@@ -679,7 +753,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
   <div class="ub" style="margin-bottom:11px">
     <i class="ti ti-file-spreadsheet" style="font-size:26px;color:var(--blue)"></i>
     <div style="font-size:13px;font-weight:700;margin-top:6px">Upload New Content Pack</div>
-    <div style="font-size:10px;color:var(--mute);margin:5px 0">Columns: subject, chapter, question, opt_a-d, correct(A/B/C/D), explanation, ncert_class/chapter/page, syllabus_unit, difficulty, pyq_year, trick</div>
+    <div style="font-size:10px;color:var(--mute);margin:5px 0">Columns: subject, chapter, question, opt_a-d, correct, explanation, NCERT refs, difficulty, PYQ, review_status, reviewer</div>
     <select id="packUpdateTarget" style="width:100%;padding:9px 12px;border:1.5px solid var(--bdr);border-radius:9px;font-size:12px;background:var(--surf);color:var(--txt);margin-top:7px" onchange="document.getElementById('packName').style.display=this.value?'none':'block'"></select>
     <input id="packName" class="fin" style="margin-top:7px" placeholder="Pack name e.g. Physics Extra Set 2">
     <input type="file" id="packCsvFile" accept=".csv" style="margin:9px 0;font-size:12px">
@@ -932,10 +1006,10 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     <div class="sec-hd" style="margin-bottom:9px"><i class="ti ti-school"></i> Join Your Institute / Batch</div>
     <div style="font-size:12px;color:var(--mute);margin-bottom:10px">Enter the batch code shared by your teacher or coaching institute to join their private leaderboard.</div>
     <div style="display:flex;gap:8px">
-      <input id="batchCodeInput" class="fin" style="flex:1;margin-top:0;font-family:monospace;text-transform:uppercase;letter-spacing:2px" placeholder="Enter batch code e.g. BT4F2A" maxlength="8" oninput="this.value=this.value.toUpperCase()">
-      <button class="btn btn-green" onclick="joinBatch()"><i class="ti ti-login"></i> Join</button>
+      <input id="aboutBatchCodeInput" class="fin" style="flex:1;margin-top:0;font-family:monospace;text-transform:uppercase;letter-spacing:2px" placeholder="Enter batch code e.g. BT4F2A" maxlength="8" oninput="this.value=this.value.toUpperCase()">
+      <button class="btn btn-green" onclick="joinBatch('aboutBatchCodeInput','aboutBatchStatus')"><i class="ti ti-login"></i> Join</button>
     </div>
-    <div id="batchStatus" style="display:none;margin-top:9px;font-size:12px;padding:8px 12px;border-radius:8px"></div>
+    <div id="aboutBatchStatus" style="display:none;margin-top:9px;font-size:12px;padding:8px 12px;border-radius:8px"></div>
     <div style="margin-top:11px;font-size:11px;color:var(--mute)">Are you a teacher or institute?
       <a href="https://www.bluetrace.tech" target="_blank" style="color:var(--blue);text-decoration:none;font-weight:700"> Contact us to get started →</a>
     </div>
@@ -1169,6 +1243,47 @@ async function api(path, body){
   const r = await fetch('/api/'+path, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
   return r.json();
 }
+function escapeHtml(value){
+  return String(value===undefined||value===null?'':value).replace(/[&<>"']/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+
+// ===== LIGHTWEIGHT USAGE VISIBILITY =====
+// Sends bounded section dwell-time summaries. Question/test counts are recorded
+// authoritatively by their existing server-side submission handlers.
+let ACTIVE_USAGE = null;
+function usageSection(tab){
+  return ({mistakes:'galti',flash:'flashcards',ai:'ai_tutor',search:'practice'})[tab] || tab || 'other';
+}
+function currentUsageContext(){
+  const topic=typeof activeTopic!=='undefined'&&activeTopic?activeTopic:{};
+  return {subject:topic.sub&&topic.sub!=='ALL'?topic.sub:'',chapter:topic.name||''};
+}
+function startUsageSection(tab){
+  if(!S.user||document.hidden)return;
+  ACTIVE_USAGE={section:usageSection(tab),startedAt:Date.now()};
+}
+function flushUsageSection(keepalive){
+  if(!ACTIVE_USAGE||!S.user||!S.sessionToken)return;
+  const elapsed=Math.min(1800,Math.floor((Date.now()-ACTIVE_USAGE.startedAt)/1000));
+  ACTIVE_USAGE.startedAt=Date.now();
+  if(elapsed<5)return;
+  const ctx=currentUsageContext();
+  const body={action:'track_activity',uid:S.user.uid,sessionToken:S.sessionToken,section:ACTIVE_USAGE.section,elapsedSec:elapsed,subject:ctx.subject,chapter:ctx.chapter};
+  if(keepalive){
+    try{fetch('/api/scoring',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),keepalive:true});}catch(e){}
+  }else api('scoring',body).catch(function(){});
+}
+function trackUsageEvent(section,extra){
+  if(!S.user||!S.sessionToken)return;
+  api('scoring',Object.assign({action:'track_activity',uid:S.user.uid,sessionToken:S.sessionToken,section:section,elapsedSec:0},extra||{})).catch(function(){});
+}
+document.addEventListener('visibilitychange',function(){
+  if(document.hidden)flushUsageSection(true);
+  else{const active=document.querySelector('.screen.active');startUsageSection(active?active.id.replace('screen-',''):'home');}
+});
+window.addEventListener('pagehide',function(){flushUsageSection(true);});
 
 // ===== ACCESS STATUS =====
 function canAccess(){
@@ -1417,6 +1532,7 @@ async function doRegister(){
 }
 
 async function signOut(){
+  flushUsageSection(true);
   try{ await window._fbSignOut(window._fbAuth); }catch(e){}
   clearSession(); stopVerify(); updateUI(); switchTab('home');
   toast('Signed out successfully.');
@@ -1432,11 +1548,15 @@ function updateUI(){
   document.getElementById('profileEmail').textContent = u ? u.email : '';
   document.getElementById('profileAv').textContent = u ? u.name[0].toUpperCase() : '?';
   document.getElementById('lbName').textContent = u ? u.name.split(' ')[0] : 'You';
+  const solvedEl=document.getElementById('hSolved'); if(solvedEl) solvedEl.textContent=u?(u.totalQuestionsAttempted||0).toLocaleString('en-IN'):'0';
   document.getElementById('adminBadge').style.display = isAdmin?'inline-block':'none';
   document.getElementById('proBadge').style.display = (u && u.accessStatus==='paid')?'inline-block':'none';
   document.getElementById('adminTab').style.display = isAdmin?'flex':'none';
   document.getElementById('authBtn').title = isLoggedIn?'Sign Out':'Sign In';
+  const doubtActions=document.getElementById('teacherDoubtActions');
+  if(doubtActions)doubtActions.style.display=(u&&u.academyRole==='student'&&u.batchId)?'grid':'none';
   showAccessBanner(); updateSubCard();
+  if(isLoggedIn) loadAssignedTests();
 }
 
 // ===== NAV =====
@@ -1446,14 +1566,16 @@ function switchTab(tab){
     if(!S.user){ document.getElementById('authModal').classList.add('active'); return; }
     openPaywall(); return;
   }
+  flushUsageSection(false);
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
   const sc=document.getElementById('screen-'+tab);
   const bt=document.querySelector(`.nb[data-tab="${tab}"]`);
   if(sc) sc.classList.add('active');
   if(bt) bt.classList.add('active');
-  if(tab==='admin'){ loadAdminUsers(); loadPacksList(); loadFeatureFlags(); loadAcademyList(); loadTrialConfigAdmin(); }
+  if(tab==='admin'){ loadAdminUsers(); loadPacksList(); loadFeatureFlags(); loadAcademyList(); loadTrialConfigAdmin(); loadAdminUsage(); }
   if(tab==='about'){ initAbout(); loadReferral(); }
+  if(tab==='home'){ loadAssignedTests(); }
   if(tab==='syllabus') renderSyllabus();
   if(tab==='home'){ renderDailyMission(); refreshTargetLeapBar(); }
   if(tab==='analytics') renderMasteryDash();
@@ -1464,6 +1586,7 @@ function switchTab(tab){
   if(tab==='analytics') buildStreak();
   if(tab==='mistakes'){ renderMistakes(); loadGaltiFromServer(); }
   if(tab==='notes') renderNotes();
+  startUsageSection(tab);
 }
 document.querySelectorAll('.nb').forEach(b=>b.addEventListener('click',function(){ switchTab(this.getAttribute('data-tab')); }));
 
@@ -1595,6 +1718,7 @@ function renderQuiz(){
   document.getElementById('quizView').style.display='block';
   document.getElementById('resultView').style.display='none';
   answered=false;
+  questionStartTime=Date.now();
   const q=quizList[curQ];
   const hdr=activeTopic?`<div class="tqhdr"><div style="font-size:10px;opacity:.75;text-transform:uppercase;letter-spacing:.8px">Smart Topic Test</div><div style="font-size:16px;font-weight:800;margin-top:2px">${activeTopic.name}</div><div style="font-size:11px;opacity:.7;margin-top:3px">${activeTopic.sub} · NCERT Class ${activeTopic.cl}, Ch.${activeTopic.ch} · Pages ${activeTopic.pg}</div></div>`:'';
   document.getElementById('quizView').innerHTML=`${hdr}
@@ -1639,10 +1763,35 @@ function handleAns(el, idx){
   document.getElementById('refTags').innerHTML=`<span class="ncert-tag"><i class="ti ti-book"></i> NCERT Cl.${q.ncertCl} Ch.${q.ncertCh} Pg.${q.ncertPg}</span><span class="syl-tag"><i class="ti ti-list"></i> ${q.unit}</span>${q.pyq?`<span class="badge bh">PYQ ${q.pyqYr}</span>`:''}`;
   document.getElementById('explBox').classList.add('show');
   document.getElementById('confRow').style.display='flex';
+  if(S.user&&S.sessionToken){
+    const elapsed=questionStartTime?Date.now()-questionStartTime:0;
+    api('scoring',{action:'track_practice_answer',uid:S.user.uid,sessionToken:S.sessionToken,questionId:String(q.id),subject:q.sub,chapter:q.ch,timeTakenMs:elapsed,mode:activeTopic&&activeTopic.id==='revision'?'revision':'practice'}).catch(function(){});
+  }
 }
 
 function showHint(){ const q=quizList[curQ]; toast(`Hint: NCERT Class ${q.ncertCl}, Ch.${q.ncertCh}, Page ${q.ncertPg} - ${q.unit}`); }
-function bookmarkQ(){ toast('🔖 Question bookmarked!'); }
+async function bookmarkQ(){
+  if(!S.user){ openAuth(); return; }
+  const q = quizList[curQ]; if(!q) return;
+  try{
+    const r = await api('scoring',{action:'toggle_bookmark',uid:S.user.uid,sessionToken:S.sessionToken,question:q});
+    if(r.ok) toast(r.bookmarked?'🔖 Saved for revision':'Removed from saved questions');
+    else toast('Could not save question');
+  }catch(e){ toast('Could not save question'); }
+}
+async function openBookmarks(){
+  if(!S.user){ openAuth(); return; }
+  const el=document.createElement('div'); el.id='bookmarksModal';
+  el.style.cssText='position:fixed;inset:0;background:rgba(10,35,66,.85);z-index:750;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)';
+  el.innerHTML='<div style="background:var(--surf);border-radius:20px 20px 0 0;width:100%;max-width:520px;padding:20px;max-height:88vh;overflow-y:auto"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><b>Saved Questions</b><button onclick="document.getElementById(\'bookmarksModal\').remove()" style="background:none;border:none;color:var(--mute);font-size:18px">×</button></div><div id="bookmarksList" style="font-size:12px;color:var(--mute)">Loading...</div></div>';
+  document.body.appendChild(el); el.addEventListener('click',function(e){if(e.target===el)el.remove();});
+  try{
+    const r=await api('scoring',{action:'list_bookmarks',uid:S.user.uid,sessionToken:S.sessionToken});
+    const list=document.getElementById('bookmarksList'); const items=r.bookmarks||[];
+    if(!items.length){list.textContent='No saved questions yet. Tap the bookmark icon while practising.';return;}
+    list.innerHTML=items.map(function(b,i){return '<div style="padding:10px 0;border-bottom:1px solid var(--bdr)"><div style="font-size:10px;color:var(--blue);font-weight:700">'+escapeHtml(b.sub)+' · '+escapeHtml(b.chapter)+'</div><b>'+(i+1)+'. '+escapeHtml(b.text)+'</b>'+(b.explanation?'<div style="margin-top:5px;color:var(--mute)">'+escapeHtml(b.explanation)+'</div>':'')+'</div>';}).join('');
+  }catch(e){document.getElementById('bookmarksList').textContent='Could not load saved questions.';}
+}
 function logConf(l){ toast(`Logged as ${l}`); document.getElementById('confRow').style.display='none'; }
 
 function nextQ(){
@@ -1745,16 +1894,40 @@ const AI_RESP={
   'important':"NEET 2026 Most Important Chapters:\n\nPhysics (25 Qs): Electrostatics, Current Electricity, Optics, Modern Physics, Mechanics\nChemistry (25 Qs): Organic (IUPAC, GOC, Biomolecules), Equilibrium, Electrochemistry, Coordination\nBiology (50 Qs): Genetics, Human Physiology, Plant Physiology, Cell Biology, Ecology\n\n💡 Biology has 50 questions - give it the most time!\nTarget 70%+ in Biology for a good rank.",
   'default':"Great question! Based on the NEET 2026 syllabus:\n\nThis is a high-yield topic. I recommend:\n1️⃣ Read the NCERT chapter carefully first\n2️⃣ Note key formulas and definitions\n3️⃣ Solve 15-20 past NEET questions on this topic\n4️⃣ Use Smart Test feature to check your understanding\n\nWhich specific concept would you like me to explain in detail?",
 };
+let LAST_AI_QUESTION='';
+let LAST_AI_REPLY='';
 function askAI(q){ document.getElementById('aiIn').value=q; sendAI(); }
 function sendAI(){
   const inp=document.getElementById('aiIn'); const q=inp.value.trim(); if(!q) return;
   const wrap=document.getElementById('aiWrap');
-  wrap.innerHTML+=`<div class="aimsg user">${q}</div>`; inp.value=''; wrap.scrollTop=wrap.scrollHeight;
+  LAST_AI_QUESTION=q; LAST_AI_REPLY='';
+  wrap.innerHTML+=`<div class="aimsg user">${escapeHtml(q)}</div>`; inp.value=''; wrap.scrollTop=wrap.scrollHeight;
+  trackUsageEvent('ai_tutor',{aiQuestions:1});
   setTimeout(()=>{
     const key=Object.keys(AI_RESP).find(k=>q.toLowerCase().includes(k));
-    const reply=(AI_RESP[key]||AI_RESP.default).replace(/\n/g,'<br>');
+    LAST_AI_REPLY=AI_RESP[key]||AI_RESP.default;
+    const reply=escapeHtml(LAST_AI_REPLY).replace(/\n/g,'<br>');
     wrap.innerHTML+=`<div class="aimsg bot">${reply}</div>`; wrap.scrollTop=wrap.scrollHeight;
   },700);
+}
+
+async function raiseTeacherDoubt(){
+  if(!S.user||S.user.academyRole!=='student'||!S.user.batchId){toast('Join an academy batch to ask its teacher');return;}
+  let question=LAST_AI_QUESTION||prompt('What would you like to ask your teacher?','');
+  if(!question)return;
+  const topic=typeof activeTopic!=='undefined'&&activeTopic?activeTopic:{};
+  const r=await api('academy',{action:'raise_doubt',uid:S.user.uid,sessionToken:S.sessionToken,question:question,aiAnswer:LAST_AI_REPLY,subject:topic.sub||'',chapter:topic.name||''});
+  if(r.ok)toast('Doubt sent to your teacher');else toast(r.error||'Could not send doubt');
+}
+async function openMyDoubts(){
+  if(!S.user)return;
+  const modal=document.createElement('div');modal.id='myDoubtsModal';modal.style.cssText='position:fixed;inset:0;background:rgba(10,35,66,.85);z-index:760;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)';
+  modal.innerHTML='<div style="background:var(--surf);border-radius:20px 20px 0 0;width:100%;max-width:560px;padding:20px;max-height:88vh;overflow-y:auto"><div style="display:flex;justify-content:space-between"><b>Teacher Replies</b><button onclick="document.getElementById(\'myDoubtsModal\').remove()" style="border:0;background:none;font-size:18px;color:var(--mute)">×</button></div><div id="myDoubtsBody" style="margin-top:12px;font-size:12px;color:var(--mute)">Loading...</div></div>';
+  document.body.appendChild(modal);modal.addEventListener('click',function(e){if(e.target===modal)modal.remove();});
+  try{
+    const r=await api('academy',{action:'list_my_doubts',uid:S.user.uid,sessionToken:S.sessionToken});const body=document.getElementById('myDoubtsBody');
+    body.innerHTML=(r.doubts||[]).length?r.doubts.map(function(d){return '<div style="padding:10px 0;border-bottom:1px solid var(--bdr)"><div style="font-size:10px;color:var(--mute)">'+escapeHtml(d.subject||'NEET')+' · '+new Date(d.createdAt).toLocaleDateString('en-IN')+'</div><b>'+escapeHtml(d.question)+'</b>'+(d.status==='resolved'?'<div style="margin-top:7px;padding:9px;background:var(--green-l);border-radius:8px;color:var(--txt)"><b>Teacher:</b> '+escapeHtml(d.teacherReply)+'</div>':'<div style="margin-top:5px;color:var(--amber)">Waiting for teacher reply</div>')+'</div>';}).join(''):'No teacher doubts yet.';
+  }catch(e){document.getElementById('myDoubtsBody').textContent='Could not load replies.';}
 }
 
 // ===== STREAK =====
@@ -1810,6 +1983,16 @@ async function loadAdminStats(){
     if(u) u.textContent = r.total || 0;
     // Trial/expired are computed client-side from the page data
   }catch(e){}
+}
+
+async function loadAdminUsage(){
+  const box=document.getElementById('adminUsageSummary');if(!box||!S.user||S.user.role!=='admin')return;
+  box.innerHTML='<div style="font-size:11px;color:var(--mute)">Loading real usage data...</div>';
+  try{
+    const r=await api('academy',{action:'get_usage_summary',uid:S.user.uid,sessionToken:S.sessionToken,days:7});
+    if(!r.ok){box.textContent=r.error||'Could not load usage';return;}
+    box.innerHTML=renderUsageSummary(r.summary,true);
+  }catch(e){box.textContent='Could not load usage.';}
 }
 
 function renderUserTable(users){
@@ -1992,7 +2175,7 @@ function parseCSV(txt){
   }return res;
 }
 function downloadSample(){
-  const csv=`subject,chapter,question,opt_a,opt_b,opt_c,opt_d,correct,explanation,ncert_class,ncert_chapter,ncert_page,syllabus_unit\nBiology,Cell Biology,Which organelle contains hydrolytic enzymes?,Lysosome,Ribosome,Mitochondria,Nucleus,A,Lysosomes contain hydrolytic enzymes and are called suicidal bags.,11,8,136,Cell Structure\nPhysics,Work Energy,Work done by centripetal force is?,Zero,Maximum,Negative,Infinite,A,Centripetal force is perpendicular to displacement so W=0.,11,6,118,Mechanics`;
+  const csv=`subject,chapter,question,opt_a,opt_b,opt_c,opt_d,correct,explanation,ncert_class,ncert_chapter,ncert_page,syllabus_unit,review_status,reviewer,reviewed_at\nBiology,Cell Biology,Which organelle contains hydrolytic enzymes?,Lysosome,Ribosome,Mitochondria,Nucleus,A,Lysosomes contain hydrolytic enzymes and are called suicidal bags.,11,8,136,Cell Structure,approved,Faculty name,2026-08-19\nPhysics,Work Energy,Work done by centripetal force is?,Zero,Maximum,Negative,Infinite,A,Centripetal force is perpendicular to displacement so W=0.,11,6,118,Mechanics,needs_changes,Faculty name,2026-08-19`;
   const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([csv],{type:'text/csv'})),download:'NEETAce_Sample.csv'});a.click();toast('Sample CSV downloaded!');
 }
 
@@ -2007,11 +2190,13 @@ function initAbout(){
   document.getElementById('aboutAppName').textContent = 'NEETAce Pro ' + SYLLABUS_YEAR;
 }
 
-async function joinBatch(){
+async function joinBatch(inputId, statusId){
   if(!S.user){ toast('Please sign in first.'); return; }
-  const code = document.getElementById('batchCodeInput').value.trim().toUpperCase();
+  const input = document.getElementById(inputId || 'batchCodeInput');
+  const statusEl = document.getElementById(statusId || 'batchStatus');
+  if(!input || !statusEl){ toast('Batch join form is unavailable'); return; }
+  const code = input.value.trim().toUpperCase();
   if(code.length < 6){ toast('Enter a valid batch code'); return; }
-  const statusEl = document.getElementById('batchStatus');
   statusEl.style.display='block';
   statusEl.style.cssText='display:block;background:var(--blue-l);color:var(--blue);padding:8px 12px;border-radius:8px;font-size:12px';
   statusEl.textContent='Joining batch...';
@@ -2288,10 +2473,20 @@ async function loadContentPacks(){
     if(d.questions && d.questions.length){
       // Merge pack questions into the live QUESTIONS pool, avoiding id collisions
       const existingIds = new Set(QUESTIONS.map(q=>q.id));
-      d.questions.forEach(q=>{ if(!existingIds.has(q.id)) QUESTIONS.push(q); });
+      const existingTexts = new Set(QUESTIONS.map(function(q){return String(q.text||'').toLowerCase().replace(/\s+/g,' ').trim();}));
+      d.questions.forEach(function(q){
+        const textKey=String(q.text||'').toLowerCase().replace(/\s+/g,' ').trim();
+        if(existingIds.has(q.id)||existingTexts.has(textKey))return;
+        QUESTIONS.push(q);existingIds.add(q.id);existingTexts.add(textKey);
+      });
       console.log('Loaded', d.questions.length, 'questions from', d.activePacks.length, 'active content packs');
     }
   }catch(e){ console.log('Content packs not available yet'); }
+  updateQuestionCounts();
+}
+function updateQuestionCounts(){
+  const map={PHYSICS:'physicsQuestionCount',CHEMISTRY:'chemistryQuestionCount',BIOLOGY:'biologyQuestionCount'};
+  Object.keys(map).forEach(function(sub){const el=document.getElementById(map[sub]);if(el)el.textContent=QUESTIONS.filter(function(q){return q.sub===sub;}).length.toLocaleString('en-IN')+' verified Qs';});
 }
 
 
@@ -2543,7 +2738,9 @@ async function handleAdaptiveAns(el, idx, q){
         qDifficulty:({starter:150,easy:300,medium:500,hard:700,exam:850}[q.diff]||500),
         correct:isCorrect,
         timeTakenMs,
-        expectedTimeMs:30000
+        expectedTimeMs:30000,
+        subject:q.sub,
+        chapter:q.ch
       });
       if(r.streakMilestone){
         toast('🔥 '+r.streakMilestone+' in a row! Moving you up.');
@@ -3446,6 +3643,116 @@ function startSyllabusUnitQuiz(sub, unitId){
 }
 
 
+// ===== ASSIGNED TEST SERIES =====
+let ASSIGNED_TEST = null;
+async function loadAssignedTests(){
+  const el=document.getElementById('assignedTestsList'); if(!el)return;
+  if(!S.user){el.innerHTML='<div style="font-size:11px;color:var(--mute)">Sign in to view assigned tests.</div>';return;}
+  try{
+    const r=await api('test-series',{action:'list_tests',uid:S.user.uid,sessionToken:S.sessionToken});
+    const tests=r.tests||[];el.innerHTML='';
+    if(!tests.length){el.innerHTML='<div style="font-size:11px;color:var(--mute)">No tests assigned right now.</div>';return;}
+    tests.slice(0,6).forEach(function(t){
+      const row=document.createElement('div');row.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--bdr)';
+      const info=document.createElement('div');const title=document.createElement('b');title.style.fontSize='12px';title.textContent=t.title;
+      const meta=document.createElement('div');meta.style.cssText='font-size:10px;color:var(--mute);margin-top:2px';meta.textContent=t.questionCount+' Qs · '+t.durationMinutes+' min · '+(t.dueAt?'Due '+new Date(t.dueAt).toLocaleString('en-IN'):'No deadline');
+      info.appendChild(title);info.appendChild(meta);
+      const action=document.createElement('button');action.className='btn '+(t.availability==='open'?'btn-blue':'btn-ghost');action.style.cssText='font-size:10px;padding:6px 9px';
+      const teacher=S.user.academyRole==='teacher'||S.user.role==='admin';
+      action.textContent=teacher?'Created':t.availability==='open'?'Start / Continue':t.availability==='upcoming'?'Upcoming':'Closed';
+      action.disabled=teacher||t.availability!=='open'; if(!action.disabled)action.onclick=function(){startAssignedTest(t.id);};
+      row.appendChild(info);row.appendChild(action);el.appendChild(row);
+    });
+  }catch(e){el.innerHTML='<div style="font-size:11px;color:var(--red)">Could not load assigned tests.</div>';}
+}
+async function startAssignedTest(testId){
+  if(!S.user){openAuth();return;}
+  try{
+    const r=await api('test-series',{action:'get_test',uid:S.user.uid,sessionToken:S.sessionToken,testId:testId});
+    if(!r.ok){toast(r.error||'Could not open test');return;}
+    if(r.test.availability!=='open'){toast('This test is not open');return;}
+    if(r.submittedAttempts>=r.test.attemptLimit&&!r.attempt){toast('Attempt limit reached');return;}
+    ASSIGNED_TEST={test:r.test,questions:r.questions,answers:new Array(r.questions.length).fill(null),responseTimes:new Array(r.questions.length).fill(0),cur:0,startedAt:r.attempt&&r.attempt.startedAt||new Date().toISOString(),questionStartedAt:Date.now(),done:false,saveTimer:null,saveChain:Promise.resolve()};
+    if(r.attempt){
+      (r.attempt.answers||[]).forEach(function(a,i){ASSIGNED_TEST.answers[i]=a;});
+      (r.attempt.responseTimes||[]).forEach(function(t,i){ASSIGNED_TEST.responseTimes[i]=t;});
+    }
+    if(!r.attempt)await performAssignedSave();
+    switchTab('quiz');startUsageSection('test_series');renderAssignedQuestion();
+    ASSIGNED_TEST.timerInt=setInterval(assignedTestTick,1000);
+  }catch(e){toast('Could not open assigned test');}
+}
+function assignedTestTick(){
+  if(!ASSIGNED_TEST||ASSIGNED_TEST.done)return;
+  const elapsed=Math.floor((Date.now()-new Date(ASSIGNED_TEST.startedAt).getTime())/1000);
+  const left=ASSIGNED_TEST.test.durationMinutes*60-elapsed;
+  const el=document.getElementById('assignedTestTimer');
+  if(el){el.textContent=Math.max(0,Math.floor(left/60))+':'+String(Math.max(0,left%60)).padStart(2,'0');el.style.color=left<300?'var(--red)':'#fff';}
+  if(left<=0)submitAssignedTest(true);
+}
+function renderAssignedQuestion(){
+  if(!ASSIGNED_TEST)return;
+  const q=ASSIGNED_TEST.questions[ASSIGNED_TEST.cur],ans=ASSIGNED_TEST.answers[ASSIGNED_TEST.cur];
+  const qv=document.getElementById('quizView');document.getElementById('resultView').style.display='none';qv.style.display='block';
+  const grid=ASSIGNED_TEST.questions.map(function(_,i){const a=ASSIGNED_TEST.answers[i];return '<button onclick="assignedGoto('+i+')" style="width:30px;height:30px;border-radius:7px;border:1px solid var(--bdr);background:'+(i===ASSIGNED_TEST.cur?'var(--blue)':a!==null?'var(--green)':'var(--surf2)')+';color:'+(i===ASSIGNED_TEST.cur||a!==null?'#fff':'var(--mute)')+';font-size:10px;font-weight:700">'+(i+1)+'</button>';}).join('');
+  qv.innerHTML='<div style="background:linear-gradient(135deg,#0a2342,var(--purple));color:#fff;border-radius:13px;padding:12px 14px;margin-bottom:11px;display:flex;justify-content:space-between"><div><div style="font-size:10px;opacity:.75">ASSIGNED TEST · +4/-1</div><div style="font-size:14px;font-weight:800">'+escapeHtml(ASSIGNED_TEST.test.title)+'</div><div style="font-size:10px;opacity:.75">Q '+(ASSIGNED_TEST.cur+1)+' of '+ASSIGNED_TEST.questions.length+'</div></div><div style="text-align:right"><div style="font-size:9px;opacity:.7">TIME LEFT</div><div id="assignedTestTimer" style="font-size:19px;font-weight:800">--:--</div></div></div>'+
+    '<div class="qcard"><div class="qtag">'+escapeHtml(q.sub)+' · '+escapeHtml(q.ch)+'</div><div class="qtext">'+escapeHtml(q.text)+'</div><div class="opts">'+['A','B','C','D'].map(function(l,i){if(!q.opts[i])return '';return '<div class="opt" '+(ans===i?'style="border-color:var(--blue);background:var(--blue-l)"':'')+' onclick="assignedAnswer('+i+')"><div class="oltr" '+(ans===i?'style="background:var(--blue);color:#fff"':'')+'>'+l+'</div>'+escapeHtml(q.opts[i])+'</div>';}).join('')+'</div></div>'+
+    '<div style="display:flex;gap:7px;margin:10px 0"><button class="btn btn-ghost" style="flex:1" onclick="assignedClear()">Clear</button><button class="btn btn-blue" style="flex:2" onclick="assignedNext()">Save & Next</button></div><div class="card"><div style="font-size:11px;font-weight:700;margin-bottom:7px">Question Palette</div><div style="display:flex;flex-wrap:wrap;gap:5px">'+grid+'</div><button class="btn btn-full" style="margin-top:11px;background:var(--red);color:#fff" onclick="if(confirm(\'Submit this test?\'))submitAssignedTest(false)"><i class="ti ti-send"></i> Submit Test</button></div>';
+  assignedTestTick();
+}
+function assignedAnswer(i){
+  if(!ASSIGNED_TEST)return;ASSIGNED_TEST.answers[ASSIGNED_TEST.cur]=i;
+  if(!ASSIGNED_TEST.responseTimes[ASSIGNED_TEST.cur])ASSIGNED_TEST.responseTimes[ASSIGNED_TEST.cur]=Date.now()-ASSIGNED_TEST.questionStartedAt;
+  queueAssignedSave();renderAssignedQuestion();
+}
+function assignedClear(){if(!ASSIGNED_TEST)return;ASSIGNED_TEST.answers[ASSIGNED_TEST.cur]=null;queueAssignedSave();renderAssignedQuestion();}
+function assignedGoto(i){if(!ASSIGNED_TEST)return;ASSIGNED_TEST.cur=i;ASSIGNED_TEST.questionStartedAt=Date.now();renderAssignedQuestion();}
+function assignedNext(){if(!ASSIGNED_TEST)return;queueAssignedSave();if(ASSIGNED_TEST.cur<ASSIGNED_TEST.questions.length-1){ASSIGNED_TEST.cur++;ASSIGNED_TEST.questionStartedAt=Date.now();renderAssignedQuestion();}else toast('Last question. Review or submit.');}
+function performAssignedSave(){
+  if(!ASSIGNED_TEST||!S.user)return Promise.resolve();
+  const state=ASSIGNED_TEST;
+  const payload={action:'save_progress',uid:S.user.uid,sessionToken:S.sessionToken,testId:state.test.id,answers:state.answers.slice(),responseTimes:state.responseTimes.slice()};
+  state.saveChain=state.saveChain.catch(function(){}).then(function(){return api('test-series',payload);});
+  return state.saveChain;
+}
+function queueAssignedSave(){
+  if(!ASSIGNED_TEST)return;
+  if(ASSIGNED_TEST.saveTimer)clearTimeout(ASSIGNED_TEST.saveTimer);
+  ASSIGNED_TEST.saveTimer=setTimeout(function(){if(ASSIGNED_TEST){ASSIGNED_TEST.saveTimer=null;performAssignedSave();}},400);
+}
+async function flushAssignedSave(){
+  if(!ASSIGNED_TEST)return;
+  if(ASSIGNED_TEST.saveTimer){clearTimeout(ASSIGNED_TEST.saveTimer);ASSIGNED_TEST.saveTimer=null;}
+  await performAssignedSave();
+}
+async function submitAssignedTest(autoSubmit){
+  if(!ASSIGNED_TEST||ASSIGNED_TEST.done)return;ASSIGNED_TEST.done=true;clearInterval(ASSIGNED_TEST.timerInt);
+  flushUsageSection(false);
+  try{
+    await flushAssignedSave();
+    const r=await api('test-series',{action:'submit_test',uid:S.user.uid,sessionToken:S.sessionToken,testId:ASSIGNED_TEST.test.id,answers:ASSIGNED_TEST.answers,responseTimes:ASSIGNED_TEST.responseTimes});
+    if(!r.ok){ASSIGNED_TEST.done=false;toast(r.error||'Submission failed');return;}
+    renderAssignedResult(r.attempt,autoSubmit);loadAssignedTests();
+  }catch(e){ASSIGNED_TEST.done=false;toast('Submission failed. Your saved answers are retained.');}
+}
+function renderAssignedResult(a,autoSubmit){
+  document.getElementById('quizView').style.display='none';const rv=document.getElementById('resultView');rv.style.display='block';
+  const subjects=Object.entries(a.bySubject||{}).map(function(x){return '<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--bdr)"><b>'+escapeHtml(x[0])+'</b><span>'+x[1].score+' marks · '+x[1].accuracy+'%</span></div>';}).join('');
+  const chapters=Object.entries(a.byChapter||{}).sort(function(x,y){return x[1].accuracy-y[1].accuracy;}).slice(0,8).map(function(x){return '<div style="display:flex;justify-content:space-between;padding:6px 0"><span>'+escapeHtml(x[0])+'</span><b style="color:'+(x[1].accuracy<50?'var(--red)':'var(--green)')+'">'+x[1].accuracy+'%</b></div>';}).join('');
+  rv.innerHTML='<div style="background:linear-gradient(135deg,#0a2342,var(--purple));color:#fff;border-radius:16px;padding:22px;text-align:center;margin-bottom:13px"><div style="font-size:11px;opacity:.75">'+(autoSubmit?'TIME COMPLETED · ':'')+'TEST RESULT</div><div style="font-size:40px;font-weight:900">'+a.score720+'<span style="font-size:16px;opacity:.65">/720</span></div><div style="font-size:12px">'+a.score+'/'+a.maxScore+' marks · Rank '+(a.rank||'—')+' of '+(a.cohortSize||1)+'</div></div><div class="quad" style="margin-bottom:12px"><div class="qbox"><div class="qn" style="color:var(--green)">'+a.correct+'</div><div class="ql">Correct</div></div><div class="qbox"><div class="qn" style="color:var(--red)">'+a.wrong+'</div><div class="ql">Wrong</div></div><div class="qbox"><div class="qn">'+a.skipped+'</div><div class="ql">Skipped</div></div><div class="qbox"><div class="qn" style="color:var(--blue)">'+a.accuracy+'%</div><div class="ql">Accuracy</div></div></div><div class="card" style="margin-bottom:11px"><b>Subject analysis</b>'+subjects+'</div><div class="card" style="margin-bottom:11px"><b>Weakest chapters first</b>'+chapters+'<div style="font-size:10px;color:var(--mute);margin-top:8px">Too-fast incorrect: '+(a.behaviours.tooFastIncorrect||0)+' · Overtime incorrect: '+(a.behaviours.overtimeIncorrect||0)+'</div></div><button class="btn btn-blue btn-full" onclick="switchTab(\'home\')">Back to Test Series</button><button class="btn btn-ghost btn-full" style="margin-top:8px" onclick="switchTab(\'mistakes\')">Review in Galti Copy</button>';
+  ASSIGNED_TEST=null;startUsageSection('analytics');
+}
+async function openTestHistory(){
+  if(!S.user){openAuth();return;}
+  const el=document.createElement('div');el.id='testHistoryModal';el.style.cssText='position:fixed;inset:0;background:rgba(10,35,66,.85);z-index:750;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)';
+  el.innerHTML='<div style="background:var(--surf);border-radius:20px 20px 0 0;width:100%;max-width:540px;padding:20px;max-height:88vh;overflow-y:auto"><div style="display:flex;justify-content:space-between"><b>Test Attempt History</b><button onclick="document.getElementById(\'testHistoryModal\').remove()" style="border:0;background:none;font-size:18px;color:var(--mute)">×</button></div><div id="testHistoryBody" style="margin-top:12px;font-size:12px;color:var(--mute)">Loading...</div></div>';
+  document.body.appendChild(el);el.addEventListener('click',function(e){if(e.target===el)el.remove();});
+  try{
+    const r=await api('test-series',{action:'get_attempt_history',uid:S.user.uid,sessionToken:S.sessionToken});const body=document.getElementById('testHistoryBody');const attempts=r.attempts||[];
+    body.innerHTML=attempts.length?attempts.map(function(a){return '<div style="padding:10px 0;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between"><div><b>'+escapeHtml(a.testTitle||'Assigned Test')+'</b><div style="font-size:10px;color:var(--mute)">'+new Date(a.submittedAt).toLocaleString('en-IN')+' · Attempt '+a.attemptNo+'</div></div><div style="text-align:right"><b style="color:var(--blue)">'+a.score720+'/720</b><div style="font-size:10px">'+a.accuracy+'% · Rank '+(a.rank||'—')+'</div></div></div>';}).join(''):'No completed assigned tests yet.';
+  }catch(e){document.getElementById('testHistoryBody').textContent='Could not load attempt history.';}
+}
+
 // ===== STUDY MODES: Learn / Practice / Exam / Revision =====
 
 // ---- EXAM MODE: NEET pattern simulator ----
@@ -3471,6 +3778,7 @@ function startExamMode(){
     done: false,
   };
   switchTab('quiz');
+  startUsageSection('exam');
   renderExamQuestion();
   if(EXAM.timerInt) clearInterval(EXAM.timerInt);
   EXAM.timerInt = setInterval(examTick, 1000);
@@ -3530,6 +3838,7 @@ function submitExam(){
   if(!EXAM || EXAM.done) return;
   EXAM.done = true;
   clearInterval(EXAM.timerInt);
+  flushUsageSection(false);startUsageSection('analytics');
   let correct=0, wrong=0, skipped=0;
   const examDiagnoses = [];
   EXAM.qs.forEach(function(q,i){
@@ -3572,7 +3881,7 @@ function submitExam(){
   '<button class="btn btn-blue btn-full" onclick="startExamMode()"><i class="ti ti-refresh"></i> New Mock Test</button>'+
   '<button class="btn btn-ghost btn-full" style="margin-top:8px" onclick="switchTab(\'mistakes\')"><i class="ti ti-notebook"></i> Review Mistakes in Galti</button>';
   if(S.user&&S.sessionToken){
-    try{ api('scoring',{uid:S.user.uid,sessionToken:S.sessionToken,subject:'global',sessionTimeSec:timeTaken*60,
+    try{ api('scoring',{uid:S.user.uid,sessionToken:S.sessionToken,subject:'global',mode:'exam',sessionTimeSec:timeTaken*60,usageTimeTracked:true,
       targetId:S.pendingTargetId||null,examScoreOutOf720:score720,
       results:EXAM.qs.map(function(q,i){return {questionId:q.id,tid:q.tid,chapter:q.ch,correct:EXAM.answers[i]===null?null:EXAM.answers[i]===q.correct,timeTaken:60,difficulty:q.diff,type:'standard'}})});
       S.pendingTargetId = null; }catch(e){}
@@ -3625,6 +3934,17 @@ function shareProgressToParent(){
   if(!ph){ toast("Add parent WhatsApp number in Profile first"); switchTab("profile"); return; }
   const num = ph.startsWith("91") ? ph : "91"+ph;
   window.open("https://wa.me/"+num+"?text="+encodeURIComponent(buildProgressText()),"_blank");
+}
+async function sendParentWeekly(){
+  if(!S.user){openAuth();return;}
+  const box=document.getElementById('parentWeeklyPreview');if(box){box.style.display='block';box.textContent='Preparing this week\'s real activity...';}
+  try{
+    const r=await api('notifications',{action:'send_parent_weekly',uid:S.user.uid,sessionToken:S.sessionToken});
+    if(!r.ok){if(box)box.textContent=r.error||'Could not prepare report';toast(r.error||'Could not prepare report');return;}
+    const s=r.stats||{},wa=r.results&&r.results.parentWaLink;
+    if(box)box.innerHTML='<b>Parent weekly preview</b><div style="margin-top:5px">Study: '+(s.studyMinutes||0)+' min · Questions: '+(s.questionsThisWeek||0)+' · Accuracy: '+(s.accuracy||0)+'%</div><div style="margin-top:3px">Focus: '+escapeHtml(s.weakestTopic||'Keep practising consistently')+'</div>'+(wa?'<a class="btn btn-green btn-full" style="display:block;text-align:center;text-decoration:none;margin-top:8px" target="_blank" href="'+escapeHtml(wa)+'"><i class="ti ti-brand-whatsapp"></i> Open WhatsApp Message</a>':'<div style="margin-top:6px;color:var(--mute)">Email processed. Add parent WhatsApp for a share link.</div>');
+    toast('Parent weekly update prepared');
+  }catch(e){if(box)box.textContent='Could not prepare report.';}
 }
 
 // ===== CHAPTER MASTERY DASHBOARD (Learning DNA) =====
@@ -3836,7 +4156,279 @@ function loadTeacherPanel(){
   const box = document.getElementById("teacherPanel"); if(!box) return;
   const isTeacher = S.user && (S.user.academyRole === "teacher" || S.user.role === "admin") && S.user.academyId;
   box.style.display = isTeacher ? "block" : "none";
-  if(isTeacher) loadTeacherPacks();
+  if(isTeacher){ loadTeacherBatches(); loadTeacherTests(); loadTeacherPacks(); }
+}
+async function teacherCreateBatch(){
+  const input = document.getElementById("teacherBatchName");
+  const btn = document.getElementById("teacherCreateBatchBtn");
+  const batchName = input ? input.value.trim() : "";
+  if(!batchName){ toast("Enter a batch name"); return; }
+  if(btn) btn.disabled = true;
+  try{
+    const r = await api("academy",{action:"create_batch",uid:S.user.uid,sessionToken:S.sessionToken,batchName:batchName});
+    if(!r.ok){ toast("Error: "+(r.error||"Could not create batch")); return; }
+    if(input) input.value = "";
+    const codeBox = document.getElementById("teacherNewBatchCode");
+    const codeValue = document.getElementById("teacherNewBatchCodeValue");
+    if(codeValue) codeValue.textContent = r.batchCode;
+    if(codeBox) codeBox.style.display = "block";
+    S.user.batchId = r.batchId; S.user.batchCode = r.batchCode; S.user.batchName = batchName;
+    saveSession(S.user, S.sessionToken);
+    toast("Batch created. Share code "+r.batchCode+" with students.");
+    loadTeacherBatches(); renderAcademyStatus();
+  }catch(e){ toast("Could not create batch. Try again."); }
+  finally{ if(btn) btn.disabled = false; }
+}
+function copyTeacherBatchCode(){
+  const el = document.getElementById("teacherNewBatchCodeValue");
+  const code = el ? el.textContent.trim() : "";
+  if(!code) return;
+  navigator.clipboard.writeText(code).then(function(){ toast("Batch code copied"); })
+    .catch(function(){ toast("Copy failed. Code: "+code); });
+}
+let TEACHER_BATCHES = [];
+let TEACHER_ROSTER_CACHE = null;
+let TEACHER_TEST_RESULTS_CACHE = null;
+async function loadTeacherBatches(){
+  const list = document.getElementById("teacherBatchesList");
+  const seats = document.getElementById("teacherSeatSummary");
+  if(!list || !seats) return;
+  list.textContent = "Loading batches...";
+  list.style.color = "";
+  try{
+    const r = await api("academy",{action:"list_my_batches",uid:S.user.uid,sessionToken:S.sessionToken});
+    if(!r.ok) throw new Error(r.error||"Could not load batches");
+    TEACHER_BATCHES = r.batches||[];
+    seats.textContent = "Academy seats used: "+r.seatsUsed+" / "+r.studentCount;
+    list.innerHTML = "";
+    const testBatch = document.getElementById("teacherTestBatch");
+    if(testBatch){
+      testBatch.innerHTML = '<option value="">Select batch</option>';
+      (r.batches||[]).forEach(function(batch){
+        const opt=document.createElement('option'); opt.value=batch.id; opt.textContent=batch.batchName||batch.batchCode||'Batch'; testBatch.appendChild(opt);
+      });
+    }
+    const packBatch=document.getElementById('tpBatch');
+    if(packBatch){
+      packBatch.innerHTML='<option value="">Select batch</option>';
+      (r.batches||[]).forEach(function(batch){const opt=document.createElement('option');opt.value=batch.id;opt.textContent=batch.batchName||batch.batchCode||'Batch';packBatch.appendChild(opt);});
+    }
+    ['teacherUsageBatch','teacherDoubtBatch'].forEach(function(id){
+      const select=document.getElementById(id);if(!select)return;const previous=select.value;
+      select.innerHTML='<option value="">Select batch</option>';
+      (r.batches||[]).forEach(function(batch){const opt=document.createElement('option');opt.value=batch.id;opt.textContent=batch.batchName||batch.batchCode||'Batch';select.appendChild(opt);});
+      select.value=(r.batches||[]).some(function(b){return b.id===previous;})?previous:((r.batches||[])[0]||{}).id||'';
+    });
+    if(!(r.batches||[]).length){ list.textContent = "No batches yet. Create your first batch above."; return; }
+    r.batches.forEach(function(batch){
+      const row = document.createElement("div");
+      row.style.cssText = "display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--bdr);font-size:12px";
+      const info = document.createElement("div");
+      info.style.flex = "1 1 150px";
+      const name = document.createElement("b"); name.textContent = batch.batchName || "Unnamed batch";
+      const meta = document.createElement("div");
+      meta.style.cssText = "font-size:10px;color:var(--mute);margin-top:2px";
+      meta.textContent = (batch.studentCount||0)+" students · "+(batch.subject||"ALL")+(batch.active===false?" · Inactive":" · Active");
+      info.appendChild(name); info.appendChild(meta);
+      const actions = document.createElement("div");
+      actions.style.cssText = "display:flex;gap:5px;align-items:center;flex-wrap:wrap;justify-content:flex-end";
+      const code = document.createElement("button");
+      code.className="btn btn-ghost"; code.style.cssText="font:800 10px monospace;padding:5px 7px;color:var(--blue);letter-spacing:1px";
+      code.textContent=batch.batchCode||"—"; code.title="Copy join code"; code.onclick=function(){navigator.clipboard.writeText(batch.batchCode||'').then(function(){toast('Batch code copied');});};
+      const roster=document.createElement("button");roster.className="btn btn-ghost";roster.style.cssText="font-size:10px;padding:5px 7px";roster.textContent="Roster";roster.onclick=function(){openTeacherRoster(batch.id);};
+      const report=document.createElement("button");report.className="btn btn-ghost";report.style.cssText="font-size:10px;padding:5px 7px";report.textContent="Report";report.onclick=function(){downloadBatchReport(batch.id);};
+      const board=document.createElement("button");board.className="btn btn-ghost";board.style.cssText="font-size:10px;padding:5px 7px";board.textContent="Board";board.onclick=function(){openBatchLeaderboard(batch.id,batch.batchName);};
+      const notify=document.createElement("button");notify.className="btn btn-ghost";notify.style.cssText="font-size:10px;padding:5px 7px";notify.textContent="Notify";notify.onclick=function(){teacherNotifyBatch(batch.id,batch.batchName);};
+      const edit=document.createElement("button");edit.className="btn btn-ghost";edit.style.cssText="font-size:10px;padding:5px 7px";edit.textContent="Edit";edit.onclick=function(){teacherEditBatch(batch.id,batch.batchName);};
+      const toggle=document.createElement("button");toggle.className="btn btn-ghost";toggle.style.cssText="font-size:10px;padding:5px 7px;color:"+(batch.active===false?'var(--green)':'var(--red)');toggle.textContent=batch.active===false?"Activate":"Deactivate";toggle.onclick=function(){teacherToggleBatch(batch.id,batch.active!==false);};
+      actions.appendChild(code);actions.appendChild(roster);actions.appendChild(report);actions.appendChild(board);actions.appendChild(notify);actions.appendChild(edit);actions.appendChild(toggle);
+      row.appendChild(info); row.appendChild(actions); list.appendChild(row);
+    });
+    const usageBatch=document.getElementById('teacherUsageBatch');if(usageBatch&&usageBatch.value)loadTeacherUsage(usageBatch.value);
+    const doubtBatch=document.getElementById('teacherDoubtBatch');if(doubtBatch&&doubtBatch.value)loadTeacherDoubts(doubtBatch.value);
+  }catch(e){
+    seats.textContent = "Seat count unavailable";
+    list.textContent = "Could not load your batches";
+    list.style.color = "var(--red)";
+  }
+}
+function formatUsageTime(seconds){
+  const mins=Math.round((seconds||0)/60);return mins>=60?Math.floor(mins/60)+'h '+(mins%60)+'m':mins+'m';
+}
+function renderUsageSummary(summary,includeStudents){
+  const sections=(summary.sections||[]).slice(0,4).map(function(s){return '<div style="display:flex;justify-content:space-between;padding:4px 0"><span>'+escapeHtml(s.name.replace(/_/g,' '))+'</span><b>'+formatUsageTime(s.timeSec)+'</b></div>';}).join('');
+  const chapters=(summary.chapters||[]).slice(0,4).map(function(c){return '<span style="display:inline-block;background:var(--surf2);padding:4px 7px;border-radius:7px;margin:2px">'+escapeHtml(c.name)+' · '+formatUsageTime(c.timeSec)+'</span>';}).join('');
+  const students=includeStudents?(summary.students||[]).slice(0,8).map(function(s){return '<div style="display:flex;justify-content:space-between;padding:5px 0;border-top:1px solid var(--bdr)"><span>'+escapeHtml(s.name)+'</span><span>'+formatUsageTime(s.timeSec)+' · '+s.questions+' Q</span></div>';}).join(''):'';
+  const inactive=includeStudents?(summary.inactiveStudents||[]).slice(0,8).map(function(s){return '<span style="display:inline-block;background:var(--red-l);color:var(--red);padding:4px 7px;border-radius:7px;margin:2px">'+escapeHtml(s.name)+'</span>';}).join(''):'';
+  return '<div class="quad" style="margin-bottom:9px"><div class="qbox"><div class="qn" style="font-size:18px">'+(summary.activeStudents||0)+'</div><div class="ql">Active</div></div><div class="qbox"><div class="qn" style="font-size:18px;color:var(--teal)">'+formatUsageTime(summary.totalTimeSec)+'</div><div class="ql">Study time</div></div><div class="qbox"><div class="qn" style="font-size:18px;color:var(--blue)">'+(summary.questionsAttempted||0)+'</div><div class="ql">Questions</div></div><div class="qbox"><div class="qn" style="font-size:18px;color:var(--purple)">'+(summary.testsSubmitted||0)+'</div><div class="ql">Tests</div></div></div>'+
+    (sections?'<b>Sections</b>'+sections:'<div style="color:var(--mute)">No recorded activity in this period.</div>')+
+    (chapters?'<div style="margin-top:7px"><b>Top chapters</b><div style="margin-top:3px">'+chapters+'</div></div>':'')+
+    (students?'<div style="margin-top:8px"><b>Student activity</b>'+students+'</div>':'')+
+    (inactive?'<div style="margin-top:8px"><b>No activity in 7 days</b><div style="margin-top:3px">'+inactive+'</div></div>':'');
+}
+async function loadTeacherUsage(batchId){
+  const box=document.getElementById('teacherUsageSummary');if(!box)return;if(!batchId){box.textContent='Select a batch to view usage.';return;}box.textContent='Loading usage...';
+  try{const r=await api('academy',{action:'get_usage_summary',uid:S.user.uid,sessionToken:S.sessionToken,batchId:batchId,days:7});box.innerHTML=r.ok?renderUsageSummary(r.summary,true):escapeHtml(r.error||'Could not load usage');}catch(e){box.textContent='Could not load usage.';}
+}
+async function loadTeacherDoubts(batchId){
+  const box=document.getElementById('teacherDoubtsList');if(!box)return;if(!batchId){box.textContent='Select a batch.';return;}box.textContent='Loading doubts...';
+  try{const r=await api('academy',{action:'list_batch_doubts',uid:S.user.uid,sessionToken:S.sessionToken,batchId:batchId});if(!r.ok){box.textContent=r.error||'Could not load doubts';return;}box.innerHTML=(r.doubts||[]).length?r.doubts.map(function(d){return '<div style="padding:9px 0;border-bottom:1px solid var(--bdr)"><div style="display:flex;justify-content:space-between;gap:8px"><b>'+escapeHtml(d.studentName)+'</b><span style="color:'+(d.status==='open'?'var(--amber)':'var(--green)')+'">'+escapeHtml(d.status)+'</span></div><div style="margin:4px 0">'+escapeHtml(d.question)+'</div>'+(d.status==='open'?'<button class="btn btn-blue" style="font-size:10px;padding:5px 8px" onclick="teacherResolveDoubt(\''+encodeURIComponent(d.id)+'\',\''+encodeURIComponent(batchId)+'\')">Answer</button>':'<div style="background:var(--green-l);padding:7px;border-radius:7px"><b>Reply:</b> '+escapeHtml(d.teacherReply)+'</div>')+'</div>';}).join(''):'No doubts from this batch.';}catch(e){box.textContent='Could not load doubts.';}
+}
+async function teacherResolveDoubt(encodedId,encodedBatchId){
+  const reply=prompt('Teacher reply:','');if(!reply||!reply.trim())return;const batchId=decodeURIComponent(encodedBatchId);
+  const r=await api('academy',{action:'resolve_doubt',uid:S.user.uid,sessionToken:S.sessionToken,doubtId:decodeURIComponent(encodedId),teacherReply:reply.trim()});
+  if(r.ok){toast('Reply saved');loadTeacherDoubts(batchId);}else toast(r.error||'Could not save reply');
+}
+async function teacherEditBatch(batchId,currentName){
+  const name=prompt('Batch name:',currentName||''); if(name===null)return;
+  if(!name.trim()){toast('Batch name cannot be empty');return;}
+  const r=await api('academy',{action:'update_batch',uid:S.user.uid,sessionToken:S.sessionToken,batchId:batchId,batchName:name.trim()});
+  if(r.ok){toast('Batch updated');loadTeacherBatches();}else toast(r.error||'Could not update batch');
+}
+async function teacherToggleBatch(batchId,isActive){
+  const verb=isActive?'deactivate':'activate';
+  if(!confirm('Are you sure you want to '+verb+' this batch?'))return;
+  const r=await api('academy',{action:'update_batch',uid:S.user.uid,sessionToken:S.sessionToken,batchId:batchId,active:!isActive});
+  if(r.ok){toast('Batch '+(isActive?'deactivated':'activated'));loadTeacherBatches();}else toast(r.error||'Could not update batch');
+}
+async function teacherNotifyBatch(batchId,batchName){
+  const subject=prompt('Announcement subject for '+(batchName||'this batch')+':','Class update');if(subject===null)return;
+  const message=prompt('Message to students:','');if(message===null)return;
+  if(!subject.trim()||!message.trim()){toast('Subject and message are required');return;}
+  const r=await api('notifications',{action:'teacher_batch_announcement',uid:S.user.uid,sessionToken:S.sessionToken,batchId:batchId,subject:subject.trim(),message:message.trim()});
+  if(r.ok)toast('Announcement processed for '+r.processed+' students');else toast(r.error||'Could not send announcement');
+}
+function csvCell(value){
+  let text=String(value===undefined||value===null?'':value);if(/^[=+\-@]/.test(text))text="'"+text;
+  return '"'+text.replace(/"/g,'""')+'"';
+}
+function downloadCsv(filename,rows){
+  const csv=rows.map(function(row){return row.map(csvCell).join(',');}).join('\r\n');
+  const url=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));
+  const link=document.createElement('a');link.href=url;link.download=filename;document.body.appendChild(link);link.click();link.remove();setTimeout(function(){URL.revokeObjectURL(url);},1000);
+}
+function exportTeacherRoster(){
+  if(!TEACHER_ROSTER_CACHE)return;
+  const rows=[['Name','Email','Joined','Questions attempted','Accuracy %','Last active']].concat(TEACHER_ROSTER_CACHE.students.map(function(s){return [s.name,s.email,s.joinedAt||'',s.attempted,s.accuracy,s.lastSessionAt||''];}));
+  downloadCsv((TEACHER_ROSTER_CACHE.batch.batchName||'batch').replace(/[^a-z0-9_-]+/gi,'_')+'_roster.csv',rows);
+}
+async function openTeacherRoster(batchId){
+  const modal=document.createElement('div');modal.id='teacherRosterModal';modal.style.cssText='position:fixed;inset:0;background:rgba(10,35,66,.85);z-index:760;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)';
+  modal.innerHTML='<div style="background:var(--surf);border-radius:20px 20px 0 0;width:100%;max-width:620px;padding:20px;max-height:90vh;overflow-y:auto"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b id="teacherRosterTitle">Batch Roster</b><div><button class="btn btn-ghost" style="font-size:10px;padding:5px 8px" onclick="exportTeacherRoster()">Export CSV</button><button onclick="document.getElementById(\'teacherRosterModal\').remove()" style="border:0;background:none;font-size:18px;color:var(--mute)">×</button></div></div><div id="teacherRosterBody" style="margin-top:12px;font-size:12px;color:var(--mute)">Loading...</div></div>';
+  document.body.appendChild(modal);modal.addEventListener('click',function(e){if(e.target===modal)modal.remove();});
+  try{
+    const r=await api('academy',{action:'get_batch_roster',uid:S.user.uid,sessionToken:S.sessionToken,batchId:batchId});const body=document.getElementById('teacherRosterBody');
+    if(!r.ok){body.textContent=r.error||'Could not load roster';return;}TEACHER_ROSTER_CACHE=r;document.getElementById('teacherRosterTitle').textContent=(r.batch.batchName||'Batch')+' Roster';
+    body.innerHTML=r.students.length?r.students.map(function(s){return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--bdr)"><div><b>'+escapeHtml(s.name)+'</b><div style="font-size:10px;color:var(--mute)">'+escapeHtml(s.email)+' · '+s.attempted+' Qs · '+s.accuracy+'%</div><div style="font-size:9px;color:var(--mute)">Last active: '+(s.lastSessionAt?new Date(s.lastSessionAt).toLocaleString('en-IN'):'No activity yet')+'</div></div><button class="btn btn-ghost" style="font-size:10px;padding:5px 7px;color:var(--red)" onclick="teacherRemoveStudent(\''+encodeURIComponent(batchId)+'\',\''+encodeURIComponent(s.uid)+'\')">Remove</button></div>';}).join(''):'No students have joined this batch yet.';
+  }catch(e){document.getElementById('teacherRosterBody').textContent='Could not load roster.';}
+}
+async function teacherRemoveStudent(encodedBatchId,encodedStudentUid){
+  const batchId=decodeURIComponent(encodedBatchId),studentUid=decodeURIComponent(encodedStudentUid);if(!confirm('Remove this student from the batch and release their academy seat?'))return;
+  const r=await api('academy',{action:'remove_student',uid:S.user.uid,sessionToken:S.sessionToken,batchId:batchId,studentUid:studentUid});
+  if(r.ok){toast('Student removed');document.getElementById('teacherRosterModal')?.remove();loadTeacherBatches();openTeacherRoster(batchId);}else toast(r.error||'Could not remove student');
+}
+async function openBatchLeaderboard(batchId,batchName){
+  const modal=document.createElement('div');modal.id='batchLeaderboardModal';modal.style.cssText='position:fixed;inset:0;background:rgba(10,35,66,.85);z-index:760;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)';
+  modal.innerHTML='<div style="background:var(--surf);border-radius:20px 20px 0 0;width:100%;max-width:520px;padding:20px;max-height:88vh;overflow-y:auto"><div style="display:flex;justify-content:space-between"><b>'+escapeHtml(batchName||'Batch')+' Leaderboard</b><button onclick="document.getElementById(\'batchLeaderboardModal\').remove()" style="border:0;background:none;font-size:18px;color:var(--mute)">×</button></div><div id="batchLeaderboardBody" style="margin-top:12px;font-size:12px;color:var(--mute)">Loading...</div></div>';
+  document.body.appendChild(modal);modal.addEventListener('click',function(e){if(e.target===modal)modal.remove();});
+  try{const r=await api('academy',{action:'batch_leaderboard',uid:S.user.uid,sessionToken:S.sessionToken,academyId:S.user.academyId,batchId:batchId});const body=document.getElementById('batchLeaderboardBody');if(r.error){body.textContent=r.error;return;}body.innerHTML=(r.leaderboard||[]).length?r.leaderboard.map(function(s){return '<div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--bdr)"><div><b>#'+s.rank+' '+escapeHtml(s.name||'Student')+'</b><div style="font-size:10px;color:var(--mute)">'+s.attempted+' attempted · '+s.accuracy+'% accuracy</div></div><b style="color:var(--blue)">'+Math.round(s.weighted)+'</b></div>';}).join(''):'No student has reached the 5-question minimum yet.';}catch(e){document.getElementById('batchLeaderboardBody').textContent='Could not load leaderboard.';}
+}
+function openMyBatchLeaderboard(){if(S.user&&S.user.batchId)openBatchLeaderboard(S.user.batchId,S.user.batchName||'My Batch');}
+const TEACHER_TEST_TEMPLATES={
+  weekly_neet:{title:'Weekly NEET-Style Mock',subject:'ALL',type:'part',count:45,duration:45,distribution:{PHYSICS:12,CHEMISTRY:12,BIOLOGY:21}},
+  full_neet:{title:'NEET-Style Full Mock',subject:'ALL',type:'full',count:180,duration:180,distribution:{PHYSICS:45,CHEMISTRY:45,BIOLOGY:90}},
+  physics_45:{title:'Physics Subject Test',subject:'PHYSICS',type:'subject',count:45,duration:45},
+  chemistry_45:{title:'Chemistry Subject Test',subject:'CHEMISTRY',type:'subject',count:45,duration:45},
+  biology_90:{title:'Biology Subject Test',subject:'BIOLOGY',type:'subject',count:90,duration:90}
+};
+function applyTeacherTestTemplate(key){
+  const t=TEACHER_TEST_TEMPLATES[key];if(!t)return;
+  document.getElementById('teacherTestTitle').value=t.title;
+  document.getElementById('teacherTestChapter').value='';
+  document.getElementById('teacherTestSubject').value=t.subject;
+  document.getElementById('teacherTestType').value=t.type;
+  document.getElementById('teacherTestCount').value=t.count;
+  document.getElementById('teacherTestDuration').value=t.duration;
+}
+function uniqueVerifiedQuestions(list){
+  const ids=new Set(),texts=new Set();return list.filter(function(q){const id=String(q.id),text=String(q.text||'').toLowerCase().replace(/\s+/g,' ').trim();if(ids.has(id)||!text||texts.has(text))return false;ids.add(id);texts.add(text);return true;});
+}
+function selectTeacherTestQuestions(pool,count,templateKey){
+  const unique=uniqueVerifiedQuestions(pool),template=TEACHER_TEST_TEMPLATES[templateKey];
+  if(!template||!template.distribution)return unique.length>=count?shuffleArray(unique).slice(0,count):null;
+  const selected=[];
+  for(const entry of Object.entries(template.distribution)){
+    const available=shuffleArray(unique.filter(function(q){return q.sub===entry[0];}));if(available.length<entry[1])return null;selected.push.apply(selected,available.slice(0,entry[1]));
+  }
+  return shuffleArray(selected);
+}
+async function teacherCreateTest(){
+  const templateKey=(document.getElementById('teacherTestTemplate')||{}).value||'custom';
+  const title=(document.getElementById('teacherTestTitle')||{}).value||'';
+  const batchId=(document.getElementById('teacherTestBatch')||{}).value||'';
+  const subject=(document.getElementById('teacherTestSubject')||{}).value||'ALL';
+  const chapter=((document.getElementById('teacherTestChapter')||{}).value||'').trim().toLowerCase();
+  const type=(document.getElementById('teacherTestType')||{}).value||'chapter';
+  const count=Math.max(5,Math.min(180,parseInt((document.getElementById('teacherTestCount')||{}).value)||20));
+  const durationMinutes=Math.max(5,Math.min(180,parseInt((document.getElementById('teacherTestDuration')||{}).value)||count));
+  const attemptLimit=parseInt((document.getElementById('teacherTestAttempts')||{}).value)||1;
+  const startRaw=(document.getElementById('teacherTestStart')||{}).value||'';
+  const dueRaw=(document.getElementById('teacherTestDue')||{}).value||'';
+  if(!title.trim()||!batchId){toast('Enter a test title and select a batch');return;}
+  if(startRaw&&dueRaw&&new Date(dueRaw)<=new Date(startRaw)){toast('Deadline must be after the opening time');return;}
+  let pool=QUESTIONS.filter(function(q){return subject==='ALL'||q.sub===subject;});
+  if(chapter)pool=pool.filter(function(q){return ((q.ch||'')+' '+(q.unit||'')+' '+(q.tid||'')).toLowerCase().indexOf(chapter)>=0;});
+  const questions=selectTeacherTestQuestions(pool,count,templateKey);
+  if(!questions){toast('This template needs more verified questions in one or more subjects. Choose a smaller template or upload reviewed packs.');return;}
+  const btn=document.getElementById('teacherCreateTestBtn'); if(btn)btn.disabled=true;
+  try{
+    const r=await api('test-series',{action:'create_test',uid:S.user.uid,sessionToken:S.sessionToken,title:title.trim(),batchId:batchId,subject:subject,type:type,templateKey:templateKey,durationMinutes:durationMinutes,attemptLimit:attemptLimit,startAt:startRaw?new Date(startRaw).toISOString():null,dueAt:dueRaw?new Date(dueRaw).toISOString():null,questions:questions});
+    if(!r.ok){toast('Error: '+(r.error||'Could not create test'));return;}
+    document.getElementById('teacherTestTitle').value='';
+    document.getElementById('teacherTestChapter').value='';
+    document.getElementById('teacherTestTemplate').value='custom';
+    toast('Test assigned to '+(r.test.batchName||'batch'));
+    loadTeacherTests();
+  }catch(e){toast('Could not create test');}
+  finally{if(btn)btn.disabled=false;}
+}
+async function loadTeacherTests(){
+  const el=document.getElementById('teacherTestsList'); if(!el||!S.user)return;
+  el.textContent='Loading assigned tests...';
+  try{
+    const r=await api('test-series',{action:'list_tests',uid:S.user.uid,sessionToken:S.sessionToken});
+    const tests=r.tests||[]; el.innerHTML='';
+    if(!tests.length){el.textContent='No assigned tests yet.';return;}
+    tests.forEach(function(t){
+      const row=document.createElement('div'); row.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--bdr);font-size:12px';
+      const info=document.createElement('div'); const name=document.createElement('b'); name.textContent=t.title;
+      const meta=document.createElement('div'); meta.style.cssText='font-size:10px;color:var(--mute)'; meta.textContent=t.batchName+' · '+t.questionCount+' Qs · '+t.durationMinutes+' min';
+      info.appendChild(name);info.appendChild(meta);
+      const btn=document.createElement('button');btn.className='btn btn-ghost';btn.style.cssText='font-size:10px;padding:5px 8px';btn.textContent='Results';btn.onclick=function(){openTeacherTestResults(t.id);};
+      row.appendChild(info);row.appendChild(btn);el.appendChild(row);
+    });
+  }catch(e){el.textContent='Could not load tests.';}
+}
+async function openTeacherTestResults(testId){
+  const el=document.createElement('div');el.id='teacherTestResultsModal';
+  el.style.cssText='position:fixed;inset:0;background:rgba(10,35,66,.85);z-index:760;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)';
+  el.innerHTML='<div style="background:var(--surf);border-radius:20px 20px 0 0;width:100%;max-width:560px;padding:20px;max-height:90vh;overflow-y:auto"><div style="display:flex;justify-content:space-between;align-items:center"><b>Test Results</b><div><button class="btn btn-ghost" style="font-size:10px;padding:5px 8px" onclick="exportTeacherTestResults()">Export CSV</button><button onclick="document.getElementById(\'teacherTestResultsModal\').remove()" style="border:0;background:none;font-size:18px;color:var(--mute)">×</button></div></div><div id="teacherTestResultsBody" style="margin-top:12px;font-size:12px;color:var(--mute)">Loading...</div></div>';
+  document.body.appendChild(el);el.addEventListener('click',function(e){if(e.target===el)el.remove();});
+  try{
+    const r=await api('test-series',{action:'get_test_results',uid:S.user.uid,sessionToken:S.sessionToken,testId:testId});
+    const body=document.getElementById('teacherTestResultsBody');
+    if(!r.ok){body.textContent=r.error||'Could not load results';return;}
+    TEACHER_TEST_RESULTS_CACHE=r;
+    let h='<div class="quad" style="margin-bottom:10px"><div class="qbox"><div class="qn">'+r.summary.assigned+'</div><div class="ql">Assigned</div></div><div class="qbox"><div class="qn">'+r.summary.submitted+'</div><div class="ql">Submitted</div></div><div class="qbox"><div class="qn">'+r.summary.notAttempted+'</div><div class="ql">Not Attempted</div></div><div class="qbox"><div class="qn">'+r.summary.averageScore+'</div><div class="ql">Average</div></div></div><div style="font-size:10px;color:var(--mute);margin-bottom:8px">Highest score: '+r.summary.highestScore+' · Total submissions: '+r.summary.totalSubmissions+'</div>';
+    h+=(r.attempts||[]).length?(r.attempts||[]).map(function(a){const chapters=Object.entries(a.byChapter||{}).filter(function(x){return x[1].attempted>0;}).sort(function(x,y){return x[1].accuracy-y[1].accuracy;});const weak=chapters.length?' · Review '+escapeHtml(chapters[0][0]):'';return '<div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--bdr)"><div><b>'+escapeHtml(a.studentName||'Student')+'</b><div style="font-size:10px;color:var(--mute)">Attempt '+a.attemptNo+' · '+a.accuracy+'% accuracy'+weak+'</div></div><div style="text-align:right"><b>'+a.score+'/'+a.maxScore+'</b><div style="font-size:10px;color:var(--blue)">Rank '+(a.rank||'—')+'</div></div></div>';}).join(''):'No submissions yet.';
+    body.innerHTML=h;
+  }catch(e){document.getElementById('teacherTestResultsBody').textContent='Could not load results.';}
+}
+function exportTeacherTestResults(){
+  if(!TEACHER_TEST_RESULTS_CACHE)return;
+  const r=TEACHER_TEST_RESULTS_CACHE;
+  const rows=[['Student','Attempt','Score','Maximum','Score / 720','Accuracy %','Rank','Submitted','Weakest chapter']].concat((r.attempts||[]).map(function(a){const chapters=Object.entries(a.byChapter||{}).filter(function(x){return x[1].attempted>0;}).sort(function(x,y){return x[1].accuracy-y[1].accuracy;});return [a.studentName||'Student',a.attemptNo,a.score,a.maxScore,a.score720,a.accuracy,a.rank||'',a.submittedAt||'',chapters.length?chapters[0][0]:''];}));
+  downloadCsv((r.test.title||'test').replace(/[^a-z0-9_-]+/gi,'_')+'_results.csv',rows);
 }
 async function loadTeacherPacks(){
   const el = document.getElementById("teacherPacksList"); if(!el) return;
@@ -3859,12 +4451,14 @@ function teacherUploadPack(){
   const target = document.getElementById("tpTarget") ? document.getElementById("tpTarget").value : "";
   const name = document.getElementById("tpName") ? document.getElementById("tpName").value.trim() : "";
   const scopeType = document.getElementById("tpScope") ? document.getElementById("tpScope").value : "academy";
+  const batchId = document.getElementById("tpBatch") ? document.getElementById("tpBatch").value : "";
   const fi = document.getElementById("tpFile");
   if(!target && !name){ toast("Enter a pack name or pick an existing pack to update"); return; }
+  if(!target && scopeType==="batch" && !batchId){ toast("Select the batch that should receive this pack"); return; }
   if(!fi || !fi.files.length){ toast("Select a CSV file"); return; }
   const reader = new FileReader();
   reader.onload = async function(e){
-    const body = {action:"teacher_upload",uid:S.user.uid,sessionToken:S.sessionToken,csvText:e.target.result,scopeType};
+    const body = {action:"teacher_upload",uid:S.user.uid,sessionToken:S.sessionToken,csvText:e.target.result,scopeType,batchId};
     if(target){ body.targetPackId = target; body.changeNote = prompt("What changed in this version? (optional)")||""; }
     else body.name = name;
     const r = await api("packs", body);
@@ -3874,6 +4468,9 @@ function teacherUploadPack(){
     } else toast("Error: "+(r.error||"Upload failed"));
   };
   reader.readAsText(fi.files[0]);
+}
+function toggleTeacherPackBatch(){
+  const scope=document.getElementById('tpScope'),batch=document.getElementById('tpBatch');if(!scope||!batch)return;batch.style.display=scope.value==='batch'?'block':'none';
 }
 
 
@@ -4306,7 +4903,7 @@ async function teacherRegister(){
     S.user.academyName = r.academy.name;
     saveSession(S.user, S.sessionToken);
     renderAcademyStatus();
-    loadMyAcademy(); loadGaltiFromServer(); bulkSyncExistingMistakes();
+    loadTeacherPanel(); loadMyAcademy(); loadGaltiFromServer(); bulkSyncExistingMistakes();
   } else toast("Error: " + (r.error||"Failed"));
 }
 
@@ -4323,10 +4920,12 @@ function renderAcademyStatus(){
   var batchEl = document.getElementById("academyBatchLabel");
   var roleEl = document.getElementById("academyRoleLabel");
   var badgeEl = document.getElementById("academyStatusBadge");
+  var leaderboardBtn = document.getElementById("academyLeaderboardBtn");
   if(nameEl) nameEl.textContent = S.user.academyName || "Academy";
   if(infoEl) infoEl.textContent = (S.user.batchCode ? "Batch: " + S.user.batchCode : "No batch yet") + " \u00b7 " + (S.user.accessStatus==="paid" ? "Access active" : "Pending activation");
   if(batchEl) batchEl.textContent = S.user.batchName || S.user.batchCode || "\u2014";
   if(roleEl) roleEl.textContent = S.user.academyRole === "teacher" ? "Teacher" : "Student";
+  if(leaderboardBtn) leaderboardBtn.style.display = S.user.academyRole === "student" && S.user.batchId ? "flex" : "none";
   if(badgeEl){
     badgeEl.textContent = S.user.accessStatus === "paid" ? "ACTIVE" : "PENDING";
     badgeEl.className = "sp " + (S.user.accessStatus === "paid" ? "sp-active" : "sp-trial");
@@ -4674,6 +5273,33 @@ function copyPaperText(encoded){
   else toast('Copy not supported on this browser');
 }
 
+
+function openNcertPracticeMenu(){
+  if(!hasFeatureAccess('ncert_ebook')){toast('NCERT Practice is not available in your plan');openPricingModal();return;}
+  const old=document.getElementById('ncertPracticeModal');if(old)old.remove();
+  const el=document.createElement('div');el.id='ncertPracticeModal';el.style.cssText='position:fixed;inset:0;background:rgba(10,35,66,.85);z-index:700;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)';
+  el.innerHTML='<div style="background:var(--surf);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:20px;max-height:92vh;overflow-y:auto"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div><b style="font-size:15px">NCERT Practice</b><div style="font-size:10px;color:var(--mute)">Choose a class and chapter from verified questions</div></div><button onclick="document.getElementById(\'ncertPracticeModal\').remove()" style="background:none;border:none;font-size:18px;color:var(--mute)">×</button></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><select id="ncertPracticeSubject" onchange="refreshNcertPracticeOptions()" style="padding:9px;border:1.5px solid var(--bdr);border-radius:9px;background:var(--surf);color:var(--txt)"><option value="BIOLOGY">Biology</option><option value="PHYSICS">Physics</option><option value="CHEMISTRY">Chemistry</option></select><select id="ncertPracticeClass" onchange="refreshNcertPracticeOptions()" style="padding:9px;border:1.5px solid var(--bdr);border-radius:9px;background:var(--surf);color:var(--txt)"><option value="11">Class 11</option><option value="12">Class 12</option></select></div><select id="ncertPracticeChapter" onchange="updateNcertPracticeCount()" style="width:100%;padding:9px;border:1.5px solid var(--bdr);border-radius:9px;background:var(--surf);color:var(--txt);margin-top:8px"></select><input class="fin" id="ncertPracticePage" placeholder="Optional exact NCERT page" style="margin-top:8px" oninput="updateNcertPracticeCount()"><div id="ncertPracticeCount" style="font-size:11px;color:var(--mute);margin:8px 0"></div><button class="btn btn-blue btn-full" onclick="startNcertPractice()"><i class="ti ti-player-play"></i> Start NCERT Practice</button><button class="btn btn-ghost btn-full" style="margin-top:7px" onclick="openNcertEbookMenu()"><i class="ti ti-book"></i> Open Official NCERT eBook</button></div>';
+  document.body.appendChild(el);el.addEventListener('click',function(e){if(e.target===el)el.remove();});refreshNcertPracticeOptions();
+}
+function ncertPracticePool(){
+  const sub=(document.getElementById('ncertPracticeSubject')||{}).value||'BIOLOGY';
+  const cls=parseInt((document.getElementById('ncertPracticeClass')||{}).value)||11;
+  const chapterEncoded=(document.getElementById('ncertPracticeChapter')||{}).value||'';
+  const chapter=chapterEncoded?decodeURIComponent(chapterEncoded):'';
+  const page=((document.getElementById('ncertPracticePage')||{}).value||'').trim();
+  return uniqueVerifiedQuestions(QUESTIONS).filter(function(q){return q.sub===sub&&parseInt(q.ncertCl)===cls&&(!chapter||String(q.ch||'')===chapter)&&(!page||String(q.ncertPg||'')===page);});
+}
+function refreshNcertPracticeOptions(){
+  const sub=(document.getElementById('ncertPracticeSubject')||{}).value||'BIOLOGY';const cls=parseInt((document.getElementById('ncertPracticeClass')||{}).value)||11;const select=document.getElementById('ncertPracticeChapter');if(!select)return;
+  const chapters=Array.from(new Set(uniqueVerifiedQuestions(QUESTIONS).filter(function(q){return q.sub===sub&&parseInt(q.ncertCl)===cls&&q.ch;}).map(function(q){return q.ch;}))).sort();
+  select.innerHTML='<option value="">All available chapters</option>'+chapters.map(function(ch){return '<option value="'+encodeURIComponent(ch)+'">'+escapeHtml(ch)+'</option>';}).join('');updateNcertPracticeCount();
+}
+function updateNcertPracticeCount(){const el=document.getElementById('ncertPracticeCount');if(el){const n=ncertPracticePool().length;el.textContent=n+' unique referenced question'+(n===1?'':'s')+' available · up to 20 per session';}}
+function startNcertPractice(){
+  const pool=ncertPracticePool();if(!pool.length){toast('No verified question matches this NCERT selection');return;}
+  const sub=document.getElementById('ncertPracticeSubject').value;const cls=document.getElementById('ncertPracticeClass').value;const chapterValue=document.getElementById('ncertPracticeChapter').value;const chapter=chapterValue?decodeURIComponent(chapterValue):'All chapters';
+  quizList=shuffleArray(pool).slice(0,20).map(shuffleQuestion);activeTopic={name:'NCERT Class '+cls+' · '+chapter,sub:sub,id:'ncert'};curQ=0;answered=false;document.getElementById('ncertPracticeModal').remove();switchTab('quiz');renderQuiz();
+}
 
 function openNcertEbookMenu(){
   if(!hasFeatureAccess('ncert_ebook')){ toast('NCERT eBook is a paid feature'); openPricingModal(); return; }
@@ -5280,6 +5906,23 @@ async function openTargetHistory(){
       '</div>';
     }).join('');
   }catch(e){ el.innerHTML = '<div style="text-align:center;padding:14px;color:var(--mute);font-size:12px">Could not load history right now.</div>'; }
+}
+
+
+// ===== REPORTING V1: CSV export (packages existing roster data, no new analytics) =====
+async function downloadBatchReport(batchId){
+  if(!S.user) return;
+  try{
+    const r = await api("academy", {action:"export_batch_report", uid:S.user.uid, sessionToken:S.sessionToken, batchId:batchId});
+    if(!r.ok) throw new Error(r.error||"Could not generate report");
+    const blob = new Blob([r.csv], {type:"text/csv;charset=utf-8;"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = r.filename || "batch_report.csv";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast("Report downloaded");
+  }catch(e){ toast(e.message || "Could not download report"); }
 }
 
 // ===== INIT =====

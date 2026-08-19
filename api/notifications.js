@@ -21,6 +21,13 @@
 
 const { db } = require('./_firebase');
 const nodemailer = require('nodemailer');
+const { summarizeUsage, daysAgoKey } = require('../lib/usage');
+
+function escapeHtml(value) {
+  return String(value || '').replace(/[&<>"']/g, function(char) {
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char];
+  });
+}
 
 // ── Email transporter (Gmail SMTP) ──────────────────────
 function getTransporter() {
@@ -192,6 +199,14 @@ const EMAIL_TEMPLATES = {
       <div style="font-size:26px;font-weight:800;color:#4a3aa7">${stats.currentRank||' - '}</div>
       <div style="font-size:12px;color:#666">AIR estimate</div>
     </div>
+    <div style="background:#f0f4f8;border-radius:10px;padding:14px;text-align:center">
+      <div style="font-size:26px;font-weight:800;color:#0d9488">${stats.studyMinutes||0}</div>
+      <div style="font-size:12px;color:#666">Minutes studied</div>
+    </div>
+    <div style="background:#f0f4f8;border-radius:10px;padding:14px;text-align:center">
+      <div style="font-size:18px;font-weight:800;color:#1a56db">${escapeHtml(stats.topSection||'Building data')}</div>
+      <div style="font-size:12px;color:#666">Most-used section</div>
+    </div>
   </div>
   ${stats.weakestTopic ? `<div style="background:#feecec;border-radius:10px;padding:14px;margin:12px 0">
     <b style="color:#e34948">Focus area this week:</b><br>
@@ -245,6 +260,30 @@ const EMAIL_TEMPLATES = {
   <p style="color:#888;font-size:12px;text-align:center">Offer expires in ${hoursLeft} hours. Crack NEET. Not your budget.</p>
 </div>`,
   }),
+
+  batch_announcement: (name, announcementSubject, message, teacherName, batchName) => ({
+    subject: `NEETAce · ${announcementSubject}`,
+    html: `
+<div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:20px">
+  <div style="background:linear-gradient(135deg,#0a2342,#1a56db);color:#fff;border-radius:14px;padding:22px;text-align:center;margin-bottom:20px">
+    <div style="font-size:20px;font-weight:800">${escapeHtml(batchName)} Announcement</div>
+  </div>
+  <h2 style="color:#0a2342">Hi ${escapeHtml(name)},</h2>
+  <div style="color:#444;line-height:1.7;background:#f0f4f8;border-radius:10px;padding:16px">${escapeHtml(message).replace(/\n/g,'<br>')}</div>
+  <p style="color:#666;font-size:12px;margin-top:16px">Sent by ${escapeHtml(teacherName)} through NEETAce.</p>
+  <p style="color:#aaa;font-size:11px;text-align:center">NEETAce · Bluetrace Technologies Pvt. Ltd.</p>
+</div>`,
+  }),
+};
+
+EMAIL_TEMPLATES.parent_weekly_progress = (studentName, parentName, stats) => {
+  const report = EMAIL_TEMPLATES.weekly_progress(studentName, stats);
+  return {
+    subject: `Weekly NEET progress for ${studentName}`,
+    html: report.html
+      .replace(`Here's how you did this week, ${studentName}:`, `Dear ${escapeHtml(parentName || 'Parent')}, here is ${escapeHtml(studentName)}'s week:`)
+      .replace('Continue Studying', 'Open NEETAce'),
+  };
 };
 
 // ── WhatsApp message templates ───────────────────────────
@@ -270,8 +309,14 @@ const WA_TEMPLATES = {
   weekly_progress: (name, q, acc, rank) =>
     `📊 *NEETAce Weekly Update - ${name}*\n\n✅ Questions done: ${q}\n🎯 Accuracy: ${acc}%\n🏆 AIR estimate: ${rank}\n\nKeep going - consistency beats talent every time!\n\nhttps://neet.bluetrace.tech`,
 
+  parent_weekly: (studentName, parentName, stats) =>
+    `📊 *Weekly NEET Progress - ${studentName}*\n\nNamaste ${parentName||'Parent'},\n⏱️ Study time: ${stats.studyMinutes||0} min\n✅ Questions: ${stats.questionsThisWeek||0}\n🎯 Accuracy: ${stats.accuracy||0}%\n🧭 Focus next: ${stats.weakestTopic||'Keep practising consistently'}\n\nShared through NEETAce · https://neet.bluetrace.tech`,
+
   offer_alert:    (name, festival, discount, code) =>
     `🎉 *${festival} Special Offer!*\n\nHi ${name}, celebrate with *${discount}% OFF* NEETAce!\n\nUse code: *${code}*\nValid for limited time only.\n\n👉 https://neet.bluetrace.tech\n\n_Crack NEET. Not your budget. - NEETAce_`,
+
+  batch_announcement: (name, subject, message, teacherName, batchName) =>
+    `📣 *${batchName}: ${subject}*\n\nHi ${name},\n${message}\n\n- ${teacherName}\nSent through NEETAce`,
 };
 
 // ── Send email ───────────────────────────────────────────
@@ -338,6 +383,7 @@ async function dispatch(uid, event, customData = {}) {
       payment_success: [name, planLabel, paidUntil],
       weekly_progress: [name, customData.stats || {}],
       offer_alert:     [name, customData.festival, customData.discount, customData.code, customData.hoursLeft],
+      batch_announcement: [name, customData.subject, customData.message, customData.teacherName, customData.batchName],
     }[event] || [name];
     results.email = await sendEmail(email, EMAIL_TEMPLATES[event], ...tmplArgs);
   }
@@ -345,6 +391,8 @@ async function dispatch(uid, event, customData = {}) {
   // ── Parent email ──
   if (prefs.parent && parentEmail && event === 'trial_started') {
     results.parentEmail = await sendEmail(parentEmail, EMAIL_TEMPLATES.parent_trial_started, name, u.parentName||'Parent', trialEnd);
+  } else if (prefs.parent && parentEmail && event === 'weekly_progress') {
+    results.parentEmail = await sendEmail(parentEmail, EMAIL_TEMPLATES.parent_weekly_progress, name, u.parentName||'Parent', customData.stats || {});
   }
 
   // ── WhatsApp links (stored for admin to click/send) ──
@@ -357,11 +405,19 @@ async function dispatch(uid, event, customData = {}) {
       payment_success: WA_TEMPLATES.payment_success(name, planLabel),
       weekly_progress: WA_TEMPLATES.weekly_progress(name, customData.stats?.questionsThisWeek||0, customData.stats?.accuracy||0, customData.stats?.currentRank||' - '),
       offer_alert:     WA_TEMPLATES.offer_alert(name, customData.festival, customData.discount, customData.code),
+      batch_announcement: WA_TEMPLATES.batch_announcement(name, customData.subject, customData.message, customData.teacherName, customData.batchName),
     }[event];
 
     if (waMsgArgs) {
-      results.whatsappLink   = phone       ? waLink(phone, waMsgArgs)       : null;
-      results.parentWaLink   = parentPhone ? waLink(parentPhone, WA_TEMPLATES.parent_trial(name, u.parentName||'Parent')) : null;
+      results.whatsappLink = phone ? waLink(phone, waMsgArgs) : null;
+      const parentMessage = event === 'trial_started'
+        ? WA_TEMPLATES.parent_trial(name, u.parentName||'Parent')
+        : event === 'weekly_progress'
+          ? WA_TEMPLATES.parent_weekly(name, u.parentName||'Parent', customData.stats || {})
+          : null;
+      results.parentWaLink = prefs.parent && parentPhone && parentMessage
+        ? waLink(parentPhone, parentMessage)
+        : null;
     }
   }
 
@@ -399,6 +455,33 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ notifications: snap.docs.map(d=>d.data()) });
   }
 
+  // Student-triggered parent digest using the same stored usage/scores that
+  // power the teacher dashboard. No separate parent analytics store.
+  if (action === 'send_parent_weekly') {
+    const prefs = user.notifPrefs || { parent: true };
+    if (!prefs.parent) return res.status(403).json({ error: 'Parent notifications are disabled in Profile' });
+    if (!user.parentPhone && !user.parentEmail)
+      return res.status(400).json({ error: 'Add a parent WhatsApp number or email in Profile first' });
+    const startDate = daysAgoKey(6);
+    const usageSnap = await db.collection('usage_daily').where('uid', '==', uid).limit(14).get();
+    const usage = summarizeUsage(usageSnap.docs, startDate);
+    const global = user.scores && user.scores.global || {};
+    const weakest = Object.entries(user.conceptStats || {})
+      .filter(function(entry) { return (entry[1].attempted || 0) >= 3; })
+      .sort(function(a, b) { return (a[1].accuracy || 0) - (b[1].accuracy || 0); })[0];
+    const stats = {
+      questionsThisWeek: usage.questionsAttempted,
+      studyMinutes: Math.round(usage.totalTimeSec / 60),
+      accuracy: global.accuracy || 0,
+      mistakesLogged: Object.values(user.galtiMistakes || {}).filter(function(m) { return !m.recovered; }).length,
+      currentRank: global.rank || '-',
+      weakestTopic: weakest ? String(weakest[0]).slice(0, 60) : '',
+      topSection: usage.sections[0] ? usage.sections[0].name.replace(/_/g, ' ') : '',
+    };
+    const results = await dispatch(uid, 'weekly_progress', { stats });
+    return res.status(200).json({ ok: true, stats, results });
+  }
+
   // ── Self-send: student triggers their own notification ──
   if (action === 'send_self') {
     const { event } = req.body;
@@ -406,6 +489,26 @@ module.exports = async function handler(req, res) {
     if (!allowed.includes(event)) return res.status(400).json({ error: 'Event not allowed for self-send' });
     const results = await dispatch(uid, event, req.body);
     return res.status(200).json({ ok: true, results });
+  }
+
+  // ── Teacher: send one announcement to an owned batch ──
+  if (action === 'teacher_batch_announcement') {
+    if (!user.academyId || (user.academyRole !== 'teacher' && user.role !== 'admin'))
+      return res.status(403).json({ error: 'Academy teacher only' });
+    const batchId = String(req.body.batchId || '').trim();
+    const subject = String(req.body.subject || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 100);
+    const message = String(req.body.message || '').trim().slice(0, 1200);
+    if (!batchId || !subject || !message) return res.status(400).json({ error: 'batchId, subject and message required' });
+    const batchRef = db.collection('academies').doc(user.academyId).collection('batches').doc(batchId);
+    const batchSnap = await batchRef.get();
+    if (!batchSnap.exists) return res.status(404).json({ error: 'Batch not found' });
+    const batch = batchSnap.data();
+    if (user.role !== 'admin' && batch.createdBy !== uid) return res.status(403).json({ error: 'Not your batch' });
+    const memberSnap = await batchRef.collection('students').limit(100).get();
+    const deliveries = await Promise.all(memberSnap.docs.map(function(member) {
+      return dispatch(member.id, 'batch_announcement', { subject, message, teacherName: user.name || 'Teacher', batchName: batch.batchName || 'Batch' });
+    }));
+    return res.status(200).json({ ok: true, processed: deliveries.length });
   }
 
   // ── Admin: send to any user or all users ────────────────

@@ -186,6 +186,84 @@ describe('Priority 3: ConceptStats aggregation and bloat protection', () => {
   });
 });
 
+describe('Persistent question bookmarks', () => {
+  test('toggle_bookmark saves a sanitized question and toggles it off on the second call', async () => {
+    seed('users', 'u1', baseUser({ uid: 'u1' }));
+    const body = {
+      uid: 'u1', sessionToken: 'valid_session_token_123', action: 'toggle_bookmark',
+      question: { id: 'q1', text: 'Saved question?', sub: 'PHYSICS', ch: 'Motion', tid: 'p3', opts: ['A','B','C','D'], correct: 1, explanation: 'Because.' },
+    };
+    const first = mockReqRes(body); await handler(first.req, first.res);
+    expect(first.res._json).toMatchObject({ ok: true, bookmarked: true, count: 1 });
+    expect(getDoc('users', 'u1').bookmarks[0]).toMatchObject({ questionId: 'q1', chapter: 'Motion' });
+
+    const second = mockReqRes(body); await handler(second.req, second.res);
+    expect(second.res._json).toMatchObject({ ok: true, bookmarked: false, count: 0 });
+    expect(getDoc('users', 'u1').bookmarks).toEqual([]);
+  });
+
+  test('list_bookmarks returns saved questions newest first', async () => {
+    seed('users', 'u1', baseUser({ uid: 'u1', bookmarks: [
+      { questionId: 'old', text: 'Old', savedAt: '2026-08-01T00:00:00.000Z' },
+      { questionId: 'new', text: 'New', savedAt: '2026-08-02T00:00:00.000Z' },
+    ] }));
+    const { req, res } = mockReqRes({ uid: 'u1', sessionToken: 'valid_session_token_123', action: 'list_bookmarks' });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    expect(res._json.bookmarks.map((b) => b.questionId)).toEqual(['new', 'old']);
+  });
+});
+
+describe('Bounded weekly usage tracking', () => {
+  test('track_activity aggregates dwell time and AI questions but ignores client-supplied question counts', async () => {
+    seed('users', 'u1', baseUser({ uid: 'u1', name: 'Usage Student', academyId: 'acy1', academyRole: 'student', batchId: 'b1' }));
+    const body = { uid: 'u1', sessionToken: 'valid_session_token_123', action: 'track_activity', section: 'ai_tutor', elapsedSec: 120, aiQuestions: 1, questions: 999, subject: 'BIOLOGY', chapter: 'Genetics' };
+    const first = mockReqRes(body); await handler(first.req, first.res);
+    const second = mockReqRes({ ...body, elapsedSec: 30, aiQuestions: 0 }); await handler(second.req, second.res);
+    const key = 'u1_' + new Date().toISOString().slice(0, 10);
+    const usage = getDoc('usage_daily', key);
+    expect(first.res._json).toMatchObject({ ok: true, tracked: true });
+    expect(usage).toMatchObject({ uid: 'u1', academyId: 'acy1', batchId: 'b1', totalTimeSec: 150, aiQuestions: 1, questionsAttempted: 0 });
+    expect(usage.sections.ai_tutor.timeSec).toBe(150);
+    expect(usage.chapters.Genetics.timeSec).toBe(150);
+  });
+
+  test('normal scored sessions write authoritative question and time totals', async () => {
+    seed('users', 'u1', baseUser({ uid: 'u1', academyId: 'acy1', academyRole: 'student', batchId: 'b1' }));
+    const { req, res } = mockReqRes({
+      uid: 'u1', sessionToken: 'valid_session_token_123', subject: 'physics', sessionTimeSec: 90,
+      results: [{ correct: true, difficulty: 'medium', tid: 'p3', chapter: 'Laws of Motion' }, { correct: false, difficulty: 'medium', tid: 'p3', chapter: 'Laws of Motion' }],
+    });
+    await handler(req, res);
+    const usage = getDoc('usage_daily', 'u1_' + new Date().toISOString().slice(0, 10));
+    expect(res._status).toBe(200);
+    expect(usage).toMatchObject({ questionsAttempted: 2, totalTimeSec: 90 });
+    expect(usage.subjects.PHYSICS.questions).toBe(2);
+  });
+
+  test('scored exam payload does not duplicate time already recorded by browser dwell', async () => {
+    seed('users', 'u1', baseUser({ uid: 'u1', academyId: 'acy1', academyRole: 'student', batchId: 'b1' }));
+    const { req, res } = mockReqRes({
+      uid: 'u1', sessionToken: 'valid_session_token_123', subject: 'global', mode: 'exam',
+      usageTimeTracked: true, sessionTimeSec: 1800,
+      results: [{ correct: true, difficulty: 'medium', tid: 'p3', chapter: 'Laws of Motion' }],
+    });
+    await handler(req, res);
+    const usage = getDoc('usage_daily', 'u1_' + new Date().toISOString().slice(0, 10));
+    expect(res._status).toBe(200);
+    expect(usage).toMatchObject({ questionsAttempted: 1, totalTimeSec: 0 });
+  });
+
+  test('individual non-adaptive practice answers contribute one bounded question', async () => {
+    seed('users', 'u1', baseUser({ uid: 'u1', academyId: 'acy1', academyRole: 'student', batchId: 'b1' }));
+    const { req, res } = mockReqRes({ uid: 'u1', sessionToken: 'valid_session_token_123', action: 'track_practice_answer', questionId: 'q1', subject: 'BIOLOGY', chapter: 'Cell', timeTakenMs: 45000 });
+    await handler(req, res);
+    const usage = getDoc('usage_daily', 'u1_' + new Date().toISOString().slice(0, 10));
+    expect(res._json).toMatchObject({ ok: true, tracked: true });
+    expect(usage).toMatchObject({ questionsAttempted: 1, totalTimeSec: 0 });
+  });
+});
+
 describe('Priority 1: rankScore - mastery-adjusted, prevents easy-question grinding', () => {
   test('rankScore = weighted * accuracyMultiplier * consistencyMultiplier (not raw weighted)', async () => {
     seed('users', 'u1', baseUser({ uid: 'u1' }));
@@ -501,6 +579,32 @@ describe('Coverage completion pass — scoring.js real gaps found via line-by-li
       });
       await handler(req, res);
       expect(res._status).toBe(500);
+    } finally {
+      db.collection = original;
+    }
+  });
+});
+
+describe('Coverage completion — PR #5 usage-analytics integration resilience', () => {
+  test('a usage-analytics recording failure is caught and NEVER blocks the actual scored session response', async () => {
+    seed('users', 'u1', baseUser({ uid: 'u1' }));
+    const { db } = require('../mocks/_firebase.mock');
+    const original = db.collection;
+    db.collection = (name) => {
+      if (name === 'usage_daily') throw new Error('usage analytics down');
+      return original(name);
+    };
+    try {
+      const { req, res } = mockReqRes({
+        uid: 'u1', sessionToken: 'valid_session_token_123', subject: 'physics',
+        results: [{ correct: true, difficulty: 'medium', tid: 'p3', chapter: 'Laws of Motion' }],
+      });
+      await handler(req, res);
+      // The scored session itself must succeed regardless - this is the actual guarantee
+      // the source code's own comment states: "Analytics failure must never block a
+      // student's scored session."
+      expect(res._status).toBe(200);
+      expect(res._json.session.score).toBeGreaterThan(0);
     } finally {
       db.collection = original;
     }
