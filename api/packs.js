@@ -120,11 +120,13 @@ const STARTER_PACKS = [
 ];
 
 async function verifyAdmin(uid, sessionToken) {
-  const snap = await db.collection('users').doc(uid).get();
-  if (!snap.exists) return null;
-  const u = snap.data();
-  if (u.sessionToken !== sessionToken || u.role !== 'admin') return null;
-  return u;
+  // Delegates to the shared lib/session.js implementation - was previously an
+  // independent, hand-copied duplicate of the exact same check in packs.js.
+  // Kept as a thin wrapper (not removed) so this file's 8 existing call sites
+  // don't need to change; only the actual verification logic is now shared.
+  const { verifyAdminSession } = require('../lib/session');
+  const result = await verifyAdminSession(db, uid, sessionToken);
+  return result.ok ? result.profile : null;
 }
 
 // Writes a new version snapshot + updates the live pack doc in one place
