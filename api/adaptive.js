@@ -12,6 +12,7 @@
 // Question selection targets this zone per tid, weighted toward weakest tids first.
 
 const { db } = require('./_firebase');
+const { verifySession } = require('../lib/session');
 const { recordUsage } = require('../lib/usage');
 
 // ── Constants ────────────────────────────────────────────
@@ -81,11 +82,9 @@ module.exports = async function handler(req, res) {
   const { action, uid, sessionToken } = req.body || {};
   if (!uid || !sessionToken) return res.status(400).json({ error: 'uid and sessionToken required' });
 
-  // Verify session
-  const uSnap = await db.collection('users').doc(uid).get();
-  if (!uSnap.exists) return res.status(404).json({ error: 'User not found' });
-  const user = uSnap.data();
-  if (user.sessionToken !== sessionToken) return res.status(401).json({ error: 'Invalid session' });
+  const auth = await verifySession(db, uid, sessionToken);
+  if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
+  const user = auth.profile;
 
   // ── 1. RECORD ANSWER ─────────────────────────────────────
   // Called after every single answer — updates theta for the question's tid
