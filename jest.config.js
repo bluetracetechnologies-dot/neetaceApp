@@ -51,6 +51,10 @@ module.exports = {
     'lib/galti-classify.js':  { statements: 94, branches: 83, functions: 99, lines: 97 },
     'lib/learning-dna.js':    { statements: 99, branches: 63, functions: 99, lines: 99 },
     'lib/score-predictor.js': { statements: 93, branches: 73, functions: 84, lines: 97 },
+    // The shared session-verification helper - now the single source of truth for
+    // 19+ previously-duplicated checks across 13 files. Directly closes the root
+    // cause of the payments.js verify vulnerability found in the full-codebase review.
+    'lib/session.js':         { statements: 93, branches: 93, functions: 99, lines: 99 },
   },
   coverageReporters: ['text', 'text-summary', 'lcov', 'json-summary'],
   verbose: true,
