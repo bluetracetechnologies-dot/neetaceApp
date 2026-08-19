@@ -2,6 +2,7 @@
 // Hobby deployment stays within Vercel's 12-function limit.
 
 const { db } = require('./_firebase');
+const { verifySession } = require('../lib/session');
 const { recordUsage } = require('../lib/usage');
 
 const MAX_QUESTIONS = 180;
@@ -108,10 +109,9 @@ async function handler(req, res) {
   const { action, uid, sessionToken } = body;
   if (!uid || !sessionToken) return res.status(400).json({ error: 'Auth required' });
 
-  const userSnap = await db.collection('users').doc(uid).get();
-  if (!userSnap.exists) return res.status(404).json({ error: 'User not found' });
-  const user = userSnap.data();
-  if (user.sessionToken !== sessionToken) return res.status(401).json({ error: 'Invalid session' });
+  const auth = await verifySession(db, uid, sessionToken);
+  if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
+  const user = auth.profile;
 
   if (action === 'create_test') {
     if (!isTeacher(user)) return res.status(403).json({ error: 'Teacher only' });
