@@ -4236,11 +4236,12 @@ async function loadTeacherBatches(){
       code.className="btn btn-ghost"; code.style.cssText="font:800 10px monospace;padding:5px 7px;color:var(--blue);letter-spacing:1px";
       code.textContent=batch.batchCode||"—"; code.title="Copy join code"; code.onclick=function(){navigator.clipboard.writeText(batch.batchCode||'').then(function(){toast('Batch code copied');});};
       const roster=document.createElement("button");roster.className="btn btn-ghost";roster.style.cssText="font-size:10px;padding:5px 7px";roster.textContent="Roster";roster.onclick=function(){openTeacherRoster(batch.id);};
+      const report=document.createElement("button");report.className="btn btn-ghost";report.style.cssText="font-size:10px;padding:5px 7px";report.textContent="Report";report.onclick=function(){downloadBatchReport(batch.id);};
       const board=document.createElement("button");board.className="btn btn-ghost";board.style.cssText="font-size:10px;padding:5px 7px";board.textContent="Board";board.onclick=function(){openBatchLeaderboard(batch.id,batch.batchName);};
       const notify=document.createElement("button");notify.className="btn btn-ghost";notify.style.cssText="font-size:10px;padding:5px 7px";notify.textContent="Notify";notify.onclick=function(){teacherNotifyBatch(batch.id,batch.batchName);};
       const edit=document.createElement("button");edit.className="btn btn-ghost";edit.style.cssText="font-size:10px;padding:5px 7px";edit.textContent="Edit";edit.onclick=function(){teacherEditBatch(batch.id,batch.batchName);};
       const toggle=document.createElement("button");toggle.className="btn btn-ghost";toggle.style.cssText="font-size:10px;padding:5px 7px;color:"+(batch.active===false?'var(--green)':'var(--red)');toggle.textContent=batch.active===false?"Activate":"Deactivate";toggle.onclick=function(){teacherToggleBatch(batch.id,batch.active!==false);};
-      actions.appendChild(code);actions.appendChild(roster);actions.appendChild(board);actions.appendChild(notify);actions.appendChild(edit);actions.appendChild(toggle);
+      actions.appendChild(code);actions.appendChild(roster);actions.appendChild(report);actions.appendChild(board);actions.appendChild(notify);actions.appendChild(edit);actions.appendChild(toggle);
       row.appendChild(info); row.appendChild(actions); list.appendChild(row);
     });
     const usageBatch=document.getElementById('teacherUsageBatch');if(usageBatch&&usageBatch.value)loadTeacherUsage(usageBatch.value);
@@ -5905,6 +5906,23 @@ async function openTargetHistory(){
       '</div>';
     }).join('');
   }catch(e){ el.innerHTML = '<div style="text-align:center;padding:14px;color:var(--mute);font-size:12px">Could not load history right now.</div>'; }
+}
+
+
+// ===== REPORTING V1: CSV export (packages existing roster data, no new analytics) =====
+async function downloadBatchReport(batchId){
+  if(!S.user) return;
+  try{
+    const r = await api("academy", {action:"export_batch_report", uid:S.user.uid, sessionToken:S.sessionToken, batchId:batchId});
+    if(!r.ok) throw new Error(r.error||"Could not generate report");
+    const blob = new Blob([r.csv], {type:"text/csv;charset=utf-8;"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = r.filename || "batch_report.csv";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast("Report downloaded");
+  }catch(e){ toast(e.message || "Could not download report"); }
 }
 
 // ===== INIT =====
