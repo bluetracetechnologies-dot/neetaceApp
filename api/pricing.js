@@ -17,6 +17,7 @@
 // Each tier has: price_paise, label, description, features[], active
 
 const { db } = require('./_firebase');
+const { verifyAdminSession } = require('../lib/session');
 
 const DEFAULT_PRICING = {
   plan_starter: {
@@ -120,9 +121,8 @@ module.exports = async function handler(req, res) {
     if (!adminUid || !sessionToken) return res.status(400).json({ error: 'Missing credentials' });
 
     // Verify admin
-    const snap = await db.collection('users').doc(adminUid).get();
-    if (!snap.exists || snap.data().role !== 'admin' || snap.data().sessionToken !== sessionToken)
-      return res.status(403).json({ error: 'Admin access required' });
+    const auth = await verifyAdminSession(db, adminUid, sessionToken);
+    if (!auth.ok) return res.status(403).json({ error: 'Admin access required' });
 
     if (action === 'update' && config) {
       // Basic sanity check on price fields - admin-only surface, so this guards against
