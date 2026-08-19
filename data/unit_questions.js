@@ -196,33 +196,134 @@ trick:'72 beats/min = 72/60 = 1.2 beats/s. Normal HR = 60-100 bpm.'},
 ];
 
 // ===== UNIT VARIANT ENGINE =====
-function hashCode(str){let h=0;for(let i=0;i<str.length;i++){h=((h<<5)-h)+str.charCodeAt(i);h|=0;}return Math.abs(h);}
-function seededRandom(seed){let s=seed;return function(){s+=0x6D2B79F5;let t=s;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;};}
+const UNIT_HISTORY_BY_STUDENT_TEMPLATE = new Map();
+const questionEngineUtils=(typeof require==='function')
+  ?require('./question_engine_utils')
+  :(typeof globalThis!=='undefined'?globalThis.QuestionEngineUtils:undefined)||{};
+const hashCode=questionEngineUtils.hashCode||function(str){let h=0;for(let i=0;i<str.length;i++){h=((h<<5)-h)+str.charCodeAt(i);h|=0;}return Math.abs(h);};
+const seededRandom=questionEngineUtils.seededRandom||function(seed){let s=seed;return function(){s+=0x6D2B79F5;let t=s;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;};};
+const shuffleSeeded=questionEngineUtils.shuffleSeeded||function(arr,seed){const rng=seededRandom(seed);const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+const getAttemptBucket=questionEngineUtils.getAttemptBucket||function(ts=Date.now()){return Math.floor(Number(ts)/(24*60*60*1000));};
+const normalizeGenerationOptions=questionEngineUtils.normalizeGenerationOptions||function(optionsOrAttemptSeed){
+  const opts=(optionsOrAttemptSeed&&typeof optionsOrAttemptSeed==='object'&&!Array.isArray(optionsOrAttemptSeed))
+    ?{...optionsOrAttemptSeed}
+    :{attemptSeed:optionsOrAttemptSeed};
+  if(opts.attemptSeed==null) opts.attemptSeed=opts.sessionId??opts.attemptId??opts.nonce??getAttemptBucket();
+  if(opts.varyStrategy!=='holdOneConstant') opts.varyStrategy='all';
+  const maxRerolls=Number(opts.maxRerolls);
+  opts.maxRerolls=Number.isFinite(maxRerolls)&&maxRerolls>=0?Math.floor(maxRerolls):10;
+  return opts;
+};
 function round(n){return Math.round(n*10000)/10000;}
 function pickFrom(arr,seed){const rng=seededRandom(seed);return arr[Math.floor(rng()*arr.length)];}
-function shuffleSeeded(arr,seed){const rng=seededRandom(seed);const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+const toSignature=questionEngineUtils.toSignature||function(value){
+  if(typeof value==='string') return value;
+  if(value&&typeof value==='object'){
+    try{return JSON.stringify(value);}catch(e){return null;}
+  }
+  return null;
+};
+const extractLastHistoryValue=questionEngineUtils.extractLastHistoryValue||function(history){
+  if(history instanceof Set){
+    let last;
+    for(const item of history) last=item;
+    return last;
+  }
+  if(Array.isArray(history)&&history.length) return history[history.length-1];
+  return null;
+};
 
-function generateUnitQuestion(tmpl, studentId){
-  const seed = hashCode(studentId + tmpl.id);
-  const rng  = seededRandom(seed);
-  const vals = {};
-  let questionText = tmpl.template;
+function generateUnitQuestion(tmpl, studentId, optionsOrAttemptSeed){
+  const opts=normalizeGenerationOptions(optionsOrAttemptSeed);
+  const historyKey=`${studentId}:${tmpl.id}`;
+  const historyLimit=Number.isFinite(Number(opts.historyLimit))?Math.max(1,Math.floor(Number(opts.historyLimit))):20;
+  const inMemoryHistory=UNIT_HISTORY_BY_STUDENT_TEMPLATE.get(historyKey)||[];
+  const providedHistory=opts.history;
+  const seenSignatures=new Set(inMemoryHistory);
+  if(providedHistory instanceof Set||Array.isArray(providedHistory)){
+    for(const item of providedHistory){
+      const sig=toSignature(item);
+      if(sig) seenSignatures.add(sig);
+    }
+  }
+  const previousVals=opts.previousParamValues
+    ||(function(){
+      const candidates=[extractLastHistoryValue(inMemoryHistory),extractLastHistoryValue(providedHistory)];
+      for(const candidate of candidates){
+        if(!candidate) continue;
+        if(candidate&&typeof candidate==='object'&&!Array.isArray(candidate)) return candidate;
+        if(typeof candidate==='string'){
+          try{
+            const parsed=JSON.parse(candidate);
+            if(parsed&&typeof parsed==='object') return parsed;
+          }catch(e){}
+        }
+      }
+      return null;
+    })();
+  const paramKeys=Object.keys(tmpl.params);
+  const canHoldOne=opts.varyStrategy==='holdOneConstant'&&previousVals&&paramKeys.length>1;
+  const holdKey=canHoldOne?paramKeys[hashCode(`${studentId}:${tmpl.id}:${opts.attemptSeed}:hold`)%paramKeys.length]:null;
 
-  // Resolve each parameter
-  for(const [k, p] of Object.entries(tmpl.params)){
-    const unitPool = UNITS[p.type] || [];
-    const exclude  = p.exclude || [];
-    const available = unitPool.filter(u=>!exclude.includes(u.label));
-    const chosenUnit = available[Math.floor(rng()*available.length)];
-    const valuePool  = p.values || [1,2,5,10];
-    const rawVal     = valuePool[Math.floor(rng()*valuePool.length)];
-    const siVal      = chosenUnit ? chosenUnit.toSI(rawVal) : rawVal;
-    const display    = chosenUnit ? chosenUnit.display(rawVal) : `${rawVal}`;
-    vals[k]          = rawVal;
-    vals[k+'SI']     = siVal;
-    vals[k+'Unit']   = chosenUnit ? chosenUnit.label : p.baseUnit;
-    vals[k+'Display']= display;
-    questionText     = questionText.replace(new RegExp('{'+k+'}','g'), display);
+  let seed=0;
+  let vals={};
+  let questionText=tmpl.template;
+  let signature='';
+  let fallbackVals={};
+  let fallbackText=tmpl.template;
+  let fallbackSignature='';
+  let accepted=false;
+  for(let reroll=0;reroll<=opts.maxRerolls;reroll++){
+    seed=hashCode(`${studentId}:${tmpl.id}:${opts.attemptSeed}:${reroll}`);
+    const rng=seededRandom(seed);
+    const candidateVals={};
+    let candidateText=tmpl.template;
+    for(const [k, p] of Object.entries(tmpl.params)){
+      const unitPool = UNITS[p.type] || [];
+      const exclude  = p.exclude || [];
+      const available = unitPool.filter(u=>!exclude.includes(u.label));
+      const chosenUnit = available[Math.floor(rng()*available.length)];
+      const valuePool  = p.values || [1,2,5,10];
+      const rawVal     = valuePool[Math.floor(rng()*valuePool.length)];
+      const siVal      = chosenUnit ? chosenUnit.toSI(rawVal) : rawVal;
+      const display    = chosenUnit ? chosenUnit.display(rawVal) : `${rawVal}`;
+      candidateVals[k]          = rawVal;
+      candidateVals[k+'SI']     = siVal;
+      candidateVals[k+'Unit']   = chosenUnit ? chosenUnit.label : p.baseUnit;
+      candidateVals[k+'Display']= display;
+    }
+    if(holdKey&&previousVals[holdKey]!=null){
+      for(const suffix of ['', 'SI', 'Unit', 'Display']){
+        const key=`${holdKey}${suffix}`;
+        if(previousVals[key]!=null) candidateVals[key]=previousVals[key];
+      }
+    }
+    for(const key of Object.keys(tmpl.params)){
+      candidateText=candidateText.replace(new RegExp('{'+key+'}','g'),candidateVals[key+'Display']??candidateVals[key]);
+    }
+    const candidateSignature=JSON.stringify(candidateVals);
+    fallbackVals=candidateVals;
+    fallbackText=candidateText;
+    fallbackSignature=candidateSignature;
+    if(!seenSignatures.has(candidateSignature)){
+      vals=candidateVals;
+      questionText=candidateText;
+      signature=candidateSignature;
+      accepted=true;
+      break;
+    }
+  }
+  if(!accepted){
+    vals=fallbackVals;
+    questionText=fallbackText;
+    signature=fallbackSignature;
+  }
+  const updatedHistory=[...inMemoryHistory,signature].slice(-historyLimit);
+  UNIT_HISTORY_BY_STUDENT_TEMPLATE.set(historyKey,updatedHistory);
+  if(providedHistory instanceof Set) providedHistory.add(signature);
+  if(Array.isArray(providedHistory)){
+    providedHistory.push(signature);
+    if(providedHistory.length>historyLimit) providedHistory.splice(0,providedHistory.length-historyLimit);
   }
 
   let ans;
@@ -263,11 +364,13 @@ function generateUnitQuestion(tmpl, studentId){
   };
 }
 
-function getUnitQuestions(studentId, count=10){
-  return UNIT_QUESTIONS.slice(0,count).map(t=>generateUnitQuestion(t,studentId));
+function getUnitQuestions(studentId, count=10, optionsOrAttemptSeed){
+  const opts=normalizeGenerationOptions(optionsOrAttemptSeed);
+  return UNIT_QUESTIONS.slice(0,count).map((t,idx)=>generateUnitQuestion(t,studentId,{...opts,attemptSeed:`${opts.attemptSeed}:${idx}`}));
 }
-function getUnitQuestionsBySubject(studentId, subject, count=5){
-  return UNIT_QUESTIONS.filter(q=>q.sub===subject).slice(0,count).map(t=>generateUnitQuestion(t,studentId));
+function getUnitQuestionsBySubject(studentId, subject, count=5, optionsOrAttemptSeed){
+  const opts=normalizeGenerationOptions(optionsOrAttemptSeed);
+  return UNIT_QUESTIONS.filter(q=>q.sub===subject).slice(0,count).map((t,idx)=>generateUnitQuestion(t,studentId,{...opts,attemptSeed:`${opts.attemptSeed}:${idx}`}));
 }
 
-if(typeof module!=='undefined') module.exports={UNIT_QUESTIONS,generateUnitQuestion,getUnitQuestions,getUnitQuestionsBySubject,UNITS};
+if(typeof module!=='undefined') module.exports={UNIT_QUESTIONS,generateUnitQuestion,getUnitQuestions,getUnitQuestionsBySubject,UNITS,UNIT_HISTORY_BY_STUDENT_TEMPLATE};
