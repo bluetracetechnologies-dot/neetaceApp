@@ -125,6 +125,16 @@ module.exports = async function handler(req, res) {
       return res.status(403).json({ error: 'Admin access required' });
 
     if (action === 'update' && config) {
+      // Basic sanity check on price fields - admin-only surface, so this guards against
+      // accidental typos more than malice, but a bad price_paise here would otherwise
+      // surface as a confusing Razorpay error far from this actual cause.
+      for (const [key, plan] of Object.entries(config)) {
+        if (plan && typeof plan === 'object' && 'price_paise' in plan) {
+          if (typeof plan.price_paise !== 'number' || plan.price_paise < 0) {
+            return res.status(400).json({ error: `Invalid price_paise for ${key}: must be a non-negative number` });
+          }
+        }
+      }
       const update = { ...config, updatedAt: new Date().toISOString(), updatedBy: adminUid };
       await db.collection('config').doc('pricing').set(update, { merge: true });
       return res.status(200).json({ ok: true, message: 'Pricing updated successfully' });
