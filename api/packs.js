@@ -58,16 +58,45 @@ function backfillMetadata(q) {
   };
 }
 
+const correctMap = { A: 0, B: 1, C: 2, D: 3 };
+
+// Standard NTA-format options for structured question types. Auto-populated,
+// never authored freely in CSV - a typo in these fixed phrasings would be a
+// real correctness risk for students studying from them. Verified against the
+// current, standard convention used across NEET assertion-reason and
+// statement-based questions.
+const AR_OPTIONS = [
+  'Both Assertion and Reason are true, and Reason is the correct explanation of Assertion',
+  'Both Assertion and Reason are true, but Reason is NOT the correct explanation of Assertion',
+  'Assertion is true, but Reason is false',
+  'Assertion is false, but Reason is true',
+];
+const STATEMENT_OPTIONS = [
+  'Both Statement I and Statement II are true',
+  'Statement I is true, but Statement II is false',
+  'Statement I is false, but Statement II is true',
+  'Both Statement I and Statement II are false',
+];
+
 function csvRowToQuestion(row, packId, idx) {
-  const correctMap = { A: 0, B: 1, C: 2, D: 3 };
   const chapter = row.chapter || row.ch || 'General';
+  const qType = (row.type || 'standard').toLowerCase();
+  const isStructured = qType === 'assertion_reason' || qType === 'statement';
   return {
     id: `${packId}_${idx}`,
     sub: (row.subject || row.sub || 'BIOLOGY').toUpperCase(),
     ch: chapter,
     tid: row.tid || packId,
     text: row.question || row.text || '',
-    opts: [row.opt_a || '', row.opt_b || '', row.opt_c || '', row.opt_d || ''],
+    type: isStructured ? qType : 'standard',
+    // Structured questions ALWAYS get the fixed, standard option set - never
+    // the CSV's own opt_a-d columns, even if present, to guarantee every
+    // assertion-reason/statement question uses identical, correct phrasing.
+    opts: isStructured
+      ? (qType === 'assertion_reason' ? AR_OPTIONS : STATEMENT_OPTIONS)
+      : [row.opt_a || '', row.opt_b || '', row.opt_c || '', row.opt_d || ''],
+    statement1: isStructured ? (row.statement1 || row.assertion || '') : null,
+    statement2: isStructured ? (row.statement2 || row.reason || '') : null,
     correct: correctMap[(row.correct || 'A').toUpperCase()] ?? 0,
     explanation: row.explanation || 'Refer NCERT.',
     ncertCl: parseInt(row.ncert_class) || 11,
@@ -442,3 +471,10 @@ module.exports = async function handler(req, res) {
 
   return res.status(400).json({ error: 'Unknown action' });
 };
+
+// Named export for direct unit testing, same pattern already used by
+// notifications.js's sendEmail export.
+module.exports.csvRowToQuestion = csvRowToQuestion;
+module.exports.AR_OPTIONS = AR_OPTIONS;
+module.exports.STATEMENT_OPTIONS = STATEMENT_OPTIONS;
+module.exports.parseCSV = parseCSV;
