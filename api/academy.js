@@ -22,6 +22,7 @@
 //   5. Admin can see all academies, their student counts, payment status
 
 const { db } = require('./_firebase');
+const { verifySession } = require('../lib/session');
 const crypto  = require('crypto');
 const { summarizeUsage, daysAgoKey } = require('../lib/usage');
 const testSeriesHandler = require('./_test-series');
@@ -154,10 +155,9 @@ module.exports = async function handler(req, res) {
 
   if (!uid || !sessionToken) return res.status(400).json({ error: 'Auth required' });
 
-  const uSnap = await db.collection('users').doc(uid).get();
-  if (!uSnap.exists) return res.status(404).json({ error: 'User not found' });
-  const user = uSnap.data();
-  if (user.sessionToken !== sessionToken) return res.status(401).json({ error: 'Invalid session' });
+  const auth = await verifySession(db, uid, sessionToken);
+  if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
+  const user = auth.profile;
 
   const config = await getAcademyConfig();
 
