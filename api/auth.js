@@ -82,7 +82,7 @@ module.exports = async function handler(req, res) {
       const decoded = await auth.verifyIdToken(idToken);
       const uid2 = decoded.uid;
       const snap = await db.collection('users').doc(uid2).get();
-      if (!snap.exists) return res.status(404).json({ error: 'Account not found. Please register first.' });
+      if (!snap.exists) return res.status(404).json({ error: 'PROFILE_NOT_FOUND', message: 'Account not found. Please register first.' });
       const profile = snap.data();
       if (profile.disabled) return res.status(403).json({ error: 'Your account has been disabled by the admin.' });
       const crypto = require('crypto');
