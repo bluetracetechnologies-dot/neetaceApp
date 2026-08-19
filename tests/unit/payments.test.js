@@ -129,6 +129,12 @@ describe('Regression: create_order still works correctly after the verify fix', 
     expect(res._status).toBe(401);
   });
 
+  test('MIGRATION NOTE: a non-existent uid now returns 401 (normalized via shared verifySession), was 404 before', async () => {
+    const { req, res } = mockReqRes({ uid: 'ghost_uid', sessionToken: 'anything', action: 'create_order' });
+    await handler(req, res);
+    expect(res._status).toBe(401);
+  });
+
   test('a customPricePaise override on the user doc replaces the plan default', async () => {
     const { seed: s2 } = require('../helpers/withMockDb');
     seed('users', 'u1', baseUser({ uid: 'u1', sessionToken: 'real_token', customPricePaise: 19900 }));
