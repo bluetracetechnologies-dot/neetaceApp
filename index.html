@@ -4392,6 +4392,15 @@ function applyTeacherTestTemplate(key){
   document.getElementById('teacherTestCount').value=t.count;
   document.getElementById('teacherTestDuration').value=t.duration;
 }
+// Treats the coded fallback values ('', '1', '-') as "not really tagged" -
+// roughly 62% of the question bank was confirmed to have these defaults
+// rather than a real NCERT page reference, so any page-range logic must
+// distinguish genuine data from an untouched default.
+function isRealNcertPage(page){
+  const s = String(page||'').trim();
+  return s !== '' && s !== '1' && s !== '-' && !isNaN(parseInt(s));
+}
+
 function uniqueVerifiedQuestions(list){
   const ids=new Set(),texts=new Set();return list.filter(function(q){const id=String(q.id),text=String(q.text||'').toLowerCase().replace(/\s+/g,' ').trim();if(ids.has(id)||!text||texts.has(text))return false;ids.add(id);texts.add(text);return true;});
 }
@@ -5320,27 +5329,62 @@ function openNcertPracticeMenu(){
   if(!hasFeatureAccess('ncert_ebook')){toast('NCERT Practice is not available in your plan');openPricingModal();return;}
   const old=document.getElementById('ncertPracticeModal');if(old)old.remove();
   const el=document.createElement('div');el.id='ncertPracticeModal';el.style.cssText='position:fixed;inset:0;background:rgba(10,35,66,.85);z-index:700;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)';
-  el.innerHTML='<div style="background:var(--surf);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:20px;max-height:92vh;overflow-y:auto"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div><b style="font-size:15px">NCERT Practice</b><div style="font-size:10px;color:var(--mute)">Choose a class and chapter from verified questions</div></div><button onclick="document.getElementById(\'ncertPracticeModal\').remove()" style="background:none;border:none;font-size:18px;color:var(--mute)">×</button></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><select id="ncertPracticeSubject" onchange="refreshNcertPracticeOptions()" style="padding:9px;border:1.5px solid var(--bdr);border-radius:9px;background:var(--surf);color:var(--txt)"><option value="BIOLOGY">Biology</option><option value="PHYSICS">Physics</option><option value="CHEMISTRY">Chemistry</option></select><select id="ncertPracticeClass" onchange="refreshNcertPracticeOptions()" style="padding:9px;border:1.5px solid var(--bdr);border-radius:9px;background:var(--surf);color:var(--txt)"><option value="11">Class 11</option><option value="12">Class 12</option></select></div><select id="ncertPracticeChapter" onchange="updateNcertPracticeCount()" style="width:100%;padding:9px;border:1.5px solid var(--bdr);border-radius:9px;background:var(--surf);color:var(--txt);margin-top:8px"></select><input class="fin" id="ncertPracticePage" placeholder="Optional exact NCERT page" style="margin-top:8px" oninput="updateNcertPracticeCount()"><div id="ncertPracticeCount" style="font-size:11px;color:var(--mute);margin:8px 0"></div><button class="btn btn-blue btn-full" onclick="startNcertPractice()"><i class="ti ti-player-play"></i> Start NCERT Practice</button><button class="btn btn-ghost btn-full" style="margin-top:7px" onclick="openNcertEbookMenu()"><i class="ti ti-book"></i> Open Official NCERT eBook</button></div>';
+  el.innerHTML='<div style="background:var(--surf);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:20px;max-height:92vh;overflow-y:auto"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div><b style="font-size:15px">NCERT Practice</b><div style="font-size:10px;color:var(--mute)">Choose a class and chapter from verified questions</div></div><button onclick="document.getElementById(\'ncertPracticeModal\').remove()" style="background:none;border:none;font-size:18px;color:var(--mute)">×</button></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><select id="ncertPracticeSubject" onchange="refreshNcertPracticeOptions()" style="padding:9px;border:1.5px solid var(--bdr);border-radius:9px;background:var(--surf);color:var(--txt)"><option value="BIOLOGY">Biology</option><option value="PHYSICS">Physics</option><option value="CHEMISTRY">Chemistry</option></select><select id="ncertPracticeClass" onchange="refreshNcertPracticeOptions()" style="padding:9px;border:1.5px solid var(--bdr);border-radius:9px;background:var(--surf);color:var(--txt)"><option value="11">Class 11</option><option value="12">Class 12</option></select></div><select id="ncertPracticeChapter" onchange="updateNcertPracticeCount()" style="width:100%;padding:9px;border:1.5px solid var(--bdr);border-radius:9px;background:var(--surf);color:var(--txt);margin-top:8px"></select><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px"><input class="fin" id="ncertPracticePageFrom" type="number" placeholder="Page from (optional)" oninput="updateNcertPracticeCount()"><input class="fin" id="ncertPracticePageTo" type="number" placeholder="Page to (optional)" oninput="updateNcertPracticeCount()"></div><div id="ncertPracticeCount" style="font-size:11px;color:var(--mute);margin:8px 0"></div><button class="btn btn-blue btn-full" onclick="startNcertPractice()"><i class="ti ti-player-play"></i> Start NCERT Practice</button><button class="btn btn-ghost btn-full" style="margin-top:7px" onclick="openNcertEbookMenu()"><i class="ti ti-book"></i> Open Official NCERT eBook</button></div>';
   document.body.appendChild(el);el.addEventListener('click',function(e){if(e.target===el)el.remove();});refreshNcertPracticeOptions();
 }
-function ncertPracticePool(){
+// ignorePage=true computes the pool as if no page filter were applied - used
+// internally to detect "would a page-range filter return zero results" so we
+// can fall back honestly instead of silently showing nothing.
+function ncertPracticePool(ignorePage){
   const sub=(document.getElementById('ncertPracticeSubject')||{}).value||'BIOLOGY';
   const cls=parseInt((document.getElementById('ncertPracticeClass')||{}).value)||11;
   const chapterEncoded=(document.getElementById('ncertPracticeChapter')||{}).value||'';
   const chapter=chapterEncoded?decodeURIComponent(chapterEncoded):'';
-  const page=((document.getElementById('ncertPracticePage')||{}).value||'').trim();
-  return uniqueVerifiedQuestions(QUESTIONS).filter(function(q){return q.sub===sub&&parseInt(q.ncertCl)===cls&&(!chapter||String(q.ch||'')===chapter)&&(!page||String(q.ncertPg||'')===page);});
+  const pageFrom=((document.getElementById('ncertPracticePageFrom')||{}).value||'').trim();
+  const pageTo=((document.getElementById('ncertPracticePageTo')||{}).value||'').trim();
+  const hasRange = !ignorePage && (pageFrom || pageTo);
+  return uniqueVerifiedQuestions(QUESTIONS).filter(function(q){
+    if(q.sub!==sub || parseInt(q.ncertCl)!==cls) return false;
+    if(chapter && String(q.ch||'')!==chapter) return false;
+    if(hasRange){
+      if(!isRealNcertPage(q.ncertPg)) return false;
+      const p = parseInt(q.ncertPg);
+      if(pageFrom && p < parseInt(pageFrom)) return false;
+      if(pageTo && p > parseInt(pageTo)) return false;
+    }
+    return true;
+  });
 }
 function refreshNcertPracticeOptions(){
   const sub=(document.getElementById('ncertPracticeSubject')||{}).value||'BIOLOGY';const cls=parseInt((document.getElementById('ncertPracticeClass')||{}).value)||11;const select=document.getElementById('ncertPracticeChapter');if(!select)return;
   const chapters=Array.from(new Set(uniqueVerifiedQuestions(QUESTIONS).filter(function(q){return q.sub===sub&&parseInt(q.ncertCl)===cls&&q.ch;}).map(function(q){return q.ch;}))).sort();
   select.innerHTML='<option value="">All available chapters</option>'+chapters.map(function(ch){return '<option value="'+encodeURIComponent(ch)+'">'+escapeHtml(ch)+'</option>';}).join('');updateNcertPracticeCount();
 }
-function updateNcertPracticeCount(){const el=document.getElementById('ncertPracticeCount');if(el){const n=ncertPracticePool().length;el.textContent=n+' unique referenced question'+(n===1?'':'s')+' available · up to 20 per session';}}
+function updateNcertPracticeCount(){
+  const el=document.getElementById('ncertPracticeCount'); if(!el) return;
+  const strict = ncertPracticePool(false);
+  const pageFrom=((document.getElementById('ncertPracticePageFrom')||{}).value||'').trim();
+  const pageTo=((document.getElementById('ncertPracticePageTo')||{}).value||'').trim();
+  if((pageFrom||pageTo) && strict.length===0){
+    const fallback = ncertPracticePool(true);
+    el.innerHTML = '<span style="color:var(--amber)">No page-tagged questions in that range yet</span> - '+fallback.length+' question'+(fallback.length===1?'':'s')+' available for this chapter instead';
+  } else {
+    el.textContent = strict.length+' unique referenced question'+(strict.length===1?'':'s')+' available &middot; up to 20 per session';
+  }
+}
 function startNcertPractice(){
-  const pool=ncertPracticePool();if(!pool.length){toast('No verified question matches this NCERT selection');return;}
+  const pageFrom=((document.getElementById('ncertPracticePageFrom')||{}).value||'').trim();
+  const pageTo=((document.getElementById('ncertPracticePageTo')||{}).value||'').trim();
+  let pool = ncertPracticePool(false);
+  let usedFallback = false;
+  if((pageFrom||pageTo) && pool.length===0){
+    pool = ncertPracticePool(true); // graceful fallback - never silently empty
+    usedFallback = true;
+  }
+  if(!pool.length){ toast('No verified question matches this NCERT selection'); return; }
   const sub=document.getElementById('ncertPracticeSubject').value;const cls=document.getElementById('ncertPracticeClass').value;const chapterValue=document.getElementById('ncertPracticeChapter').value;const chapter=chapterValue?decodeURIComponent(chapterValue):'All chapters';
   quizList=shuffleArray(pool).slice(0,20).map(shuffleQuestion);activeTopic={name:'NCERT Class '+cls+' · '+chapter,sub:sub,id:'ncert'};curQ=0;answered=false;document.getElementById('ncertPracticeModal').remove();switchTab('quiz');renderQuiz();
+  if(usedFallback) toast('Showing chapter-level questions - none were page-tagged in that exact range');
 }
 
 function openNcertEbookMenu(){
