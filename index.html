@@ -1469,19 +1469,24 @@ async function doGoogleSignIn(){
         btn.disabled = false; btn.textContent = 'Continue with Google'; return;
       }
     }
-    if(r.error === 'User profile not found. Please register.'){
-      // Auto-register Google user
+    if(r.error === 'PROFILE_NOT_FOUND'){
+      // FIX: backend's actual message text ('Account not found. Please register
+      // first.') had drifted from this exact-match check ('User profile not
+      // found. Please register.') - the two were never equal, so auto-registration
+      // was silently dead code. Every new Google user hit this and got stuck at
+      // a raw "account not found" message with no way to complete signup.
+      // Now checks a stable code instead of fragile free text.
       const reg = await api('auth', {action:'register',
         email: result.user.email,
         password: 'google_oauth_' + result.user.uid,
         name: name,
         uid: result.user.uid
       });
-      if(reg.error){ showAuthErr(reg.error); return; }
+      if(reg.error){ showAuthErr(reg.message || reg.error); return; }
       // Now login
       r = await api('auth', {action:'login', idToken: idToken});
     }
-    if(r.error){ showAuthErr(r.error); return; }
+    if(r.error){ showAuthErr(r.message || r.error); return; }
     saveSession(r.user, r.sessionToken);
     startVerify();
     closeModal('authModal');
@@ -1515,7 +1520,7 @@ async function doLogin(){
     const idToken = await cred.user.getIdToken();
     // Step 2: Server session (kills old sessions on other devices)
     const r = await api('auth', {action:'login', idToken: idToken});
-    if(r.error){ showAuthErr(r.error); btn.disabled=false; btn.innerHTML='<i class="ti ti-login"></i> Sign In'; return; }
+    if(r.error){ showAuthErr(r.message || r.error); btn.disabled=false; btn.innerHTML='<i class="ti ti-login"></i> Sign In'; return; }
     saveSession(r.user, r.sessionToken);
     startVerify();
     closeModal('authModal');
