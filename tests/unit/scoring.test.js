@@ -584,3 +584,29 @@ describe('Coverage completion pass — scoring.js real gaps found via line-by-li
     }
   });
 });
+
+describe('Coverage completion — PR #5 usage-analytics integration resilience', () => {
+  test('a usage-analytics recording failure is caught and NEVER blocks the actual scored session response', async () => {
+    seed('users', 'u1', baseUser({ uid: 'u1' }));
+    const { db } = require('../mocks/_firebase.mock');
+    const original = db.collection;
+    db.collection = (name) => {
+      if (name === 'usage_daily') throw new Error('usage analytics down');
+      return original(name);
+    };
+    try {
+      const { req, res } = mockReqRes({
+        uid: 'u1', sessionToken: 'valid_session_token_123', subject: 'physics',
+        results: [{ correct: true, difficulty: 'medium', tid: 'p3', chapter: 'Laws of Motion' }],
+      });
+      await handler(req, res);
+      // The scored session itself must succeed regardless - this is the actual guarantee
+      // the source code's own comment states: "Analytics failure must never block a
+      // student's scored session."
+      expect(res._status).toBe(200);
+      expect(res._json.session.score).toBeGreaterThan(0);
+    } finally {
+      db.collection = original;
+    }
+  });
+});
