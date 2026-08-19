@@ -1542,7 +1542,7 @@ async function doRegister(){
   try{
     // Step 1: Create Firestore profile via our API (sets trial start, role etc.)
     const r = await api('auth', {action:'register',  email, password:pass, name });
-    if(r.error){ showAuthErr(r.error); btn.disabled=false; btn.innerHTML='<i class="ti ti-user-plus"></i> Create Account'; return; }
+    if(r.error){ showAuthErr(r.message || r.error); btn.disabled=false; btn.innerHTML='<i class="ti ti-user-plus"></i> Create Account'; return; }
     // Step 2: Auto sign-in after registration
     toast('Account created! Signing you in...');
     document.getElementById('loginEmail').value=email;
