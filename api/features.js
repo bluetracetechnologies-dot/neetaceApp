@@ -16,6 +16,7 @@
 //   category      - quiz | ai | analytics | notifications | social | admin
 
 const { db } = require('./_firebase');
+const { verifyAdminSession } = require('../lib/session');
 
 
 const DEFAULT_LEVELS = [
@@ -367,9 +368,8 @@ module.exports = async function handler(req, res) {
   const { action, uid, sessionToken } = req.body || {};
   if (!uid || !sessionToken) return res.status(400).json({ error: 'Auth required' });
 
-  const uSnap = await db.collection('users').doc(uid).get();
-  if (!uSnap.exists || uSnap.data().role !== 'admin' || uSnap.data().sessionToken !== sessionToken)
-    return res.status(403).json({ error: 'Admin only' });
+  const auth = await verifyAdminSession(db, uid, sessionToken);
+  if (!auth.ok) return res.status(403).json({ error: 'Admin only' });
 
   // Admin: get full feature list including costs and notes
   if (action === 'admin_list') {
@@ -456,8 +456,8 @@ module.exports = async function handler(req, res) {
     } catch(e) { return res.status(200).json({ levels: DEFAULT_LEVELS }); }
   }
   if (action === 'toggle_level' || action === 'set_free_days') {
-    const uS2 = await db.collection('users').doc(uid).get();
-    if (!uS2.exists || uS2.data().role !== 'admin' || uS2.data().sessionToken !== sessionToken) return res.status(403).json({ error: 'Admin only' });
+    const auth2 = await verifyAdminSession(db, uid, sessionToken);
+    if (!auth2.ok) return res.status(403).json({ error: 'Admin only' });
     const sn = await db.collection('config').doc('levels').get();
     var list = sn.exists && sn.data().list ? sn.data().list : JSON.parse(JSON.stringify(DEFAULT_LEVELS));
     if (action === 'toggle_level') { var idx = list.findIndex(function(l){return l.id === req.body.levelId}); if (idx >= 0) list[idx].enabled = req.body.enabled; }
@@ -479,9 +479,8 @@ module.exports = async function handler(req, res) {
     } catch(e) { return res.status(200).json({ trial: { trialDays: 7 } }); }
   }
   if (action === 'update_trial_config') {
-    const uS4 = await db.collection('users').doc(uid).get();
-    if (!uS4.exists || uS4.data().role !== 'admin' || uS4.data().sessionToken !== sessionToken)
-      return res.status(403).json({ error: 'Admin only' });
+    const auth4 = await verifyAdminSession(db, uid, sessionToken);
+    if (!auth4.ok) return res.status(403).json({ error: 'Admin only' });
     const { trialDays, dailyQuestionCap, featureAccess, fullAccessDays, dailyCapAmount, subjectCaps } = req.body;
     const update = {};
     if (trialDays !== undefined) update.trialDays = trialDays;
