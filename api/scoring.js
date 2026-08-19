@@ -6,6 +6,7 @@
 // No new Firestore collections created.
 
 const { db } = require('./_firebase');
+const { verifySession } = require('../lib/session');
 const { recordUsage } = require('../lib/usage');
 
 // Difficulty weights
@@ -71,10 +72,9 @@ module.exports = async function handler(req, res) {
   if (!uid || !sessionToken) return res.status(400).json({ error: 'uid and sessionToken required' });
 
   // Verify session ONCE, reuse the same doc read for every action below (zero duplicate reads).
-  const uSnap = await db.collection('users').doc(uid).get();
-  if (!uSnap.exists) return res.status(404).json({ error: 'User not found' });
-  const user = uSnap.data();
-  if (user.sessionToken !== sessionToken) return res.status(401).json({ error: 'Invalid session' });
+  const auth = await verifySession(db, uid, sessionToken);
+  if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
+  const user = auth.profile;
 
   try {
     // ══════════════════════════════════════════════════════════════
