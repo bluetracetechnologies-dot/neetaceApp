@@ -62,10 +62,38 @@ module.exports = async function handler(req, res) {
     const { uid, sessionToken, razorpay_order_id, razorpay_payment_id, razorpay_signature } = body;
     if (!uid||!sessionToken||!razorpay_order_id||!razorpay_payment_id||!razorpay_signature)
       return res.status(400).json({ error: 'Missing payment params' });
-    const keySecret = process.env.RAZORPAY_KEY_SECRET;
-    if (!keySecret) return res.status(500).json({ error: 'Payment not configured.' });
+    const keyId = process.env.RAZORPAY_KEY_ID, keySecret = process.env.RAZORPAY_KEY_SECRET;
+    if (!keyId||!keySecret) return res.status(500).json({ error: 'Payment not configured.' });
+
+    // FIX (security): this session-ownership check was missing entirely - sessionToken
+    // was destructured from the request but never actually verified against the real
+    // value on the user's own document, unlike create_order a few lines above.
+    const userSnap = await db.collection('users').doc(uid).get();
+    if (!userSnap.exists) return res.status(404).json({ error: 'User not found' });
+    if (userSnap.data().sessionToken !== sessionToken) return res.status(401).json({ error: 'Invalid session' });
+
     const expectedSig = crypto.createHmac('sha256', keySecret).update(razorpay_order_id + '|' + razorpay_payment_id).digest('hex');
     if (expectedSig !== razorpay_signature) return res.status(400).json({ error: 'Invalid payment signature.' });
+
+    // FIX (security): confirm the order Razorpay actually created belongs to THIS uid,
+    // not just that the signature is valid for some order/payment pair. Without this,
+    // a valid signature for anyone's real payment could be replayed against a
+    // different uid, crediting an account that never paid.
+    try {
+      const instance = new Razorpay({ key_id: keyId, key_secret: keySecret });
+      const order = await instance.orders.fetch(razorpay_order_id);
+      if (!order || !order.notes || order.notes.uid !== uid)
+        return res.status(403).json({ error: 'This payment does not belong to this account.' });
+    } catch (err) {
+      return res.status(500).json({ error: 'Could not verify order ownership.' });
+    }
+
+    // FIX (security): reject if this exact payment_id has already been used to credit
+    // ANY account - closes the replay path where one real payment activates multiple
+    // free accounts. Reuses the existing paymentId field, no new collection needed.
+    const alreadyUsed = await db.collection('users').where('paymentId', '==', razorpay_payment_id).limit(1).get();
+    if (!alreadyUsed.empty) return res.status(409).json({ error: 'This payment has already been used.' });
+
     const paidUntil = nextMay31();
     await db.collection('users').doc(uid).update({ paid: true, paidUntil: paidUntil.toISOString(), paymentId: razorpay_payment_id, paidAt: new Date().toISOString() });
     try { const { dispatch } = require('./notifications'); dispatch(uid, 'payment_success', { planLabel: 'Pro' }).catch(()=>{}); } catch(e) {}
