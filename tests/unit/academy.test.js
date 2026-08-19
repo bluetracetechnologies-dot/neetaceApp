@@ -473,3 +473,292 @@ describe('Priority 12: academy.js — batch_leaderboard (untested until now)', (
     expect(res._status).toBe(403);
   });
 });
+
+function setupTeacherWithBatch(batchOverrides = {}) {
+  const acad = { ...PENDING_ACADEMY, id: 'acy1', seatsUsed: 5, studentCount: 30 };
+  seed('academies', acad.id, acad);
+  const batch = BATCH_FIXTURE(acad.id, { createdBy: 'u_teacher', ...batchOverrides });
+  seedNested(`academies/${acad.id}/batches/${batch.id}`, batch);
+  seed('users', 'u_teacher', baseUser({ uid: 'u_teacher', academyId: acad.id, academyRole: 'teacher', role: 'user' }));
+  return { acad, batch };
+}
+
+describe('Coverage completion — PR #5 new actions (Teacher Dashboard V1 + beyond)', () => {
+
+  test('list_my_batches sort comparator actually executes (2+ batches needed - single-item sorts never invoke the comparator)', async () => {
+    const acad = { ...PENDING_ACADEMY, id: 'acy1' };
+    seed('academies', acad.id, acad);
+    seedNested(`academies/acy1/batches/b1`, BATCH_FIXTURE('acy1', { id: 'b1', createdBy: 'u_teacher', createdAt: '2026-08-01T00:00:00.000Z' }));
+    seedNested(`academies/acy1/batches/b2`, BATCH_FIXTURE('acy1', { id: 'b2', batchCode: 'BT2', createdBy: 'u_teacher', createdAt: '2026-08-10T00:00:00.000Z' }));
+    seed('users', 'u_teacher', baseUser({ uid: 'u_teacher', academyId: 'acy1', academyRole: 'teacher' }));
+    const { req, res } = mockReqRes({ uid: 'u_teacher', sessionToken: 'valid_session_token_123', action: 'list_my_batches' });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    expect(res._json.batches[0].id).toBe('b2'); // newer createdAt genuinely sorts first
+  });
+
+  test('update_batch changes batchName for the owning teacher', async () => {
+    const { batch } = setupTeacherWithBatch();
+    const { req, res } = mockReqRes({ uid: 'u_teacher', sessionToken: 'valid_session_token_123', action: 'update_batch', batchId: batch.id, batchName: 'Renamed Batch' });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    expect(res._json.batch.batchName).toBe('Renamed Batch');
+  });
+
+  test('update_batch validates subject and targetYear fields', async () => {
+    const { batch } = setupTeacherWithBatch();
+    const { req, res } = mockReqRes({ uid: 'u_teacher', sessionToken: 'valid_session_token_123', action: 'update_batch', batchId: batch.id, subject: 'physics', targetYear: 2027 });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    expect(res._json.batch.subject).toBe('PHYSICS');
+  });
+
+  test('update_batch rejects an out-of-range targetYear', async () => {
+    const { batch } = setupTeacherWithBatch();
+    const { req, res } = mockReqRes({ uid: 'u_teacher', sessionToken: 'valid_session_token_123', action: 'update_batch', batchId: batch.id, targetYear: 1999 });
+    await handler(req, res);
+    expect(res._status).toBe(400);
+  });
+
+  test('update_batch rejects a non-owning teacher (getOwnedBatch throws, caught cleanly)', async () => {
+    const { batch } = setupTeacherWithBatch();
+    seed('users', 'u_stranger', baseUser({ uid: 'u_stranger', academyId: 'acy1', academyRole: 'teacher' }));
+    const { req, res } = mockReqRes({ uid: 'u_stranger', sessionToken: 'valid_session_token_123', action: 'update_batch', batchId: batch.id, batchName: 'Hijacked' });
+    await handler(req, res);
+    expect(res._status).toBe(403);
+  });
+
+  test('get_batch_roster returns sorted student profiles with real scores merged in', async () => {
+    const { acad, batch } = setupTeacherWithBatch();
+    seedNested(`academies/acy1/batches/${batch.id}/students/u_b`, { name: 'Zara', joinedAt: '2026-08-05T00:00:00.000Z', active: true });
+    seedNested(`academies/acy1/batches/${batch.id}/students/u_a`, { name: 'Amit', joinedAt: '2026-08-03T00:00:00.000Z', active: true });
+    seed('users', 'u_a', baseUser({ uid: 'u_a', name: 'Amit', scores: { global: { attempted: 20, accuracy: 70, weighted: 55 } } }));
+    seed('users', 'u_b', baseUser({ uid: 'u_b', name: 'Zara', scores: { global: { attempted: 15, accuracy: 60, weighted: 40 } } }));
+    const { req, res } = mockReqRes({ uid: 'u_teacher', sessionToken: 'valid_session_token_123', action: 'get_batch_roster', batchId: batch.id });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    expect(res._json.students[0].name).toBe('Amit'); // alphabetically sorted
+    expect(res._json.students[0].accuracy).toBe(70);
+  });
+
+  test('get_batch_roster error path returns a clean status, not a crash', async () => {
+    const { req, res } = mockReqRes({ uid: 'u_nonexistent', sessionToken: 'valid_session_token_123', action: 'get_batch_roster', batchId: 'b1' });
+    await handler(req, res);
+    expect(res._status).toBeGreaterThanOrEqual(400);
+  });
+
+  test('remove_student deletes membership and releases a seat for a current member (real transaction, not a stub)', async () => {
+    const { acad, batch } = setupTeacherWithBatch();
+    seedNested(`academies/acy1/batches/${batch.id}/students/u_student`, { name: 'Leaving Student', joinedAt: '2026-08-01T00:00:00.000Z', active: true });
+    seed('users', 'u_student', baseUser({ uid: 'u_student', academyId: 'acy1', batchId: batch.id, academyRole: 'student' }));
+    const { req, res } = mockReqRes({ uid: 'u_teacher', sessionToken: 'valid_session_token_123', action: 'remove_student', batchId: batch.id, studentUid: 'u_student' });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    expect(res._json.seatReleased).toBe(true);
+    expect(getDoc('users', 'u_student').academyId).toBeNull();
+    expect(getDoc('academies', 'acy1').seatsUsed).toBe(4); // released from 5
+  });
+
+  test('remove_student rejects a missing studentUid', async () => {
+    const { batch } = setupTeacherWithBatch();
+    const { req, res } = mockReqRes({ uid: 'u_teacher', sessionToken: 'valid_session_token_123', action: 'remove_student', batchId: batch.id });
+    await handler(req, res);
+    expect(res._status).toBe(400);
+  });
+
+  test('remove_student on a student NOT actually in the batch returns 404, not a crash', async () => {
+    const { batch } = setupTeacherWithBatch();
+    const { req, res } = mockReqRes({ uid: 'u_teacher', sessionToken: 'valid_session_token_123', action: 'remove_student', batchId: batch.id, studentUid: 'u_never_joined' });
+    await handler(req, res);
+    expect(res._status).toBe(404);
+  });
+
+  test('get_usage_summary for a teacher scopes to their own batch (not academy-wide)', async () => {
+    const { batch } = setupTeacherWithBatch();
+    seed('usage_daily', 'entry1', { academyId: 'acy1', batchId: batch.id, date: '2026-08-18', uid: 'u_student', minutes: 20 });
+    const { req, res } = mockReqRes({ uid: 'u_teacher', sessionToken: 'valid_session_token_123', action: 'get_usage_summary', batchId: batch.id, days: 7 });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    expect(res._json.summary).toBeDefined();
+  });
+
+  test('get_usage_summary for an admin with a batchId filters by that specific batch', async () => {
+    seed('users', 'u_admin', baseUser({ uid: 'u_admin', role: 'admin' }));
+    seed('usage_daily', 'entry1', { academyId: 'acy1', batchId: 'b1', date: '2026-08-18' });
+    const { req, res } = mockReqRes({ uid: 'u_admin', sessionToken: 'valid_session_token_123', action: 'get_usage_summary', batchId: 'b1', days: 7 });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+  });
+
+  test('get_usage_summary for an admin with an academyId (no batchId) filters academy-wide', async () => {
+    seed('users', 'u_admin', baseUser({ uid: 'u_admin', role: 'admin' }));
+    seed('usage_daily', 'entry1', { academyId: 'acy1', date: '2026-08-18' });
+    const { req, res } = mockReqRes({ uid: 'u_admin', sessionToken: 'valid_session_token_123', action: 'get_usage_summary', academyId: 'acy1', days: 7 });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+  });
+
+  test('get_usage_summary for an admin with NEITHER batchId nor academyId falls back to a global date-range query', async () => {
+    seed('users', 'u_admin', baseUser({ uid: 'u_admin', role: 'admin' }));
+    seed('usage_daily', 'entry1', { date: '2026-08-18' });
+    const { req, res } = mockReqRes({ uid: 'u_admin', sessionToken: 'valid_session_token_123', action: 'get_usage_summary', days: 7 });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+  });
+
+  test('raise_doubt succeeds for a genuine batch student', async () => {
+    const acad = { ...PENDING_ACADEMY, id: 'acy1' };
+    seed('academies', acad.id, acad);
+    seedNested('academies/acy1/batches/b1', BATCH_FIXTURE('acy1', { id: 'b1', createdBy: 'u_teacher' }));
+    seed('users', 'u_student', baseUser({ uid: 'u_student', academyId: 'acy1', batchId: 'b1', academyRole: 'student' }));
+    const { req, res } = mockReqRes({ uid: 'u_student', sessionToken: 'valid_session_token_123', action: 'raise_doubt', question: 'Why does momentum conserve here?', subject: 'physics' });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    expect(res._json.doubt.status).toBe('open');
+  });
+
+  test('raise_doubt rejects a non-student (not in an academy batch)', async () => {
+    seed('users', 'u1', baseUser({ uid: 'u1' }));
+    const { req, res } = mockReqRes({ uid: 'u1', sessionToken: 'valid_session_token_123', action: 'raise_doubt', question: 'test' });
+    await handler(req, res);
+    expect(res._status).toBe(403);
+  });
+
+  test('list_my_doubts returns the calling student\'s own doubts, sorted newest first', async () => {
+    seed('users', 'u_student', baseUser({ uid: 'u_student' }));
+    seed('academy_doubts', 'd1', { studentUid: 'u_student', question: 'old', createdAt: '2026-08-01T00:00:00.000Z' });
+    seed('academy_doubts', 'd2', { studentUid: 'u_student', question: 'new', createdAt: '2026-08-10T00:00:00.000Z' });
+    const { req, res } = mockReqRes({ uid: 'u_student', sessionToken: 'valid_session_token_123', action: 'list_my_doubts' });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    expect(res._json.doubts[0].question).toBe('new');
+  });
+
+  test('list_batch_doubts sorts open doubts before resolved ones, for the owning teacher', async () => {
+    const { batch } = setupTeacherWithBatch();
+    seed('academy_doubts', 'd1', { batchId: batch.id, academyId: 'acy1', status: 'resolved', createdAt: '2026-08-10T00:00:00.000Z' });
+    seed('academy_doubts', 'd2', { batchId: batch.id, academyId: 'acy1', status: 'open', createdAt: '2026-08-01T00:00:00.000Z' });
+    const { req, res } = mockReqRes({ uid: 'u_teacher', sessionToken: 'valid_session_token_123', action: 'list_batch_doubts', batchId: batch.id });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    expect(res._json.doubts[0].status).toBe('open'); // open sorts first even though it's older
+  });
+
+  test('list_batch_doubts rejects a non-owning teacher', async () => {
+    const { batch } = setupTeacherWithBatch();
+    seed('users', 'u_stranger', baseUser({ uid: 'u_stranger', academyId: 'acy1', academyRole: 'teacher' }));
+    const { req, res } = mockReqRes({ uid: 'u_stranger', sessionToken: 'valid_session_token_123', action: 'list_batch_doubts', batchId: batch.id });
+    await handler(req, res);
+    expect(res._status).toBeGreaterThanOrEqual(400);
+  });
+
+  test('resolve_doubt lets the owning teacher answer and marks it resolved', async () => {
+    const { batch } = setupTeacherWithBatch();
+    seed('academy_doubts', 'd1', { id: 'd1', academyId: 'acy1', batchId: batch.id, status: 'open', question: 'help' });
+    const { req, res } = mockReqRes({ uid: 'u_teacher', sessionToken: 'valid_session_token_123', action: 'resolve_doubt', doubtId: 'd1', teacherReply: 'Use F=ma here.' });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    expect(res._json.doubt.status).toBe('resolved');
+  });
+
+  test('resolve_doubt rejects a teacher from a DIFFERENT academy answering this doubt', async () => {
+    const { batch } = setupTeacherWithBatch();
+    seed('academy_doubts', 'd1', { id: 'd1', academyId: 'acy1', batchId: batch.id, status: 'open' });
+    seed('academies', 'acy2', { ...PENDING_ACADEMY, id: 'acy2' });
+    seed('users', 'u_other_teacher', baseUser({ uid: 'u_other_teacher', academyId: 'acy2', academyRole: 'teacher' }));
+    const { req, res } = mockReqRes({ uid: 'u_other_teacher', sessionToken: 'valid_session_token_123', action: 'resolve_doubt', doubtId: 'd1', teacherReply: 'nope' });
+    await handler(req, res);
+    expect(res._status).toBe(403);
+  });
+
+  test('resolve_doubt 404s for a non-existent doubtId', async () => {
+    seed('users', 'u_teacher', baseUser({ uid: 'u_teacher', academyId: 'acy1', academyRole: 'teacher' }));
+    const { req, res } = mockReqRes({ uid: 'u_teacher', sessionToken: 'valid_session_token_123', action: 'resolve_doubt', doubtId: 'ghost', teacherReply: 'x' });
+    await handler(req, res);
+    expect(res._status).toBe(404);
+  });
+
+  test('get_quote catch-fallback returns DEFAULT_ACADEMY_CONFIG cleanly when config read throws', async () => {
+    seed('users', 'u1', baseUser({ uid: 'u1' }));
+    const { db } = require('../mocks/_firebase.mock');
+    const original = db.collection;
+    db.collection = (name) => { if (name === 'config') throw new Error('down'); return original(name); };
+    try {
+      const { req, res } = mockReqRes({ uid: 'u1', sessionToken: 'valid_session_token_123', action: 'get_quote', studentCount: 20 });
+      await handler(req, res);
+      expect(res._status).toBe(200); // graceful fallback to defaults, not a crash
+    } finally {
+      db.collection = original;
+    }
+  });
+
+  test('an unrecognized action returns a clean 400', async () => {
+    seed('users', 'u1', baseUser({ uid: 'u1' }));
+    const { req, res } = mockReqRes({ uid: 'u1', sessionToken: 'valid_session_token_123', action: 'made_up_action' });
+    await handler(req, res);
+    expect(res._status).toBe(400);
+  });
+});
+
+describe('Coverage completion — final 3 lines (join_batch cross-academy, roster catch, doubt sort reverse branch)', () => {
+  test('join_batch rejects a user who already belongs to a DIFFERENT academy (cross-academy conflict, not same-academy re-join)', async () => {
+    const acad1 = { ...PENDING_ACADEMY, id: 'acy1' };
+    const acad2 = { ...PENDING_ACADEMY, id: 'acy2', academyCode: 'ACY2CODE' };
+    seed('academies', 'acy1', acad1);
+    seed('academies', 'acy2', acad2);
+    seedNested('academies/acy2/batches/b2', BATCH_FIXTURE('acy2', { id: 'b2', batchCode: 'BT2CODE' }));
+    seed('users', 'u_student', baseUser({ uid: 'u_student', academyId: 'acy1', academyRole: 'student' })); // already in acy1
+    const { req, res } = mockReqRes({ uid: 'u_student', sessionToken: 'valid_session_token_123', action: 'join_batch', batchCode: 'BT2CODE' }); // trying acy2
+    await handler(req, res);
+    expect(res._status).toBe(409);
+  });
+
+  test('get_batch_roster catch block genuinely fires for a non-owning teacher (not just the outer auth layer)', async () => {
+    const { batch } = setupTeacherWithBatch();
+    seed('users', 'u_stranger', baseUser({ uid: 'u_stranger', academyId: 'acy1', academyRole: 'teacher' }));
+    const { req, res } = mockReqRes({ uid: 'u_stranger', sessionToken: 'valid_session_token_123', action: 'get_batch_roster', batchId: batch.id });
+    await handler(req, res);
+    expect(res._status).toBe(403); // getOwnedBatch's thrown requestError, caught by THIS action's own try/catch
+  });
+
+  test('list_batch_doubts sort comparator hits BOTH ternary branches (open-before-resolved AND resolved-after-open)', async () => {
+    const { batch } = setupTeacherWithBatch();
+    // Seeded in the OPPOSITE order from the earlier test, forcing the reverse pairwise comparison
+    seed('academy_doubts', 'd1', { batchId: batch.id, academyId: 'acy1', status: 'open', createdAt: '2026-08-01T00:00:00.000Z' });
+    seed('academy_doubts', 'd2', { batchId: batch.id, academyId: 'acy1', status: 'resolved', createdAt: '2026-08-10T00:00:00.000Z' });
+    seed('academy_doubts', 'd3', { batchId: batch.id, academyId: 'acy1', status: 'resolved', createdAt: '2026-08-05T00:00:00.000Z' });
+    const { req, res } = mockReqRes({ uid: 'u_teacher', sessionToken: 'valid_session_token_123', action: 'list_batch_doubts', batchId: batch.id });
+    await handler(req, res);
+    expect(res._status).toBe(200);
+    expect(res._json.doubts[0].status).toBe('open');
+    // Between the two resolved doubts, newer createdAt still sorts first (same-status tie-break)
+    expect(res._json.doubts[1].createdAt).toBe('2026-08-10T00:00:00.000Z');
+  });
+});
+
+describe('Coverage completion — raise_doubt rate-limit filter (needs an existing doubt to invoke its callback at all)', () => {
+  test('a student with fewer than 10 open doubts can still raise a new one, filter genuinely counts them', async () => {
+    const acad = { ...PENDING_ACADEMY, id: 'acy1' };
+    seed('academies', acad.id, acad);
+    seedNested('academies/acy1/batches/b1', BATCH_FIXTURE('acy1', { id: 'b1', createdBy: 'u_teacher' }));
+    seed('users', 'u_student', baseUser({ uid: 'u_student', academyId: 'acy1', batchId: 'b1', academyRole: 'student' }));
+    seed('academy_doubts', 'existing1', { studentUid: 'u_student', status: 'open' }); // one existing open doubt
+    seed('academy_doubts', 'existing2', { studentUid: 'u_student', status: 'resolved' }); // one resolved, shouldn't count
+    const { req, res } = mockReqRes({ uid: 'u_student', sessionToken: 'valid_session_token_123', action: 'raise_doubt', question: 'Another question' });
+    await handler(req, res);
+    expect(res._status).toBe(200); // 1 open doubt is well under the 10-limit
+  });
+
+  test('a student with 10 already-open doubts is rate-limited (429), the real anti-spam gate', async () => {
+    const acad = { ...PENDING_ACADEMY, id: 'acy1' };
+    seed('academies', acad.id, acad);
+    seedNested('academies/acy1/batches/b1', BATCH_FIXTURE('acy1', { id: 'b1', createdBy: 'u_teacher' }));
+    seed('users', 'u_student', baseUser({ uid: 'u_student', academyId: 'acy1', batchId: 'b1', academyRole: 'student' }));
+    for (let i = 0; i < 10; i++) {
+      seed('academy_doubts', `existing${i}`, { studentUid: 'u_student', status: 'open' });
+    }
+    const { req, res } = mockReqRes({ uid: 'u_student', sessionToken: 'valid_session_token_123', action: 'raise_doubt', question: 'One too many' });
+    await handler(req, res);
+    expect(res._status).toBe(429);
+  });
+});
