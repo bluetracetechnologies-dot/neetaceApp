@@ -1952,7 +1952,7 @@ async function sendAI(){
     } else if(r && r.fallback){
       show(cannedAIReply(q), r.message||'');
     } else {
-      show(cannedAIReply(q), '');
+      show(cannedAIReply(q), (r && r.error) ? ('AI Tutor unavailable: '+r.error) : 'AI Tutor unavailable. Showing quick notes.');
     }
   }catch(e){
     show(cannedAIReply(q), 'Could not reach AI Tutor. Showing quick notes.');
