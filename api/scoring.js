@@ -82,7 +82,21 @@ module.exports = async function handler(req, res) {
   // Same pattern academy.js uses for _test-series.js. Dispatched AFTER session
   // verification so the tutor module receives an already-verified user and
   // never re-implements auth.
-  if (tutorHandler.actions.has(action)) return tutorHandler(req, res, uid, user);
+  // Wrapped: this dispatch sits OUTSIDE the main try block below, so without
+  // this catch any throw inside the tutor became an unhandled 500 instead of a
+  // graceful fallback - which is exactly the response shape the frontend can't
+  // interpret, leaving a student with a bare canned reply and no explanation.
+  if (tutorHandler.actions.has(action)) {
+    try {
+      return await tutorHandler(req, res, uid, user);
+    } catch (tutorErr) {
+      console.error('tutor dispatch error', tutorErr && tutorErr.message);
+      return res.status(200).json({
+        ok: false, fallback: true, reason: 'error',
+        message: 'AI Tutor could not answer right now. Showing quick notes instead.',
+      });
+    }
+  }
 
   try {
     // ══════════════════════════════════════════════════════════════
