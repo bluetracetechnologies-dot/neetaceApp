@@ -372,7 +372,14 @@ module.exports = async function handler(req, res) {
     if (action === 'set_trial_config') {
       const { days, dailyQuestionCap, features, allFeatures } = req.body;
       const config = {};
-      if (days !== undefined) config.days = days;
+      // Writes BOTH field names deliberately. features.js's update_trial_config
+      // writes `trialDays` while this action historically wrote `days`, and both
+      // merge into the same config/trial doc - so an admin using one panel left
+      // the other showing a stale value. auth.js already reads
+      // `trialDays || days`, so keeping both in sync here means whichever field
+      // any reader picks, it gets the same number. Callers/readers were also
+      // updated to accept either, so this is belt-and-braces, not a workaround.
+      if (days !== undefined) { config.days = days; config.trialDays = days; }
       if (dailyQuestionCap !== undefined) config.dailyQuestionCap = dailyQuestionCap; // per subject per day
       if (features !== undefined) config.features = features; // array of feature keys
       if (allFeatures !== undefined) config.allFeatures = allFeatures; // true = all features during trial
