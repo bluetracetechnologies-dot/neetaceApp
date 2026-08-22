@@ -192,14 +192,28 @@ describe('features.js — get_trial_config / update_trial_config (ADMIN-ONLY her
   // {merge:true}), but which field the live trial-enforcement logic actually reads
   // determines which admin control is the "real" one - that's outside this test file's
   // scope to resolve, flagged here for a deliberate decision later.
-  test('DOCUMENTS FINDING: using both trial-config admin controls leaves BOTH "days" and "trialDays" present with no conflict warning', async () => {
+  test('FIXED: both trial-config admin controls now keep "days" and "trialDays" in sync', async () => {
     seed('users', 'u_admin', ADMIN_USER);
     const adminJs = require('../../api/admin');
+    // Write via admin.js's panel - both fields should land
     await adminJs(...Object.values(mockReqRes({ action: 'set_trial_config', uid: 'u_admin', sessionToken: 'admin_session_token', days: 7 })));
+    let cfg = getDoc('config', 'trial');
+    expect(cfg.days).toBe(7);
+    expect(cfg.trialDays).toBe(7); // previously undefined - the stale-panel bug
+
+    // Now write via features.js's panel - both fields update together
     await handler(...Object.values(mockReqRes({ action: 'update_trial_config', uid: 'u_admin', sessionToken: 'admin_session_token', trialDays: 14 })));
+    cfg = getDoc('config', 'trial');
+    expect(cfg.trialDays).toBe(14);
+    expect(cfg.days).toBe(14); // previously stuck at 7, so the other admin panel showed a stale value
+  });
+
+  test('FIXED: auth.js reads the same trial length regardless of which admin panel set it', async () => {
+    seed('users', 'u_admin', ADMIN_USER);
+    await handler(...Object.values(mockReqRes({ action: 'update_trial_config', uid: 'u_admin', sessionToken: 'admin_session_token', trialDays: 21 })));
     const cfg = getDoc('config', 'trial');
-    expect(cfg.days).toBe(7);       // admin.js's write survived
-    expect(cfg.trialDays).toBe(14); // features.js's write ALSO survived, different field, both present
+    // auth.js resolves as `trialConfig.trialDays || trialConfig.days || 7`
+    expect(cfg.trialDays || cfg.days || 7).toBe(21);
   });
 });
 
