@@ -55,6 +55,10 @@ module.exports = {
     // 19+ previously-duplicated checks across 13 files. Directly closes the root
     // cause of the payments.js verify vulnerability found in the full-codebase review.
     'lib/session.js':         { statements: 93, branches: 93, functions: 99, lines: 99 },
+    // Frontend decision logic. Added after all three shipped AI Tutor bugs turned
+    // out to live in untested frontend branches - the suite had 409 backend tests
+    // and zero frontend ones, so every one of them was invisible by construction.
+    'lib/ai-tutor-client.js': { statements: 99, branches: 92, functions: 99, lines: 99 },
   },
   coverageReporters: ['text', 'text-summary', 'lcov', 'json-summary'],
   verbose: true,
