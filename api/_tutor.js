@@ -154,10 +154,15 @@ async function handleAsk(req, res, uid, user) {
   } catch (err) {
     console.error('ai_tutor error', err.message);
     // Never surface a raw provider error to a student, and never charge them a
-    // usage credit for a failed call.
+    // usage credit for a failed call. Admins DO get the detail - without it the
+    // only way to see why Gemini rejected a call is Vercel's runtime logs, which
+    // is a slow loop when diagnosing a live issue.
+    const isAdmin = user && user.role === 'admin';
     return res.status(200).json({
       ok: false, fallback: true, reason: 'error',
-      message: 'AI Tutor could not answer right now. Showing quick notes instead.',
+      message: isAdmin
+        ? `AI Tutor error (admin detail): ${String(err.message).slice(0, 300)}`
+        : 'AI Tutor could not answer right now. Showing quick notes instead.',
     });
   }
 }
