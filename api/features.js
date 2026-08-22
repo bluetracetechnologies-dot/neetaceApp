@@ -483,7 +483,10 @@ module.exports = async function handler(req, res) {
     if (!auth4.ok) return res.status(403).json({ error: 'Admin only' });
     const { trialDays, dailyQuestionCap, featureAccess, fullAccessDays, dailyCapAmount, subjectCaps } = req.body;
     const update = {};
-    if (trialDays !== undefined) update.trialDays = trialDays;
+    // Keeps both field names in sync - see the matching comment in admin.js's
+    // set_trial_config. Two admin panels write the same config/trial doc; without
+    // this, changing the trial length in one silently left the other stale.
+    if (trialDays !== undefined) { update.trialDays = trialDays; update.days = trialDays; }
     if (dailyQuestionCap !== undefined) update.dailyQuestionCap = dailyQuestionCap;
     if (featureAccess !== undefined) update.featureAccess = featureAccess;
     if (fullAccessDays !== undefined) update.fullAccessDays = fullAccessDays;
