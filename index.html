@@ -1921,18 +1921,42 @@ const AI_RESP={
 let LAST_AI_QUESTION='';
 let LAST_AI_REPLY='';
 function askAI(q){ document.getElementById('aiIn').value=q; sendAI(); }
-function sendAI(){
+function cannedAIReply(q){
+  const key=Object.keys(AI_RESP).find(k=>q.toLowerCase().includes(k));
+  return AI_RESP[key]||AI_RESP.default;
+}
+async function sendAI(){
   const inp=document.getElementById('aiIn'); const q=inp.value.trim(); if(!q) return;
   const wrap=document.getElementById('aiWrap');
   LAST_AI_QUESTION=q; LAST_AI_REPLY='';
   wrap.innerHTML+=`<div class="aimsg user">${escapeHtml(q)}</div>`; inp.value=''; wrap.scrollTop=wrap.scrollHeight;
   trackUsageEvent('ai_tutor',{aiQuestions:1});
-  setTimeout(()=>{
-    const key=Object.keys(AI_RESP).find(k=>q.toLowerCase().includes(k));
-    LAST_AI_REPLY=AI_RESP[key]||AI_RESP.default;
-    const reply=escapeHtml(LAST_AI_REPLY).replace(/\n/g,'<br>');
-    wrap.innerHTML+=`<div class="aimsg bot">${reply}</div>`; wrap.scrollTop=wrap.scrollHeight;
-  },700);
+
+  const thinking=document.createElement('div');
+  thinking.className='aimsg bot'; thinking.textContent='Thinking...';
+  wrap.appendChild(thinking); wrap.scrollTop=wrap.scrollHeight;
+
+  function show(text, note){
+    LAST_AI_REPLY=text;
+    thinking.innerHTML=escapeHtml(text).replace(/\n/g,'<br>')+
+      (note?`<div style="margin-top:8px;font-size:10px;color:var(--mute)">${escapeHtml(note)}</div>`:'');
+    wrap.scrollTop=wrap.scrollHeight;
+  }
+
+  if(!S.user){ show(cannedAIReply(q), 'Sign in for full AI Tutor answers.'); return; }
+  try{
+    const r=await api('scoring',{uid:S.user.uid,sessionToken:S.sessionToken,action:'ai_ask',question:q});
+    if(r && r.ok && r.answer){
+      const left = (r.cap===null||r.cap===undefined) ? '' : `${Math.max(0,r.cap-r.used)} AI questions left today`;
+      show(r.answer, left);
+    } else if(r && r.fallback){
+      show(cannedAIReply(q), r.message||'');
+    } else {
+      show(cannedAIReply(q), '');
+    }
+  }catch(e){
+    show(cannedAIReply(q), 'Could not reach AI Tutor. Showing quick notes.');
+  }
 }
 
 async function raiseTeacherDoubt(){
