@@ -219,3 +219,25 @@ describe('BUG 3 (shipped to production): a throw inside the tutor escaped as an 
     }
   });
 });
+
+describe('Admin-only error detail (diagnostics without leaking to students)', () => {
+  test('an ADMIN sees the real provider error, so a live issue can be diagnosed without log access', async () => {
+    seed('users', 'u_admin', baseUser({ uid: 'u_admin', role: 'admin' }));
+    global.fetch = jest.fn(async () => ({ ok: false, status: 400, text: async () => 'API_KEY_INVALID' }));
+    const { req, res } = mockReqRes({ uid: 'u_admin', sessionToken: S, action: 'ai_ask', question: 'A question' });
+    await handler(req, res);
+    expect(res._json.fallback).toBe(true);
+    expect(res._json.message).toMatch(/admin detail/i);
+    expect(res._json.message).toMatch(/API_KEY_INVALID/);
+  });
+
+  test('a normal PAID student still sees only the generic message - no provider detail leaks', async () => {
+    seed('users', 'u1', baseUser({ uid: 'u1', planKey: 'pro', paid: true, role: 'user' }));
+    global.fetch = jest.fn(async () => ({ ok: false, status: 400, text: async () => 'API_KEY_INVALID' }));
+    const { req, res } = mockReqRes({ uid: 'u1', sessionToken: S, action: 'ai_ask', question: 'A question' });
+    await handler(req, res);
+    expect(res._json.message).not.toMatch(/API_KEY_INVALID/);
+    expect(res._json.message).not.toMatch(/admin detail/i);
+    expect(res._json.message).toMatch(/could not answer right now/i);
+  });
+});
