@@ -51,7 +51,7 @@ module.exports = async function handler(req, res) {
       if (profile.customPricePaise && profile.customPricePaise > 0) { basePrice = profile.customPricePaise; planLabel = (planLabel||'Plan') + ' (Personal Offer)'; }
       const { finalPrice, discount, valid:promoValid, label:promoLabel, err:promoError } = await applyPromo(promoCode, basePrice, uid);
       const instance = new Razorpay({key_id:keyId, key_secret:keySecret});
-      const order = await instance.orders.create({ amount:finalPrice, currency:'INR', receipt:`neetace_${uid}_${Date.now()}`, notes:{uid, email:profile.email, plan:planKey, planLabel, promoCode:promoCode||'', discount} });
+      const order = await instance.orders.create({ amount:finalPrice, currency:'INR', receipt:`neetace_${uid}_${Date.now()}`, notes:{uid, email:profile.email, plan:planKey, planLabel, promoCode:promoCode||'', discount, gstin:'27AAOCB7164R1ZP', seller:'Bluetrace Technologies Pvt. Ltd.'} });
       return res.status(200).json({ orderId:order.id, amount:order.amount, currency:order.currency, keyId, planKey, planLabel, basePrice, discount, promoValid, promoLabel:promoLabel||null, promoError:promoError||null, userName:profile.name, userEmail:profile.email });
     } catch(err) { return res.status(500).json({ error: 'Could not create payment order.' }); }
   }
