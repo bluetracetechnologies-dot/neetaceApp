@@ -8,6 +8,7 @@
 const { db } = require('./_firebase');
 const { verifySession } = require('../lib/session');
 const { recordUsage } = require('../lib/usage');
+const tutorHandler = require('./_tutor');
 
 // Difficulty weights
 const WEIGHTS = { starter:1, easy:2, medium:4, hard:7, exam:10 };
@@ -75,6 +76,13 @@ module.exports = async function handler(req, res) {
   const auth = await verifySession(db, uid, sessionToken);
   if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
   const user = auth.profile;
+
+  // AI Tutor lives behind this function rather than its own /api entry - Vercel
+  // Hobby caps at 12 deployable functions and this project is at the limit.
+  // Same pattern academy.js uses for _test-series.js. Dispatched AFTER session
+  // verification so the tutor module receives an already-verified user and
+  // never re-implements auth.
+  if (tutorHandler.actions.has(action)) return tutorHandler(req, res, uid, user);
 
   try {
     // ══════════════════════════════════════════════════════════════
