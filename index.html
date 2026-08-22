@@ -974,6 +974,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     <div style="display:flex;flex-direction:column;gap:7px;font-size:12px">
       <div style="display:flex;justify-content:space-between"><span style="color:var(--mute)">Company</span><b>Bluetrace Technologies Pvt. Ltd.</b></div>
       <div style="display:flex;justify-content:space-between"><span style="color:var(--mute)">CIN</span><span style="font-family:monospace;font-size:11px">U62099MH2026PTC474717</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:var(--mute)">GSTIN</span><span style="font-family:monospace;font-size:11px">27AAOCB7164R1ZP</span></div>
       <div style="display:flex;justify-content:space-between"><span style="color:var(--mute)">DPIIT (Startup India)</span><span style="font-family:monospace;font-size:11px">DIPP266429</span></div>
       <div style="display:flex;justify-content:space-between"><span style="color:var(--mute)">Udyam (MSME)</span><span style="font-family:monospace;font-size:11px">UDYAM-MH-25-0077376</span></div>
       <div style="display:flex;justify-content:space-between"><span style="color:var(--mute)">Incorporated</span><span>06 May 2026 · Parbhani, Maharashtra</span></div>
@@ -1151,6 +1152,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
       <div id="pricingFaq"></div>
     </div>
 
+    <div style="font-size:10px;color:var(--mute);text-align:center;margin-top:10px;line-height:1.5">Sold by Bluetrace Technologies Pvt. Ltd.<br>GSTIN 27AAOCB7164R1ZP · All prices inclusive of applicable taxes</div>
     <button style="width:100%;background:none;border:none;color:var(--mute);font-size:12px;margin-top:11px;cursor:pointer" onclick="closeModal('pricingModal')">Maybe later</button>
   </div>
 </div>
@@ -2847,9 +2849,21 @@ function showTrialInvestment(daysLeft, u){
   if(sessionStorage.getItem('trial_invest_shown')) return;
   sessionStorage.setItem('trial_invest_shown','1');
 
+  // FIX: this modal previously displayed THREE fabricated values to real users -
+  // a hardcoded '#842' AIR estimate, a hardcoded '3' day streak, and a hardcoded
+  // '5' topics in progress. None came from real data, so a brand-new user who had
+  // just signed up was shown a concrete rank they had not earned, inside a modal
+  // that nudges toward paying. Streaks aren't tracked anywhere in this codebase at
+  // all, so that tile is removed rather than faked. Everything below now comes
+  // from genuine user data, and says so honestly when there isn't enough yet.
+  const g = (S.user && S.user.scores && S.user.scores.global) || {};
   const mistakeCount = mistakes.length || 0;
-  const streakDays   = 3; // approximate
-  const rank         = '#842'; // from scores
+  const attempted = g.attempted || 0;
+  const accuracy = g.accuracy != null ? g.accuracy + '%' : '—';
+  // Real rank only - the backend deliberately leaves this null until 20 questions
+  // are attempted (MIN_FOR_RANK), so respect that instead of inventing a number.
+  const rank = g.rank ? '#'+g.rank : '—';
+  const rankLabel = g.rank ? 'your current rank' : 'rank after 20 questions';
 
   showTrialModal({
     emoji: '📈',
@@ -2862,16 +2876,16 @@ function showTrialInvestment(daysLeft, u){
           <div style="font-size:10px;color:var(--mute)">mistakes logged in Galti Copy</div>
         </div>
         <div style="background:var(--blue-l);border-radius:9px;padding:11px;text-align:center">
-          <div style="font-size:22px;font-weight:800;color:var(--blue)">${streakDays}</div>
-          <div style="font-size:10px;color:var(--mute)">day study streak</div>
+          <div style="font-size:22px;font-weight:800;color:var(--blue)">${attempted}</div>
+          <div style="font-size:10px;color:var(--mute)">questions attempted</div>
         </div>
         <div style="background:var(--purple-l);border-radius:9px;padding:11px;text-align:center">
           <div style="font-size:22px;font-weight:800;color:var(--purple)">${rank}</div>
-          <div style="font-size:10px;color:var(--mute)">current AIR estimate</div>
+          <div style="font-size:10px;color:var(--mute)">${rankLabel}</div>
         </div>
         <div style="background:var(--amber-l);border-radius:9px;padding:11px;text-align:center">
-          <div style="font-size:22px;font-weight:800;color:#7a4800">5</div>
-          <div style="font-size:10px;color:var(--mute)">topics in progress</div>
+          <div style="font-size:22px;font-weight:800;color:#7a4800">${accuracy}</div>
+          <div style="font-size:10px;color:var(--mute)">overall accuracy</div>
         </div>
       </div>
       <div style="background:var(--red-l);border-radius:9px;padding:11px;font-size:12px;color:#7a0c0c;text-align:center">
