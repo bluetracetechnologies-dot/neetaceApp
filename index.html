@@ -1943,7 +1943,14 @@ async function sendAI(){
     wrap.scrollTop=wrap.scrollHeight;
   }
 
-  if(!S.user){ show(cannedAIReply(q), 'Sign in for full AI Tutor answers.'); return; }
+  // Guard on BOTH - the AI Tutor screen has no sign-in gate, and a partially
+  // restored session (user object present, token missing) previously slipped
+  // through to an API call that failed validation with a raw
+  // "uid and sessionToken required", which is meaningless to a student.
+  if(!S.user || !S.user.uid || !S.sessionToken){
+    show(cannedAIReply(q), 'Sign in to get full AI Tutor answers.');
+    return;
+  }
   try{
     const r=await api('scoring',{uid:S.user.uid,sessionToken:S.sessionToken,action:'ai_ask',question:q});
     if(r && r.ok && r.answer){
