@@ -176,3 +176,46 @@ describe('AI Tutor - input validation and auth', () => {
     expect(res._json.ok).toBe(true); // sanity: known action still works
   });
 });
+
+describe('BUG 3 (shipped to production): a throw inside the tutor escaped as an unhandled 500', () => {
+  test('THE ACTUAL BUG: a Firestore failure during the usage lookup degrades gracefully, never a 500', async () => {
+    seed('users', 'u1', baseUser({ uid: 'u1', planKey: 'monthly', paid: true }));
+    seed('config', 'features', { ai_tutor: { usageCap: { daily: 5 } } });
+    const original = db.collection;
+    let calls = 0;
+    // Let session verification and the config read succeed, then throw on the
+    // usage-count read - the exact path that was outside any try/catch and
+    // produced a 500 the frontend could not interpret.
+    db.collection = (name) => {
+      if (name === 'ai_tutor_usage') { calls++; throw new Error('Firestore unavailable'); }
+      return original(name);
+    };
+    try {
+      const { req, res } = mockReqRes({ uid: 'u1', sessionToken: S, action: 'ai_ask', question: 'A question' });
+      await handler(req, res);
+      expect(calls).toBeGreaterThan(0);       // the failing path really was exercised
+      expect(res._status).toBe(200);          // NOT a 500
+      expect(res._json.fallback).toBe(true);  // a shape the frontend understands
+      expect(res._json.reason).toBe('error');
+    } finally {
+      db.collection = original;
+    }
+  });
+
+  test('a throw while incrementing usage still returns a usable response', async () => {
+    seed('users', 'u1', baseUser({ uid: 'u1', planKey: 'pro', paid: true }));
+    const original = db.collection;
+    db.collection = (name) => {
+      if (name === 'ai_tutor_usage') throw new Error('write failed');
+      return original(name);
+    };
+    try {
+      const { req, res } = mockReqRes({ uid: 'u1', sessionToken: S, action: 'ai_ask', question: 'A question' });
+      await handler(req, res);
+      expect(res._status).toBe(200);
+      expect(res._json.fallback).toBe(true);
+    } finally {
+      db.collection = original;
+    }
+  });
+});
