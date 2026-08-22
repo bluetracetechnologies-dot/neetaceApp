@@ -4729,7 +4729,7 @@ async function loadTrialConfig(){
   }catch(e){}
   try{
     const r2 = await api("admin", {action:"get_trial_config", uid:"anon", sessionToken:"anon"});
-    if(r2.days) TRIAL_CONFIG = r2;
+    if(r2 && (r2.days || r2.trialDays)) TRIAL_CONFIG = r2;
   }catch(e){}
 }
 
@@ -4761,7 +4761,7 @@ async function loadTrialConfigAdmin(){
     const el = document.getElementById("trialConfigPanel");
     if(el){
       el.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:9px">' +
-        '<div class="qbox"><div class="qn" style="font-size:18px">' + (r.days||7) + '</div><div class="ql">Trial days</div></div>' +
+        '<div class="qbox"><div class="qn" style="font-size:18px">' + (r.trialDays||r.days||7) + '</div><div class="ql">Trial days</div></div>' +
         '<div class="qbox"><div class="qn" style="font-size:18px">' + (r.dailyQuestionCap||10) + '</div><div class="ql">Qs/sub/day</div></div>' +
         '<div class="qbox"><div class="qn" style="font-size:18px">' + (r.allFeatures?"All":"Limited") + '</div><div class="ql">Features</div></div></div>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
@@ -4772,7 +4772,7 @@ async function loadTrialConfigAdmin(){
   }catch(e){}
 }
 async function setTrialDays(){
-  var d = parseInt(prompt("Trial duration (days):", String(TRIAL_CONFIG.days||7)));
+  var d = parseInt(prompt("Trial duration (days):", String(TRIAL_CONFIG.trialDays||TRIAL_CONFIG.days||7)));
   if(!d || isNaN(d)) return;
   await api("admin", {action:"set_trial_config", uid:S.user.uid, sessionToken:S.sessionToken, days:d});
   toast("Trial set to " + d + " days for new users"); loadTrialConfigAdmin();
@@ -4867,7 +4867,7 @@ async function loadTrialConfigAdmin(){
     const r = await api("features", {action:"get_trial_config", uid:S.user.uid, sessionToken:S.sessionToken});
     const t = r.trial || {};
     el.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:11px">'+
-      '<div><label style="font-size:11px;color:var(--mute)">Trial days</label><input class="fin" id="tcDays" type="number" value="'+(t.trialDays||7)+'" style="margin-top:3px"></div>'+
+      '<div><label style="font-size:11px;color:var(--mute)">Trial days</label><input class="fin" id="tcDays" type="number" value="'+(t.trialDays||t.days||7)+'" style="margin-top:3px"></div>'+
       '<div><label style="font-size:11px;color:var(--mute)">Full-access days (then cap)</label><input class="fin" id="tcFullDays" type="number" value="'+(t.fullAccessDays||3)+'" style="margin-top:3px"></div>'+
       '<div><label style="font-size:11px;color:var(--mute)">Daily Q cap (after full-access)</label><input class="fin" id="tcDailyCap" type="number" value="'+(t.dailyCapAmount||10)+'" placeholder="0 = unlimited" style="margin-top:3px"></div>'+
       '<div><label style="font-size:11px;color:var(--mute)">Feature access</label><select id="tcFeatures" style="width:100%;padding:9px;border:1.5px solid var(--bdr);border-radius:9px;font-size:12px;background:var(--surf);color:var(--txt);margin-top:3px">'+
